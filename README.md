@@ -26,13 +26,13 @@ The screenshots use *Pepper&Carrot* by David Revoy under
 
 The standalone build does not require Python, uv, or Terminal.
 
-### [Download RAIV for mac v0.3.0-alpha for Apple Silicon (88 MB)](https://github.com/jydie5/RAIVformac/releases/download/v0.3.0-alpha/RAIVformac-v0.3.0-alpha-macos-apple-silicon-standalone.zip)
+### [Download RAIV for mac v0.4.0-beta for Apple Silicon (90 MB)](https://github.com/jydie5/RAIVformac/releases/download/v0.4.0-beta/RAIVformac-v0.4.0-beta-macos-apple-silicon-standalone.zip)
 
 1. Download the standalone ZIP from the link above.
 2. Unzip it and move `RAIV.app` to Applications.
 3. On first launch, Control-click `RAIV.app` and choose **Open**.
 
-The current alpha is not signed or notarized. See
+The current beta is not signed or notarized. See
 [INSTALL.md](INSTALL.md) for detailed installation and troubleshooting steps.
 All versions and the SHA-256 checksum are available on the
 [Releases page](https://github.com/jydie5/RAIVformac/releases).

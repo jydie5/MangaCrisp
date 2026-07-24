@@ -12,7 +12,7 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parents[1]
 APP_PATH = ROOT_DIR / "dist" / "RAIV.app"
 AUDIT_PATH = ROOT_DIR / "dist" / "distribution-audit.json"
-DEFAULT_VERSION = "0.3.0-alpha"
+DEFAULT_VERSION = "0.4.0-beta"
 FORBIDDEN_ARCHIVE_TERMS = (
     "sample/",
     "test/",
@@ -95,7 +95,7 @@ def main() -> None:
         "model_count": audit.get("model_count"),
         "license_files": audit.get("license_files"),
         "unsigned": True,
-        "alpha_release_ready": True,
+        "beta_release_ready": True,
     }
     manifest_path = ROOT_DIR / "dist" / "standalone-release-manifest.json"
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

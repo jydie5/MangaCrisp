@@ -21,7 +21,7 @@ RAIV for mac は、Apple Silicon Mac向けの無料・オープンソース画�
 
 一般ユーザーにPython、uv、ターミナル操作は不要です。
 
-### [RAIV for mac v0.3.0-alpha Apple Silicon版をダウンロード（88 MB）](https://github.com/jydie5/RAIVformac/releases/download/v0.3.0-alpha/RAIVformac-v0.3.0-alpha-macos-apple-silicon-standalone.zip)
+### [RAIV for mac v0.4.0-beta Apple Silicon版をダウンロード（90 MB）](https://github.com/jydie5/RAIVformac/releases/download/v0.4.0-beta/RAIVformac-v0.4.0-beta-macos-apple-silicon-standalone.zip)
 
 1. 上のリンクからstandalone ZIPをダウンロードします。
 2. ZIPをダブルクリックして展開します。
@@ -32,7 +32,7 @@ RAIV for mac は、Apple Silicon Mac向けの無料・オープンソース画�
 過去版とSHA-256チェックサムは
 [Releasesページ](https://github.com/jydie5/RAIVformac/releases)で確認できます。
 
-> 現在のα版は署名・Apple notarization未実施です。初回の通常ダブルクリックはmacOSに止められることがあります。
+> 現在のβ版は署名・Apple notarization未実施です。初回の通常ダブルクリックはmacOSに止められることがあります。
 
 ## 最初の一冊を読む
 

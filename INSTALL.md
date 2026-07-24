@@ -44,7 +44,7 @@ system choice, then restart RAIV.
 
 ## If macOS blocks the app
 
-The current alpha does not have an Apple Developer ID signature or notarization.
+The current beta does not have an Apple Developer ID signature or notarization.
 Confirm that the app came from this GitHub repository, then:
 
 1. Try opening `RAIV.app` once and close the warning.

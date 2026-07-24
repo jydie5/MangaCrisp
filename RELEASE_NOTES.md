@@ -1,3 +1,33 @@
+# RAIV for mac v0.4.0-beta
+
+RAIV for mac has moved from alpha to beta. The core bookshelf, archive import,
+right-bound spread reader, Real-CUGAN enhancement, bounded prefetch cache, and
+Python-free standalone distribution are now in place.
+
+## Changes since v0.3.0-alpha
+
+- New RAIV application icon, used by the app bundle and shown in the README
+- `O` shortcut to toggle the visible spread between Original and Enhanced
+- `H` shortcut for help without requiring Shift
+- Clickable GitHub, issue-reporting, and optional support links in app help
+- Direct standalone download links near the top of both READMEs
+- A18 Pro MacBook Neo compatibility assessment and physical-test checklist
+
+## β版への移行
+
+本棚、圧縮ファイル登録、右綴じ見開き、Real-CUGAN補正、上限付き先読み
+キャッシュ、Python不要のstandalone配布が一通り成立したため、β版へ移行します。
+
+- RAIV専用アプリアイコンを追加
+- `O`キーで表示中の見開きを原画／補正版へ即時切り替え
+- Shift不要の`H`ヘルプキーを追加
+- アプリ内ヘルプへGitHub、不具合報告、任意支援リンクを追加
+- 英語／日本語README上部へstandalone版の直接ダウンロードリンクを追加
+- A18 Pro搭載MacBook Neoの互換性調査と実機テスト項目を追加
+
+このβ版はad-hoc署名済みですが、Apple Developer ID署名とnotarizationは未実施です。
+正式版までに複数のApple Silicon実機で性能と起動手順を確認します。
+
 # RAIV for mac v0.3.0-alpha
 
 ## Highlights

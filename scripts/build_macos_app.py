@@ -18,7 +18,7 @@ DIST_APP = ROOT_DIR / "dist" / "RAIV.app"
 APP_ICON_SOURCE = ROOT_DIR / "assets" / "raiv-app-icon.png"
 APP_ICON = ROOT_DIR / "build" / "RAIV.icns"
 BUNDLE_IDENTIFIER = "jp.raiv.viewer"
-APP_VERSION = "0.3.0"
+APP_VERSION = "0.4.0"
 LICENSES_DIR = ROOT_DIR / "build" / "licenses"
 RUNTIME_DISTRIBUTIONS = (
     "PyInstaller",
