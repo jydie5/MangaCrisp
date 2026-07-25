@@ -6,6 +6,7 @@ import threading
 from pathlib import Path
 
 from raiv_app.archive_utils import natural_sort_key
+from raiv_app.branding import APP_NAME
 from raiv_app.i18n import (
     current_language,
     load_language_preference,
@@ -192,8 +193,8 @@ def bookshelf_shortcuts_text() -> str:
             "ダブルクリック: 読む",
             "読む: 選択中の本を開く",
             "Delete: 選択中の本を本棚から削除。元ZIP/RARは残す",
-            "本棚から削除: 確認後、RAIV管理フォルダを削除。元ZIP/RARは残す",
-            "保存先を開く: FinderでRAIV Libraryを表示",
+            "本棚から削除: 確認後、MangaCrisp管理フォルダを削除。元ZIP/RARは残す",
+            "保存先を開く: FinderでMangaCrisp Libraryを表示",
             "H / ?: このヘルプを表示",
         ]
     )
@@ -225,7 +226,7 @@ class BookshelfWindow(QMainWindow):
         self.signals = BookshelfSignals()
         self.signals.register_progress.connect(self.on_register_progress)
         self.signals.register_done.connect(self.on_register_done)
-        self.setWindowTitle("RAIV Bookshelf")
+        self.setWindowTitle(f"{APP_NAME} Bookshelf")
         self.setMinimumSize(900, 620)
         self.resize(1180, 760)
         self.setAcceptDrops(True)
@@ -246,7 +247,7 @@ class BookshelfWindow(QMainWindow):
         layout.setSpacing(12)
 
         header_row = QHBoxLayout()
-        header = QLabel("RAIV Bookshelf", root)
+        header = QLabel(f"{APP_NAME} Bookshelf", root)
         header.setStyleSheet("font-size: 24px; font-weight: bold;")
         header_row.addWidget(header, 1)
         help_button = QPushButton("?", root)
@@ -347,7 +348,7 @@ class BookshelfWindow(QMainWindow):
         message = QMessageBox(self)
         message.setWindowTitle(tr("本棚保存先"))
         message.setIcon(QMessageBox.Information)
-        message.setText(tr("RAIVの本棚保存先を確認してください。"))
+        message.setText(tr("MangaCrispの本棚保存先を確認してください。"))
         message.setInformativeText(
             tr(
                 "展開済み漫画は容量が大きくなるため、Finderで見つけやすい場所に保存します。\n\n現在の保存先:\n{path}",
@@ -371,7 +372,7 @@ class BookshelfWindow(QMainWindow):
         QMessageBox.information(
             self,
             tr("言語設定"),
-            tr("言語設定を保存しました。RAIVを再起動すると反映されます。"),
+            tr("言語設定を保存しました。MangaCrispを再起動すると反映されます。"),
         )
 
     def eventFilter(self, watched, event) -> bool:
@@ -622,7 +623,7 @@ class BookshelfWindow(QMainWindow):
         message.setInformativeText(
             f"{title}\n\n"
             + tr(
-                "RAIVが作成した展開済みフォルダ、読書位置、しおりを削除します。\n元のZIP/RAR/7zファイルは削除しません。"
+                "MangaCrispが作成した展開済みフォルダ、読書位置、しおりを削除します。\n元のZIP/RAR/7zファイルは削除しません。"
             )
         )
         message.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
@@ -687,7 +688,7 @@ class BookshelfWindow(QMainWindow):
         self.active_reader = window
         self.stack.addWidget(window)
         self.stack.setCurrentWidget(window)
-        self.setWindowTitle(f"RAIV - {book.title}")
+        self.setWindowTitle(f"{APP_NAME} - {book.title}")
         if fullscreen:
             window.toggle_fullscreen()
         elif not self.isMaximized():
@@ -724,7 +725,7 @@ class BookshelfWindow(QMainWindow):
         self.reload_books()
         if not self.suppress_reader_return:
             self.stack.setCurrentWidget(self.bookshelf_page)
-            self.setWindowTitle("RAIV Bookshelf")
+            self.setWindowTitle(f"{APP_NAME} Bookshelf")
             self.raise_()
             self.activateWindow()
 

@@ -13,9 +13,11 @@ from math import ceil
 from pathlib import Path
 
 from PIL import Image
+from raiv_app.branding import APP_NAME, CACHE_DIR, PROJECT_URL, SUPPORT_URL
 from raiv_app.archive_utils import discover_samples, load_sample_pages
 from raiv_app.engine_utils import realcugan_executable, run_realcugan
 from raiv_app.i18n import initialize_language, tr
+from raiv_app.library import migrate_legacy_application_state
 from raiv_app.quality_settings import (
     DEFAULT_QUALITY_SETTINGS_PATH,
     load_quality_preferences,
@@ -55,13 +57,9 @@ except ImportError as exc:
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 SAMPLE_DIR = ROOT_DIR / "sample"
-PROJECT_URL = "https://github.com/jydie5/RAIVformac"
-SUPPORT_URL = "https://buymeacoffee.com/jydie5"
-
-
 def default_upscale_dir() -> Path:
     if getattr(sys, "frozen", False):
-        return Path.home() / "Library" / "Caches" / "RAIV" / "upscale"
+        return CACHE_DIR / "upscale"
     return ROOT_DIR / "test" / "output" / "upscale"
 
 
@@ -459,7 +457,7 @@ class SpreadWindow(QMainWindow):
         self.signals.display_image_done.connect(self.on_display_image_done)
 
         direction_label = "right-bound" if self.is_right_bound() else "left-bound"
-        self.setWindowTitle(f"RAIV spread smoke: {title} ({direction_label}, spread-{self.spread_order})")
+        self.setWindowTitle(f"{APP_NAME}: {title} ({direction_label}, spread-{self.spread_order})")
         self.setStyleSheet(
             "QMainWindow, QWidget { background: #111111; color: #dddddd; font-size: 14px; } "
             "QLabel#pagePane { border: 1px solid #333333; } "
@@ -2027,7 +2025,7 @@ class SpreadWindow(QMainWindow):
 def parse_args(argv: list[str]) -> Namespace:
     parser = ArgumentParser(description="Manual two-page spread smoke viewer.")
     parser.add_argument("sample", nargs="?", help="folder/archive/image sample path")
-    parser.add_argument("--bookshelf", action="store_true", help="open the RAIV bookshelf window")
+    parser.add_argument("--bookshelf", action="store_true", help=f"open the {APP_NAME} bookshelf window")
     parser.add_argument("--processed-dir", help="directory containing processed images")
     parser.add_argument("--original", action="store_true", help="ignore processed images")
     parser.add_argument("--use-processed", action="store_true", help="auto-load processed benchmark images when available")
@@ -2078,7 +2076,7 @@ def choose_source(sample_arg: str | None) -> Path:
 def choose_source_with_dialog(parent=None) -> Path:
     path, _selected_filter = QFileDialog.getOpenFileName(
         parent,
-        "Open RAIV sample",
+        f"Open {APP_NAME} sample",
         str(Path.home()),
         "Images and archives (*.zip *.cbz *.rar *.cbr *.7z *.cb7 *.png *.jpg *.jpeg *.webp *.bmp *.gif *.tif *.tiff *.avif);;All files (*)",
     )
@@ -2105,9 +2103,10 @@ def main() -> None:
     if PYSIDE_IMPORT_ERROR is not None:
         raise SystemExit("PySide6 is required: python3 -m pip install PySide6") from PYSIDE_IMPORT_ERROR
     args = parse_args(sys.argv)
+    migrate_legacy_application_state()
     initialize_language(DEFAULT_QUALITY_SETTINGS_PATH)
     app = QApplication(sys.argv)
-    app.setApplicationName("RAIV")
+    app.setApplicationName(APP_NAME)
     if should_open_bookshelf(args):
         from raiv_app.bookshelf import BookshelfWindow
 

@@ -9,7 +9,7 @@ test/output/
 test/engines/
 build/
 dist/
-RAIV.spec
+*.spec
 
 # Local samples and archives.
 sample/*

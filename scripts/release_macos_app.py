@@ -10,10 +10,10 @@ from pathlib import Path
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
-APP_PATH = ROOT_DIR / "dist" / "RAIV.app"
-ARCHIVE_PATH = ROOT_DIR / "dist" / "RAIV-notary.zip"
+APP_PATH = ROOT_DIR / "dist" / "MangaCrisp.app"
+ARCHIVE_PATH = ROOT_DIR / "dist" / "MangaCrisp-notary.zip"
 REPORT_PATH = ROOT_DIR / "dist" / "release-check.json"
-ENTITLEMENTS = ROOT_DIR / "scripts" / "raiv.entitlements.plist"
+ENTITLEMENTS = ROOT_DIR / "scripts" / "mangacrisp.entitlements.plist"
 
 
 def run(command: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -155,10 +155,10 @@ def audit_distribution() -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Build, Developer ID sign, notarize, staple, and assess RAIV.app.")
+    parser = argparse.ArgumentParser(description="Build, Developer ID sign, notarize, staple, and assess MangaCrisp.app.")
     parser.add_argument("--identity", required=True, help='codesigning identity, or "auto" when exactly one Developer ID Application identity exists')
     parser.add_argument("--notary-profile", required=True, help="notarytool keychain profile name")
-    parser.add_argument("--skip-build", action="store_true", help="use existing dist/RAIV.app")
+    parser.add_argument("--skip-build", action="store_true", help="use existing dist/MangaCrisp.app")
     parser.add_argument("--skip-notary", action="store_true", help="sign and archive only")
     parser.add_argument("--bundle-engine", action="store_true", help="bundle local Real-CUGAN engine; requires license review")
     return parser.parse_args()

@@ -1,3 +1,20 @@
+# MangaCrisp v0.5.0-beta
+
+MangaCrisp is the new product name for the independent macOS manga and comic
+viewer previously released as RAIV for mac. The application bundle is now
+`MangaCrisp.app`, and the repository is `jydie5/MangaCrisp`.
+
+Existing settings, books, and reading positions are preserved. On first launch,
+small application state is copied into MangaCrisp's Application Support
+directory, while the configured managed library continues to be used in place.
+
+## Changes
+
+- Renamed the app and public project to MangaCrisp.
+- Changed the bundle identifier to `com.jydie5.mangacrisp`.
+- Added migration coverage for previous RAIV settings, database, and AI cache.
+- Kept `raiv_app` and the `raiv-viewer` command as internal compatibility names.
+
 # RAIV for mac v0.4.0-beta
 
 RAIV for mac has moved from alpha to beta. The core bookshelf, archive import,

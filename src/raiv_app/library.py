@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 import sqlite3
 import uuid
-import shutil
 import zipfile
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
@@ -13,6 +13,14 @@ from pathlib import Path
 from typing import Any
 
 from PIL import Image
+
+from raiv_app.branding import (
+    APP_SUPPORT_DIR,
+    CACHE_DIR,
+    DEFAULT_LIBRARY_DIR,
+    LEGACY_APP_SUPPORT_DIR,
+    LEGACY_CACHE_DIR,
+)
 
 from .archive_utils import (
     ArchiveVolumeGroup,
@@ -110,14 +118,15 @@ class LibraryPaths:
 
     @classmethod
     def default(cls) -> LibraryPaths:
-        app_support = Path.home() / "Library" / "Application Support" / "RAIV"
+        app_support = APP_SUPPORT_DIR
+        migrate_legacy_application_state(app_support)
         settings_path = app_support / "settings.json"
         settings = load_library_settings(settings_path)
         return cls(
             base_dir=app_support,
-            database_path=app_support / "raiv.sqlite3",
-            library_dir=Path(settings.get("library_dir") or Path.home() / "RAIV Library").expanduser(),
-            cache_dir=Path.home() / "Library" / "Caches" / "RAIV",
+            database_path=app_support / "mangacrisp.sqlite3",
+            library_dir=Path(settings.get("library_dir") or DEFAULT_LIBRARY_DIR).expanduser(),
+            cache_dir=CACHE_DIR,
             legacy_library_dir=app_support / "Library",
             settings_path=settings_path,
         )
@@ -140,6 +149,32 @@ def load_library_settings(settings_path: Path) -> dict[str, Any]:
     except (json.JSONDecodeError, OSError):
         return {}
     return data if isinstance(data, dict) else {}
+
+
+def migrate_legacy_application_state(
+    app_support: Path = APP_SUPPORT_DIR,
+    *,
+    legacy_app_support: Path = LEGACY_APP_SUPPORT_DIR,
+    cache_dir: Path = CACHE_DIR,
+    legacy_cache_dir: Path = LEGACY_CACHE_DIR,
+) -> None:
+    """Copy small persistent state and move disposable cache from RAIV once."""
+    if app_support.exists() or not legacy_app_support.exists():
+        return
+
+    app_support.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(legacy_app_support, app_support)
+    legacy_database = app_support / "raiv.sqlite3"
+    current_database = app_support / "mangacrisp.sqlite3"
+    if legacy_database.exists() and not current_database.exists():
+        legacy_database.replace(current_database)
+
+    if legacy_cache_dir.exists() and not cache_dir.exists():
+        cache_dir.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            legacy_cache_dir.replace(cache_dir)
+        except OSError:
+            shutil.copytree(legacy_cache_dir, cache_dir)
 
 
 def save_library_settings(paths: LibraryPaths, *, library_dir_confirmed: bool) -> None:

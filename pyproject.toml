@@ -1,7 +1,7 @@
 [project]
-name = "raiv"
-version = "0.4.0b0"
-description = "macOS manga and image archive viewer for Apple Silicon"
+name = "mangacrisp"
+version = "0.5.0b0"
+description = "AI-enhanced manga and comic viewer for Apple Silicon Macs"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
@@ -12,6 +12,7 @@ dependencies = [
 ]
 
 [project.scripts]
+mangacrisp = "raiv_app.main:main"
 raiv-viewer = "raiv_app.main:main"
 
 [project.optional-dependencies]

@@ -1,10 +1,10 @@
-# RAIV for mac Roadmap
+# MangaCrisp Roadmap
 
 この文書は、公開後の機能追加と修正をユーザー価値単位で管理します。実装中の詳細はGitHub IssueとDraft Pull Requestで追跡します。
 
 ## P0: 画質設定を分かりやすくする
 
-追跡: [Issue #2 原画＋3種類の簡単画質モード](https://github.com/jydie5/RAIVformac/issues/2)
+追跡: [Issue #2 原画＋3種類の簡単画質モード](https://github.com/jydie5/MangaCrisp/issues/2)
 
 状態: 実装済み（PR #5でmainへ反映）
 
@@ -27,7 +27,7 @@
 
 ## P1: マニュアルモードと設定保存
 
-追跡: [Issue #3 マニュアル画質モードとカスタム設定保存](https://github.com/jydie5/RAIVformac/issues/3)
+追跡: [Issue #3 マニュアル画質モードとカスタム設定保存](https://github.com/jydie5/MangaCrisp/issues/3)
 
 状態: 実装済み（PR #5でmainへ反映）
 
@@ -41,7 +41,7 @@
 
 ## P1: 気づかせない自動先読み
 
-追跡: [Issue #4 読書速度に追従するバックグラウンド先読み](https://github.com/jydie5/RAIVformac/issues/4)
+追跡: [Issue #4 読書速度に追従するバックグラウンド先読み](https://github.com/jydie5/MangaCrisp/issues/4)
 
 状態: 実装済み（PR #5でmainへ反映）
 

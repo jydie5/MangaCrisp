@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
-APP_PATH = ROOT_DIR / "dist" / "RAIV.app"
+APP_PATH = ROOT_DIR / "dist" / "MangaCrisp.app"
 REPORT_PATH = ROOT_DIR / "dist" / "distribution-audit.json"
 EXPECTED_ENGINE_SHA256 = "a59aa9acd89115e33d7d71d7e413b405237833f331bdc87d4e20099af0e5e819"
 EXPECTED_ENGINE_ARM64_TEXT_SHA256 = "6dace8862343cd3a332f9e09489f77554c64064c4619a4c5fd3d2fa71f3a5f5e"
@@ -135,7 +135,7 @@ def main() -> None:
         "license_files": license_files,
         "missing_engine_licenses": missing_engine_licenses,
         "missing_runtime_licenses": missing_runtime_licenses,
-        "has_raiv_license": any(path.endswith("RAIV-MIT.txt") for path in license_files),
+        "has_project_license": any(path.endswith("MangaCrisp-MIT.txt") for path in license_files),
         "has_realcugan_license": any(path.endswith("realcugan-ncnn-vulkan-MIT.txt") for path in license_files),
         "codesign": command_result(["codesign", "--verify", "--deep", "--strict", str(APP_PATH)]),
         "spctl": command_result(["spctl", "--assess", "--type", "execute", "--verbose=4", str(APP_PATH)]),

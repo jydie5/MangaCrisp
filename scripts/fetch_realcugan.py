@@ -20,7 +20,7 @@ ENGINE_ARCHIVE_URL = (
 ENGINE_ARCHIVE_SHA256 = "0df908cbb98b480f85897221b96d37b0bdb70f82d81b2c7037fe950dd5c0fa33"
 ENGINE_EXECUTABLE_SHA256 = "a59aa9acd89115e33d7d71d7e413b405237833f331bdc87d4e20099af0e5e819"
 DEFAULT_DESTINATION = ROOT_DIR / "build" / "vendor"
-DEFAULT_CACHE_DIR = Path.home() / "Library" / "Caches" / "RAIV" / "vendor"
+DEFAULT_CACHE_DIR = Path.home() / "Library" / "Caches" / "MangaCrisp" / "vendor"
 
 LICENSE_SOURCES = (
     (
@@ -75,7 +75,7 @@ def download_verified(url: str, destination: Path, expected_sha256: str) -> Path
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = destination.with_suffix(destination.suffix + ".part")
     temporary.unlink(missing_ok=True)
-    request = urllib.request.Request(url, headers={"User-Agent": "RAIV-for-mac-build/0.2"})
+    request = urllib.request.Request(url, headers={"User-Agent": "MangaCrisp-build/0.4"})
     with urllib.request.urlopen(request, timeout=120) as response, temporary.open("wb") as output:
         shutil.copyfileobj(response, output)
     actual_sha256 = sha256_file(temporary)

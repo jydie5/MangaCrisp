@@ -1,4 +1,4 @@
-# Installing RAIV for mac
+# Installing MangaCrisp
 
 [English](INSTALL.md) | [日本語](INSTALL.ja.md)
 
@@ -11,7 +11,7 @@
 
 Intel Macs are not supported by the current standalone build.
 
-The A18 Pro MacBook Neo is expected to be compatible because both RAIV and its
+The A18 Pro MacBook Neo is expected to be compatible because both MangaCrisp and its
 bundled Real-CUGAN engine are native `arm64` executables and the engine uses
 Metal. It has not yet been tested on physical MacBook Neo hardware. Its 8 GB of
 unified memory and smaller GPU may reduce AI prefetch throughput compared with
@@ -19,42 +19,42 @@ M-series Pro Macs. See [Hardware compatibility](docs/hardware-compatibility.md).
 
 ## Download
 
-1. Open [RAIV for mac Releases](https://github.com/jydie5/RAIVformac/releases).
+1. Open [MangaCrisp Releases](https://github.com/jydie5/MangaCrisp/releases).
 2. Expand the latest release's Assets section.
 3. Download the file whose name contains `standalone.zip`.
 4. Do not download GitHub's automatically generated `Source code` archives
-   unless you intend to develop RAIV.
+   unless you intend to develop MangaCrisp.
 
 The `.sha256` file is provided for integrity verification.
 
 ## Install and launch
 
 1. Double-click the downloaded ZIP.
-2. Drag `RAIV.app` to the Applications folder.
-3. In Applications, Control-click `RAIV.app` and choose **Open**.
+2. Drag `MangaCrisp.app` to the Applications folder.
+3. In Applications, Control-click `MangaCrisp.app` and choose **Open**.
 4. Choose **Open** again in the confirmation dialog.
 
 Normal double-click launching should work afterward.
 
 ## Choose the interface language
 
-RAIV follows the first preferred language in macOS and includes English and
+MangaCrisp follows the first preferred language in macOS and includes English and
 Japanese. Use the **Language** selector in the bookshelf header to override the
-system choice, then restart RAIV.
+system choice, then restart MangaCrisp.
 
 ## If macOS blocks the app
 
 The current beta does not have an Apple Developer ID signature or notarization.
 Confirm that the app came from this GitHub repository, then:
 
-1. Try opening `RAIV.app` once and close the warning.
+1. Try opening `MangaCrisp.app` once and close the warning.
 2. Open **System Settings**.
 3. Open **Privacy & Security**.
-4. Find the RAIV message and choose **Open Anyway**.
+4. Find the MangaCrisp message and choose **Open Anyway**.
 
 There is no need to disable macOS security features. If the app still does not
 launch, report the macOS version, Mac model, downloaded filename, and exact
-warning text in [GitHub Issues](https://github.com/jydie5/RAIVformac/issues).
+warning text in [GitHub Issues](https://github.com/jydie5/MangaCrisp/issues).
 
 ## Add a book
 
@@ -66,8 +66,9 @@ Drag any supported item onto the bookshelf:
 - A folder containing images
 - An individual image
 
-After confirmation, RAIV creates a managed reading copy in `~/RAIV Library` and
-adds its cover to the bookshelf. The source file is not deleted.
+After confirmation, MangaCrisp creates a managed reading copy in
+`~/MangaCrisp Library` for new installations and adds its cover to the
+bookshelf. The source file is not deleted.
 
 The repository's [`demo`](demo) directory contains freely licensed ZIP files
 that can be used for a first test.
@@ -85,16 +86,16 @@ and the status panel explains why.
 
 ## Update
 
-Download a newer standalone ZIP and replace the old `RAIV.app`. The bookshelf
+Download a newer standalone ZIP and replace the old `MangaCrisp.app`. The bookshelf
 and reading positions are stored outside the app and are normally preserved.
 
 ## Report a problem
 
-Open a [GitHub Issue](https://github.com/jydie5/RAIVformac/issues) and include:
+Open a [GitHub Issue](https://github.com/jydie5/MangaCrisp/issues) and include:
 
 - Mac model
 - macOS version
-- RAIV version
+- MangaCrisp version
 - Archive format
 - Reproduction steps
 - Exact error text

@@ -14,11 +14,11 @@ from fetch_realcugan import ensure_realcugan, fetch_license_files, write_provena
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 ENTRYPOINT = ROOT_DIR / "src" / "raiv_app" / "main.py"
-DIST_APP = ROOT_DIR / "dist" / "RAIV.app"
-APP_ICON_SOURCE = ROOT_DIR / "assets" / "raiv-app-icon.png"
-APP_ICON = ROOT_DIR / "build" / "RAIV.icns"
-BUNDLE_IDENTIFIER = "jp.raiv.viewer"
-APP_VERSION = "0.4.0"
+DIST_APP = ROOT_DIR / "dist" / "MangaCrisp.app"
+APP_ICON_SOURCE = ROOT_DIR / "assets" / "mangacrisp-app-icon.png"
+APP_ICON = ROOT_DIR / "build" / "MangaCrisp.icns"
+BUNDLE_IDENTIFIER = "com.jydie5.mangacrisp"
+APP_VERSION = "0.5.0"
 LICENSES_DIR = ROOT_DIR / "build" / "licenses"
 RUNTIME_DISTRIBUTIONS = (
     "PyInstaller",
@@ -55,7 +55,7 @@ ICONSET_FILES = {
 def build_app_icon() -> Path:
     if not APP_ICON_SOURCE.is_file():
         raise RuntimeError(f"app icon source was not found: {APP_ICON_SOURCE}")
-    iconset_dir = ROOT_DIR / "build" / "RAIV.iconset"
+    iconset_dir = ROOT_DIR / "build" / "MangaCrisp.iconset"
     iconset_dir.mkdir(parents=True, exist_ok=True)
     for filename, size in ICONSET_FILES.items():
         subprocess.run(
@@ -107,15 +107,15 @@ def write_qt_source_notice(destination: Path) -> None:
     pyside_version = importlib.metadata.version("PySide6")
     notice = destination / "Qt-PySide6-source-and-relinking.txt"
     notice.write_text(
-        "RAIV for mac uses PySide6 and Qt under the LGPL v3 option.\n\n"
+        "MangaCrisp uses PySide6 and Qt under the LGPL v3 option.\n\n"
         f"Bundled PySide6 version: {pyside_version}\n"
         f"PySide6 source: https://github.com/qtproject/pyside-pyside-setup/tree/v{pyside_version}\n"
         f"Qt source: https://github.com/qt/qtbase/tree/v{pyside_version}\n"
-        "RAIV application source: https://github.com/jydie5/RAIVformac\n\n"
+        "MangaCrisp application source: https://github.com/jydie5/MangaCrisp\n\n"
         "The dynamically linked Qt frameworks are stored below:\n"
-        "RAIV.app/Contents/Frameworks/PySide6/Qt/lib/\n\n"
+        "MangaCrisp.app/Contents/Frameworks/PySide6/Qt/lib/\n\n"
         "You may replace compatible Qt/PySide6 libraries for relinking and then apply your own\n"
-        "ad-hoc signature with: codesign --force --deep --sign - RAIV.app\n"
+        "ad-hoc signature with: codesign --force --deep --sign - MangaCrisp.app\n"
         "The complete LGPL v3 text is included as Qt-PySide6-LGPL-3.0-only.txt.\n",
         encoding="utf-8",
     )
@@ -127,7 +127,7 @@ def prepare_license_files(engine_dir: Path | None) -> Path | None:
     copied = 0
     project_license = ROOT_DIR / "LICENSE"
     if project_license.exists():
-        shutil.copy2(project_license, LICENSES_DIR / "RAIV-MIT.txt")
+        shutil.copy2(project_license, LICENSES_DIR / "MangaCrisp-MIT.txt")
         copied += 1
     third_party_notices = ROOT_DIR / "THIRD_PARTY_NOTICES.md"
     if third_party_notices.exists():
@@ -145,10 +145,11 @@ def prepare_license_files(engine_dir: Path | None) -> Path | None:
         copied += 1
     notice = LICENSES_DIR / "README.txt"
     notice.write_text(
-        "RAIV third-party notices.\n\n"
+        "MangaCrisp third-party notices.\n\n"
         "Standalone builds bundle the pinned official realcugan-ncnn-vulkan macOS package.\n"
         "Keep every file in this directory with redistributed app bundles.\n"
-        "Without a bundled engine, set RAIV_REALCUGAN_PATH to a local realcugan-ncnn-vulkan executable.\n",
+        "Without a bundled engine, set MANGACRISP_REALCUGAN_PATH to a local realcugan-ncnn-vulkan executable.\n"
+        "RAIV_REALCUGAN_PATH remains supported for compatibility.\n",
         encoding="utf-8",
     )
     copied += 1
@@ -156,7 +157,7 @@ def prepare_license_files(engine_dir: Path | None) -> Path | None:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Build a local RAIV.app bundle.")
+    parser = argparse.ArgumentParser(description="Build a local MangaCrisp.app bundle.")
     parser.add_argument(
         "--bundle-engine",
         action="store_true",
@@ -199,7 +200,7 @@ def main() -> None:
         "--icon",
         str(app_icon),
         "--name",
-        "RAIV",
+        "MangaCrisp",
         "--osx-bundle-identifier",
         BUNDLE_IDENTIFIER,
         "--hidden-import",

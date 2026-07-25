@@ -1,6 +1,6 @@
 # Free demo books
 
-Drop any ZIP in this directory onto the RAIV bookshelf.
+Drop any ZIP in this directory onto the MangaCrisp bookshelf.
 
 The archives contain freely redistributable *Pepper&Carrot* pages so users and
 contributors can test archive import, cover generation, natural ordering,

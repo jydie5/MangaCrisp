@@ -10,9 +10,9 @@ from pathlib import Path
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
-APP_PATH = ROOT_DIR / "dist" / "RAIV.app"
+APP_PATH = ROOT_DIR / "dist" / "MangaCrisp.app"
 AUDIT_PATH = ROOT_DIR / "dist" / "distribution-audit.json"
-DEFAULT_VERSION = "0.4.0-beta"
+DEFAULT_VERSION = "0.5.0-beta"
 FORBIDDEN_ARCHIVE_TERMS = (
     "sample/",
     "test/",
@@ -35,7 +35,7 @@ def sha256_file(path: Path) -> str:
 
 def check_audit(audit: dict) -> list[str]:
     failures: list[str] = []
-    if audit.get("bundle", {}).get("identifier") != "jp.raiv.viewer":
+    if audit.get("bundle", {}).get("identifier") != "com.jydie5.mangacrisp":
         failures.append("unexpected bundle identifier")
     if not audit.get("engine_bundled"):
         failures.append("Real-CUGAN is not bundled")
@@ -47,15 +47,15 @@ def check_audit(audit: dict) -> list[str]:
         failures.append("third-party license files are missing")
     if audit.get("missing_runtime_licenses"):
         failures.append("Python runtime dependency license files are missing")
-    if not audit.get("has_raiv_license"):
-        failures.append("RAIV license is missing")
+    if not audit.get("has_project_license"):
+        failures.append("MangaCrisp license is missing")
     if audit.get("codesign", {}).get("returncode") != 0:
         failures.append("ad-hoc code-signature verification failed")
     return failures
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Build the unsigned Python-free RAIV standalone ZIP.")
+    parser = argparse.ArgumentParser(description="Build the unsigned Python-free MangaCrisp standalone ZIP.")
     parser.add_argument("--version", default=DEFAULT_VERSION)
     parser.add_argument("--skip-build", action="store_true")
     args = parser.parse_args()
@@ -69,7 +69,7 @@ def main() -> None:
     if failures:
         raise SystemExit("standalone audit failed:\n- " + "\n- ".join(failures))
 
-    artifact = ROOT_DIR / "dist" / f"RAIVformac-v{args.version}-macos-apple-silicon-standalone.zip"
+    artifact = ROOT_DIR / "dist" / f"MangaCrisp-v{args.version}-macos-apple-silicon-standalone.zip"
     checksum_path = artifact.with_suffix(artifact.suffix + ".sha256")
     artifact.unlink(missing_ok=True)
     run(["ditto", "-c", "-k", "--norsrc", "--keepParent", str(APP_PATH), str(artifact)])

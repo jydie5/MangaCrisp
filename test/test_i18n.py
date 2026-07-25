@@ -60,7 +60,7 @@ def test_help_dialog_contains_localized_project_links() -> None:
     set_language("en")
     english = help_dialog_html("?: show help")
     assert "Project links" in english
-    assert "https://github.com/jydie5/RAIVformac" in english
+    assert "https://github.com/jydie5/MangaCrisp" in english
     assert "https://buymeacoffee.com/jydie5" in english
 
     set_language("ja")

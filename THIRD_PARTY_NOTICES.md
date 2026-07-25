@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-RAIV for macのstandalone版は、以下の公式macOSパッケージを同梱します。
+MangaCrispのstandalone版は、以下の公式macOSパッケージを同梱します。
 
 ## Real-CUGAN ncnn Vulkan
 
@@ -31,11 +31,11 @@ RAIV for macのstandalone版は、以下の公式macOSパッケージを同梱�
 - [MoltenVK v1.1.1](https://github.com/KhronosGroup/MoltenVK/releases/tag/v1.1.1): Apache License 2.0
 - [LLVM OpenMP 11.0.0](https://github.com/llvm/llvm-project/tree/llvmorg-11.0.0/openmp): Apache License 2.0 with LLVM Exceptions
 
-ライセンス全文は`RAIV.app/Contents/Resources/licenses/`へ収録されます。PyInstallerのmacOSバンドル構造によっては、同じ場所へのシンボリックリンクが`Contents/Frameworks`側にも作られます。
+ライセンス全文は`MangaCrisp.app/Contents/Resources/licenses/`へ収録されます。PyInstallerのmacOSバンドル構造によっては、同じ場所へのシンボリックリンクが`Contents/Frameworks`側にも作られます。
 
 ## Python runtime and libraries
 
-standalone版はPythonランタイム、PySide6/Qt、Pillow、py7zr、rarfileと、それらが利用するライブラリを同梱します。ビルド時にインストール済みパッケージのライセンスファイルを収集し、すべて`RAIV.app/Contents/Resources/licenses/`へ収録します。
+standalone版はPythonランタイム、PySide6/Qt、Pillow、py7zr、rarfileと、それらが利用するライブラリを同梱します。ビルド時にインストール済みパッケージのライセンスファイルを収集し、すべて`MangaCrisp.app/Contents/Resources/licenses/`へ収録します。
 
 - Python: Python Software Foundation License
 - PyInstaller bootloader/runtime: GPL 2.0 or later with the PyInstaller Bootloader Exception
@@ -47,8 +47,8 @@ standalone版はPythonランタイム、PySide6/Qt、Pillow、py7zr、rarfileと
 
 PySide6/Qtの正確なバージョン、対応ソース、動的リンクされたQtライブラリの場所と差し替え後の再署名方法は、アプリ内の`Qt-PySide6-source-and-relinking.txt`に記載します。Pillowが同梱する画像形式ライブラリなどの第三者表示は、Pillowのライセンスファイルに含まれます。
 
-## RAIV relationship
+## Relationship to RAIV
 
-RAIV for macは[nalltama/RAIV](https://github.com/nalltama/RAIV)に着想を得た独立実装です。本家RAIVのコードをコピーしたforkではなく、本家の公式リリースでもありません。
+MangaCrispは旧称RAIV for macとして[nalltama/RAIV](https://github.com/nalltama/RAIV)に着想を得た独立実装です。本家RAIVのコードをコピーしたforkではなく、本家の公式リリースでもありません。
 
 この文書は同梱物の由来とライセンス表示を記録するもので、法的助言ではありません。

@@ -18,7 +18,7 @@ def load_json(path: Path) -> dict:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Fail unless RAIV is ready for public macOS distribution.")
+    parser = argparse.ArgumentParser(description="Fail unless MangaCrisp is ready for public macOS distribution.")
     parser.add_argument("--allow-bundled-engine", action="store_true", help="allow engine files in the release artifact")
     args = parser.parse_args()
 
@@ -29,8 +29,8 @@ def main() -> None:
     bundle = audit.get("bundle", {})
     if bundle.get("package_type") != "APPL":
         failures.append("bundle package type is not APPL")
-    if bundle.get("identifier") != "jp.raiv.viewer":
-        failures.append("bundle identifier is not jp.raiv.viewer")
+    if bundle.get("identifier") != "com.jydie5.mangacrisp":
+        failures.append("bundle identifier is not com.jydie5.mangacrisp")
     if audit.get("codesign", {}).get("returncode") != 0:
         failures.append("codesign verification did not pass")
     if audit.get("spctl", {}).get("returncode") != 0:

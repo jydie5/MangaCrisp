@@ -2,7 +2,7 @@
 
 ## Current standalone build
 
-RAIV for mac is distributed as an Apple Silicon `arm64` application. The
+MangaCrisp is distributed as an Apple Silicon `arm64` application. The
 bundled Real-CUGAN executable is also native `arm64` and links to Apple's Metal
 framework. Intel Macs are not supported by the current standalone package.
 
@@ -15,7 +15,7 @@ Status: **expected to run, physical-device validation pending**.
 
 Apple's MacBook Neo uses an A18 Pro with a six-core CPU, five-core GPU, 16-core
 Neural Engine, and 8 GB of unified memory. Apple lists A18-series GPUs as
-supporting Metal 3 and Metal 4. These facts match RAIV's `arm64` application and
+supporting Metal 3 and Metal 4. These facts match MangaCrisp's `arm64` application and
 Metal-backed Real-CUGAN engine, so there is no known instruction-set or graphics
 API blocker.
 

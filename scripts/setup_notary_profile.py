@@ -6,7 +6,7 @@ import subprocess
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Store Apple notary credentials in the local Keychain.")
-    parser.add_argument("--profile", default="RAIV-notary")
+    parser.add_argument("--profile", default="MangaCrisp-notary")
     parser.add_argument("--apple-id", required=True)
     parser.add_argument("--team-id", required=True)
     args = parser.parse_args()

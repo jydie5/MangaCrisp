@@ -1,4 +1,4 @@
-# RAIV for mac インストールガイド
+# MangaCrisp インストールガイド
 
 [English](INSTALL.md) | [日本語](INSTALL.ja.md)
 
@@ -11,7 +11,7 @@
 
 Intel Macは現在のstandalone版の対象外です。
 
-MacBook Neoについては、RAIV本体と同梱Real-CUGANエンジンがともに
+MacBook Neoについては、MangaCrisp本体と同梱Real-CUGANエンジンがともに
 `arm64`ネイティブで、エンジンがMetalを利用するため、構成上は動作する
 見込みです。ただし実機では未検証です。8GBユニファイドメモリと小規模な
 GPUのため、MシリーズのPro搭載MacよりAI先読みが遅くなる可能性があります。
@@ -19,7 +19,7 @@ GPUのため、MシリーズのPro搭載MacよりAI先読みが遅くなる可�
 
 ## ダウンロード
 
-1. [RAIV for mac Releases](https://github.com/jydie5/RAIVformac/releases)を開きます。
+1. [MangaCrisp Releases](https://github.com/jydie5/MangaCrisp/releases)を開きます。
 2. 最新リリースのAssetsを開きます。
 3. ファイル名に`standalone.zip`を含むものをダウンロードします。
 4. `.sha256`はダウンロードが壊れていないか確認するためのチェックサムです。
@@ -29,8 +29,8 @@ GPUのため、MシリーズのPro搭載MacよりAI先読みが遅くなる可�
 ## インストール
 
 1. ダウンロードしたZIPをダブルクリックします。
-2. 展開された`RAIV.app`をFinderの`アプリケーション`へドラッグします。
-3. `アプリケーション`にある`RAIV.app`をControlキーを押しながらクリックします。
+2. 展開された`MangaCrisp.app`をFinderの`アプリケーション`へドラッグします。
+3. `アプリケーション`にある`MangaCrisp.app`をControlキーを押しながらクリックします。
 4. メニューから`開く`を選びます。
 5. 確認画面でも`開く`を選びます。
 
@@ -38,17 +38,17 @@ GPUのため、MシリーズのPro搭載MacよりAI先読みが遅くなる可�
 
 ## 表示言語を選ぶ
 
-RAIVはmacOSの優先言語に従い、英語と日本語を収録しています。本棚右上の
-`言語`でシステム設定、英語、日本語を選択し、RAIVを再起動してください。
+MangaCrispはmacOSの優先言語に従い、英語と日本語を収録しています。本棚右上の
+`言語`でシステム設定、英語、日本語を選択し、MangaCrispを再起動してください。
 
 ## 「開発元を確認できない」と表示される場合
 
 現在のβ版はApple Developer ID署名を行っていません。配布元がこのGitHubリポジトリであることを確認してから、次の操作を行ってください。
 
-1. 一度`RAIV.app`を通常どおり開き、警告を閉じます。
+1. 一度`MangaCrisp.app`を通常どおり開き、警告を閉じます。
 2. `システム設定`を開きます。
 3. `プライバシーとセキュリティ`を開きます。
-4. RAIVに関する表示の`このまま開く`を押します。
+4. MangaCrispに関する表示の`このまま開く`を押します。
 
 それでも起動できない場合は、ダウンロードしたファイル名、macOSのバージョン、表示された警告文をGitHub Issuesへ報告してください。ターミナルでセキュリティ機能を無効化する必要はありません。
 
@@ -62,7 +62,9 @@ RAIVはmacOSの優先言語に従い、英語と日本語を収録していま�
 - 画像が入ったフォルダ
 - 単独の画像
 
-確認画面で登録すると、RAIVは`~/RAIV Library`へ読書用コピーを作り、表紙を本棚へ追加します。元ファイルは削除しません。
+確認画面で登録すると、新規利用者ではMangaCrispが`~/MangaCrisp Library`へ
+読書用コピーを作り、表紙を本棚へ追加します。元ファイルは削除しません。
+旧RAIV for mac利用者は従来の本棚保存先を引き継ぎます。
 
 ## AI補正を確認する
 
@@ -75,15 +77,15 @@ ONが原画、OFFが補正版です。高解像度ページや補正待ちペー
 
 ## 更新
 
-新しいバージョンのstandalone ZIPをダウンロードし、新しい`RAIV.app`で古いアプリを置き換えます。本棚データと読書位置はアプリ外へ保存されるため、通常はそのまま引き継がれます。
+新しいバージョンのstandalone ZIPをダウンロードし、新しい`MangaCrisp.app`で古いアプリを置き換えます。本棚データと読書位置はアプリ外へ保存されるため、通常はそのまま引き継がれます。
 
 ## 問題を報告する
 
-[GitHub Issues](https://github.com/jydie5/RAIVformac/issues)に次を記載してください。
+[GitHub Issues](https://github.com/jydie5/MangaCrisp/issues)に次を記載してください。
 
 - Macのモデル（例: M4 Pro MacBook Pro）
 - macOSのバージョン
-- RAIVのバージョン
+- MangaCrispのバージョン
 - 使用したファイル形式（内容や著作物そのものは添付不要）
 - 再現手順
 - 表示されたエラー文

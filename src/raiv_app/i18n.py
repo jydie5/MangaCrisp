@@ -8,8 +8,10 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from raiv_app.branding import APP_SUPPORT_DIR
 
-DEFAULT_SETTINGS_PATH = Path.home() / "Library" / "Application Support" / "RAIV" / "settings.json"
+
+DEFAULT_SETTINGS_PATH = APP_SUPPORT_DIR / "settings.json"
 VALID_LANGUAGE_PREFERENCES = {"auto", "en", "ja"}
 
 _active_language = "en"
@@ -26,8 +28,8 @@ ENGLISH_TRANSLATIONS = {
     "ダブルクリック: 読む": "Double-click: read",
     "読む: 選択中の本を開く": "Read: open the selected book",
     "Delete: 選択中の本を本棚から削除。元ZIP/RARは残す": "Delete: remove the selected book; keep the source archive",
-    "本棚から削除: 確認後、RAIV管理フォルダを削除。元ZIP/RARは残す": "Remove: delete RAIV's managed copy after confirmation; keep the source archive",
-    "保存先を開く: FinderでRAIV Libraryを表示": "Open Library: reveal the managed library in Finder",
+    "本棚から削除: 確認後、MangaCrisp管理フォルダを削除。元ZIP/RARは残す": "Remove: delete MangaCrisp's managed copy after confirmation; keep the source archive",
+    "保存先を開く: FinderでMangaCrisp Libraryを表示": "Open Library: reveal the managed library in Finder",
     "?: このヘルプを表示": "?: show this help",
     "H / ?: このヘルプを表示": "H / ?: show this help",
     "ショートカットを表示": "Show keyboard shortcuts",
@@ -46,7 +48,7 @@ ENGLISH_TRANSLATIONS = {
     "保存先を開く": "Open Library",
     "{count}冊 / タイトル昇順": "{count} books / title order",
     "本棚保存先": "Bookshelf Location",
-    "RAIVの本棚保存先を確認してください。": "Confirm the location of your RAIV library.",
+    "MangaCrispの本棚保存先を確認してください。": "Confirm the location of your MangaCrisp library.",
     "展開済み漫画は容量が大きくなるため、Finderで見つけやすい場所に保存します。\n\n現在の保存先:\n{path}": "Extracted books can use substantial storage. Choose a location that is easy to find in Finder.\n\nCurrent location:\n{path}",
     "この場所を使う": "Use This Location",
     "変更...": "Change...",
@@ -73,7 +75,7 @@ ENGLISH_TRANSLATIONS = {
     "保存先を開けません: {error}": "Could not open the library location: {error}",
     "削除する本を選んでください。": "Select a book to remove.",
     "この本を本棚から削除しますか？": "Remove this book from the bookshelf?",
-    "RAIVが作成した展開済みフォルダ、読書位置、しおりを削除します。\n元のZIP/RAR/7zファイルは削除しません。": "RAIV will delete its extracted copy, reading position, and bookmarks.\nThe source ZIP/RAR/7z file will not be deleted.",
+    "MangaCrispが作成した展開済みフォルダ、読書位置、しおりを削除します。\n元のZIP/RAR/7zファイルは削除しません。": "MangaCrisp will delete its extracted copy, reading position, and bookmarks.\nThe source ZIP/RAR/7z file will not be deleted.",
     "削除をキャンセルしました。": "Removal canceled.",
     "本棚から削除しました: {title}": "Removed from bookshelf: {title}",
     "削除できませんでした: {title}": "Could not remove: {title}",
@@ -82,7 +84,7 @@ ENGLISH_TRANSLATIONS = {
     "読み込み失敗: {error}": "Could not open the book: {error}",
     "画像が見つかりません: {source}": "No images found: {source}",
     "次の巻はありません。": "There is no next volume.",
-    "言語設定を保存しました。RAIVを再起動すると反映されます。": "Language preference saved. Restart RAIV to apply it.",
+    "言語設定を保存しました。MangaCrispを再起動すると反映されます。": "Language preference saved. Restart MangaCrisp to apply it.",
     "言語設定": "Language",
     "原画": "Original",
     "自然": "Natural",
@@ -213,7 +215,7 @@ ENGLISH_TRANSLATIONS = {
 
 
 def detect_system_language() -> str:
-    override = os.environ.get("RAIV_LANGUAGE", "").strip().lower()
+    override = os.environ.get("MANGACRISP_LANGUAGE", os.environ.get("RAIV_LANGUAGE", "")).strip().lower()
     if override in {"en", "ja"}:
         return override
     if sys.platform == "darwin":
@@ -248,7 +250,7 @@ def load_language_preference(settings_path: Path | None = None) -> str:
 
 
 def resolve_language(settings_path: Path | None = None) -> str:
-    override = os.environ.get("RAIV_LANGUAGE", "").strip().lower()
+    override = os.environ.get("MANGACRISP_LANGUAGE", os.environ.get("RAIV_LANGUAGE", "")).strip().lower()
     if override in {"en", "ja"}:
         return override
     preference = load_language_preference(settings_path)

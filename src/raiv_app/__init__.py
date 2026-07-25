@@ -1,3 +1,3 @@
-"""RAIV application package."""
+"""MangaCrisp application package."""
 
 __all__ = ["main"]

@@ -4,10 +4,10 @@ import json
 from pathlib import Path
 from typing import Any
 
+from raiv_app.branding import APP_SUPPORT_DIR
 
-DEFAULT_QUALITY_SETTINGS_PATH = (
-    Path.home() / "Library" / "Application Support" / "RAIV" / "settings.json"
-)
+
+DEFAULT_QUALITY_SETTINGS_PATH = APP_SUPPORT_DIR / "settings.json"
 QUALITY_SETTINGS_KEY = "quality"
 VALID_MODELS = {"models-se", "models-pro"}
 VALID_NOISE = {

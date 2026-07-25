@@ -1,23 +1,23 @@
-# RAIV for mac
+# MangaCrisp
 
 [English](README.md) | [日本語](README.ja.md)
 
 <p align="center">
-  <img src="assets/raiv-app-icon.png" width="160" alt="RAIV for mac app icon">
+  <img src="assets/mangacrisp-app-icon.png" width="160" alt="MangaCrisp app icon">
 </p>
 
-RAIV for mac is a free, open-source macOS comic reader and image viewer for
+MangaCrisp is a free, open-source manga and comic viewer for
 Apple Silicon. It reads CBZ, CBR, ZIP, RAR, 7z, image folders, and individual
 images, combining a visual bookshelf, two-page manga reading, and automatic
 Real-CUGAN AI upscaling in a native desktop application.
 
-This is an independent macOS implementation inspired by
+MangaCrisp began as RAIV for mac, an independent implementation inspired by
 [nalltama/RAIV](https://github.com/nalltama/RAIV). It is not an official release
-of the original RAIV project.
+of the original RAIV project and now follows its own product direction.
 
-![RAIV bookshelf with freely licensed sample comics](docs/images/bookshelf.png)
+![MangaCrisp bookshelf with freely licensed sample comics](docs/images/bookshelf.png)
 
-![RAIV two-page reader with the settings panel open](docs/images/reader.png)
+![MangaCrisp two-page reader with the settings panel open](docs/images/reader.png)
 
 The screenshots use *Pepper&Carrot* by David Revoy under
 [CC BY 4.0](demo/ATTRIBUTION.md). No commercial manga pages are included.
@@ -26,27 +26,28 @@ The screenshots use *Pepper&Carrot* by David Revoy under
 
 The standalone build does not require Python, uv, or Terminal.
 
-### [Download RAIV for mac v0.4.0-beta for Apple Silicon (90 MB)](https://github.com/jydie5/RAIVformac/releases/download/v0.4.0-beta/RAIVformac-v0.4.0-beta-macos-apple-silicon-standalone.zip)
+### [Download MangaCrisp v0.5.0-beta for Apple Silicon](https://github.com/jydie5/MangaCrisp/releases/download/v0.5.0-beta/MangaCrisp-v0.5.0-beta-macos-apple-silicon-standalone.zip)
 
 1. Download the standalone ZIP from the link above.
-2. Unzip it and move `RAIV.app` to Applications.
-3. On first launch, Control-click `RAIV.app` and choose **Open**.
+2. Unzip it and move `MangaCrisp.app` to Applications.
+3. On first launch, Control-click `MangaCrisp.app` and choose **Open**.
 
 The current beta is not signed or notarized. See
 [INSTALL.md](INSTALL.md) for detailed installation and troubleshooting steps.
 All versions and the SHA-256 checksum are available on the
-[Releases page](https://github.com/jydie5/RAIVformac/releases).
+[Releases page](https://github.com/jydie5/MangaCrisp/releases).
 
 ## Read your first book
 
-1. Launch RAIV to open the bookshelf.
+1. Launch MangaCrisp to open the bookshelf.
 2. Drag a ZIP, CBZ, RAR, CBR, 7z, CB7, image folder, or image onto the window.
 3. Confirm the import.
 4. Double-click the cover.
 5. Press Left Arrow or Space to advance in the default right-bound mode.
 
-RAIV keeps the source archive untouched. It stores an extracted reading copy in
-`~/RAIV Library`.
+MangaCrisp keeps the source archive untouched. New installations store an
+extracted reading copy in `~/MangaCrisp Library`. Existing RAIV for mac users
+continue using their configured library location.
 
 ## Features
 
@@ -69,9 +70,9 @@ See [ROADMAP.md](ROADMAP.md) for planned work and known improvement areas.
 
 ## Language
 
-RAIV follows the first preferred language in macOS. English and Japanese are
+MangaCrisp follows the first preferred language in macOS. English and Japanese are
 included. Use the **Language** selector in the bookshelf header to choose
-**System**, **English**, or **Japanese**. Restart RAIV after changing it so the
+**System**, **English**, or **Japanese**. Restart MangaCrisp after changing it so the
 bookshelf, reader, dialogs, help, and status messages all use the same language.
 
 ## AI enhancement
@@ -80,7 +81,7 @@ The standalone package bundles the official
 `realcugan-ncnn-vulkan 20220728 macOS` executable and models. It uses the Apple
 Silicon GPU through Vulkan/Metal and needs no additional engine setup.
 
-RAIV automatically processes the visible spread and nearby pages in the
+MangaCrisp automatically processes the visible spread and nearby pages in the
 background. The cache revolves as you read: normally 12-24 pages ahead and four
 pages behind are retained. Original pages remain available immediately while
 enhancement catches up.
@@ -127,19 +128,23 @@ beside and inside every archive.
 
 ## Storage and removal
 
-- Managed reading copies: `~/RAIV Library`
-- AI enhancement cache: `~/Library/Caches/RAIV`
-- Database and settings: the RAIV directory in macOS Application Support
+- Managed reading copies: `~/MangaCrisp Library` for new installations
+- AI enhancement cache: `~/Library/Caches/MangaCrisp`
+- Database and settings: `~/Library/Application Support/MangaCrisp`
 
-Removing a book from the bookshelf deletes RAIV's managed reading copy and
+Removing a book from the bookshelf deletes MangaCrisp's managed reading copy and
 reading state. It never deletes the original ZIP or RAR. To uninstall the app,
-remove `RAIV.app`; remove the locations above only if you also want to erase the
+remove `MangaCrisp.app`; remove the locations above only if you also want to erase the
 bookshelf and cache.
+
+On first launch, MangaCrisp copies the previous RAIV settings and database into
+the new Application Support location and reuses the configured managed library.
+This preserves existing books and reading positions.
 
 ## Current limitations
 
 - Apple Silicon only; Intel Macs are not currently supported.
-- The alpha is unsigned and not notarized.
+- The beta is unsigned and not notarized.
 - Some RAR variants may not be compatible with the available macOS extraction
   backend.
 - Updates are manual; download a newer build from Releases.
@@ -147,10 +152,10 @@ bookshelf and cache.
 ## Build from source
 
 ```bash
-git clone https://github.com/jydie5/RAIVformac.git
-cd RAIVformac
+git clone https://github.com/jydie5/MangaCrisp.git
+cd MangaCrisp
 uv sync --extra gui
-uv run raiv-viewer
+uv run mangacrisp
 ```
 
 Build a local standalone application:
@@ -172,9 +177,9 @@ uv run pytest
 
 ## Support development
 
-RAIV for mac remains free software under the MIT License whether or not you
+MangaCrisp remains free software under the MIT License whether or not you
 support its development. Stars, bug reports, testing, and code contributions are
-valuable. If RAIV is useful to you, you can optionally
+valuable. If MangaCrisp is useful to you, you can optionally
 [support continued development on Buy Me a Coffee](https://buymeacoffee.com/jydie5).
 Support helps cover AI/API usage, testing, and ongoing development; it does not
 unlock features or change the software license. Trust only funding links
@@ -182,7 +187,7 @@ published in this repository.
 
 ## License
 
-RAIV for mac is licensed under the [MIT License](LICENSE). Real-CUGAN and other
+MangaCrisp is licensed under the [MIT License](LICENSE). Real-CUGAN and other
 bundled dependencies are documented in
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Demo artwork has its own
 [CC BY 4.0 attribution](demo/ATTRIBUTION.md) and is not covered by the MIT

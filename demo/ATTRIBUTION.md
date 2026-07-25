@@ -1,6 +1,6 @@
 # Demo artwork attribution
 
-The demo ZIP files and RAIV screenshots contain selected English low-resolution
+The demo ZIP files and MangaCrisp screenshots contain selected English low-resolution
 pages from *Pepper&Carrot*:
 
 - Episode 1: *The Potion of Flight*
@@ -19,6 +19,6 @@ Source:
 
 License: [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/)
 
-RAIV for mac redistributes the exported page images unchanged. It only renames
+MangaCrisp redistributes the exported page images unchanged. It only renames
 the pages for natural archive ordering and packages them as ZIP files. The
-artwork is not covered by RAIV for mac's MIT license.
+artwork is not covered by MangaCrisp's MIT license.

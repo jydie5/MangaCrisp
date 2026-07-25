@@ -1,42 +1,42 @@
-# RAIV for mac
+# MangaCrisp
 
 [English](README.md) | [日本語](README.ja.md)
 
 <p align="center">
-  <img src="assets/raiv-app-icon.png" width="160" alt="RAIV for mac アプリアイコン">
+  <img src="assets/mangacrisp-app-icon.png" width="160" alt="MangaCrisp アプリアイコン">
 </p>
 
-![自由ライセンス作品を使用したRAIVの本棚](docs/images/bookshelf.png)
+![自由ライセンス作品を使用したMangaCrispの本棚](docs/images/bookshelf.png)
 
-![設定パネルを表示したRAIVの見開きビューワ](docs/images/reader.png)
+![設定パネルを表示したMangaCrispの見開きビューワ](docs/images/reader.png)
 
 スクリーンショットと`demo`の画像はDavid Revoy氏の*Pepper&Carrot*を
 [CC BY 4.0](demo/ATTRIBUTION.md)に基づいて使用しています。商業漫画の画像は含みません。
 
-RAIV for mac は、Apple Silicon Mac向けの無料・オープンソース画像／漫画ビューアです。CBZ、CBR、ZIP、RAR、7z、画像フォルダを読み込み、本棚、右綴じ見開き表示、Real-CUGANによるAI補正を利用できます。
+MangaCrispは、Apple Silicon Mac向けの無料・オープンソース漫画／コミックビューアです。CBZ、CBR、ZIP、RAR、7z、画像フォルダを読み込み、本棚、右綴じ見開き表示、Real-CUGANによるAI補正を利用できます。
 
-[nalltama/RAIV](https://github.com/nalltama/RAIV)の思想と配布方式に敬意を払い、macOS向けに独立実装しています。本家RAIVの公式リリースではありません。
+旧称RAIV for macとして[nalltama/RAIV](https://github.com/nalltama/RAIV)に着想を得て独立実装しました。現在はMangaCrispとして独自の製品方針で開発しており、本家RAIVの公式リリースではありません。
 
 ## すぐに使う
 
 一般ユーザーにPython、uv、ターミナル操作は不要です。
 
-### [RAIV for mac v0.4.0-beta Apple Silicon版をダウンロード（90 MB）](https://github.com/jydie5/RAIVformac/releases/download/v0.4.0-beta/RAIVformac-v0.4.0-beta-macos-apple-silicon-standalone.zip)
+### [MangaCrisp v0.5.0-beta Apple Silicon版をダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/v0.5.0-beta/MangaCrisp-v0.5.0-beta-macos-apple-silicon-standalone.zip)
 
 1. 上のリンクからstandalone ZIPをダウンロードします。
 2. ZIPをダブルクリックして展開します。
-3. `RAIV.app`を`アプリケーション`フォルダへ移動します。
-4. 初回だけ`RAIV.app`をControlキーを押しながらクリックし、`開く`を選びます。
+3. `MangaCrisp.app`を`アプリケーション`フォルダへ移動します。
+4. 初回だけ`MangaCrisp.app`をControlキーを押しながらクリックし、`開く`を選びます。
 
 詳しい画面説明と起動できない場合の対処は[INSTALL.ja.md](INSTALL.ja.md)にあります。
 過去版とSHA-256チェックサムは
-[Releasesページ](https://github.com/jydie5/RAIVformac/releases)で確認できます。
+[Releasesページ](https://github.com/jydie5/MangaCrisp/releases)で確認できます。
 
 > 現在のβ版は署名・Apple notarization未実施です。初回の通常ダブルクリックはmacOSに止められることがあります。
 
 ## 最初の一冊を読む
 
-1. RAIVを起動すると本棚が開きます。
+1. MangaCrispを起動すると本棚が開きます。
 2. ZIP、CBZ、RAR、CBR、7z、CB7、または画像フォルダを本棚へドラッグ＆ドロップします。
 3. 確認画面で`登録`を選びます。
 4. 表紙をダブルクリックすると読書画面が開きます。
@@ -92,7 +92,7 @@ standalone版には、公式の`realcugan-ncnn-vulkan 20220728 macOS`実行フ�
 ## 表示言語
 
 初期状態ではmacOSの優先言語に従います。本棚右上の`言語`から`システム設定`、
-`英語`、`日本語`を選択できます。変更後にRAIVを再起動すると、本棚、ビューワ、
+`英語`、`日本語`を選択できます。変更後にMangaCrispを再起動すると、本棚、ビューワ、
 確認画面、ヘルプ、状態表示が同じ言語へ切り替わります。
 
 ## キーボード操作
@@ -113,25 +113,28 @@ standalone版には、公式の`realcugan-ncnn-vulkan 20220728 macOS`実行フ�
 
 ## 保存場所
 
-- 本棚データ: `~/RAIV Library`
-- AI補正キャッシュ: `~/Library/Caches/RAIV`
-- 本棚データベース: RAIVのApplication Support領域
+- 本棚データ: 新規利用者は`~/MangaCrisp Library`
+- AI補正キャッシュ: `~/Library/Caches/MangaCrisp`
+- 本棚データベース: `~/Library/Application Support/MangaCrisp`
 
-元のZIP/RARは取り込み後も元の場所に残ります。本棚から削除するとRAIVが作った展開済みコピーと読書状態を削除します。
+元のZIP/RARは取り込み後も元の場所に残ります。本棚から削除するとMangaCrispが作った展開済みコピーと読書状態を削除します。
+
+旧RAIV for macを利用していた場合、初回起動時に設定とデータベースを新しい場所へ
+引き継ぎ、既存の本棚保存先を継続利用します。本や読書位置は失われません。
 
 ## アンインストール
 
-1. `RAIV.app`をゴミ箱へ移動します。
-2. 本棚も不要なら`~/RAIV Library`を削除します。
-3. 補正キャッシュも不要なら`~/Library/Caches/RAIV`を削除します。
+1. `MangaCrisp.app`をゴミ箱へ移動します。
+2. 本棚も不要なら設定中の本棚保存先を削除します。
+3. 補正キャッシュも不要なら`~/Library/Caches/MangaCrisp`を削除します。
 
-元のZIP/RARはRAIVのアンインストールでは削除されません。
+元のZIP/RARはMangaCrispのアンインストールでは削除されません。
 
 ## 現在の制限
 
 - Apple Silicon Mac専用です。
 - 署名・Apple notarization未実施です。
-- α版のためUIと設定の互換性が変わる可能性があります。
+- β版のためUIと設定の互換性が変わる可能性があります。
 - RAR形式によってはmacOS側の展開機能との相性で開けない場合があります。
 - 自動アップデートは未実装です。新しいZIPをReleasesから取得してください。
 
@@ -140,10 +143,10 @@ standalone版には、公式の`realcugan-ncnn-vulkan 20220728 macOS`実行フ�
 この項目は開発者向けです。一般ユーザーはstandalone版を利用してください。
 
 ```bash
-git clone https://github.com/jydie5/RAIVformac.git
-cd RAIVformac
+git clone https://github.com/jydie5/MangaCrisp.git
+cd MangaCrisp
 uv sync --extra gui
-uv run raiv-viewer
+uv run mangacrisp
 ```
 
 Python不要のローカルアプリを作る場合:
@@ -164,8 +167,8 @@ uv run pytest
 
 ## 開発を支援する
 
-RAIV for macは支援の有無にかかわらずMIT Licenseの無料ソフトウェアです。
-Star、不具合報告、動作テスト、コードへの貢献を歓迎します。RAIVが役立った場合は、
+MangaCrispは支援の有無にかかわらずMIT Licenseの無料ソフトウェアです。
+Star、不具合報告、動作テスト、コードへの貢献を歓迎します。MangaCrispが役立った場合は、
 [Buy Me a Coffeeで今後の開発を任意で支援](https://buymeacoffee.com/jydie5)
 できます。支援はAI・API利用料、テスト、継続開発に活用し、機能の解放や
 ソフトウェアのライセンスには影響しません。送金には、このリポジトリ内に掲載した
@@ -173,7 +176,7 @@ Star、不具合報告、動作テスト、コードへの貢献を歓迎しま�
 
 ## ライセンス
 
-RAIV for mac本体はMIT Licenseです。同梱するReal-CUGANと依存物の由来、バージョン、ライセンスは[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)に記載しています。standaloneアプリ内にもライセンス全文を収録します。
+MangaCrisp本体はMIT Licenseです。同梱するReal-CUGANと依存物の由来、バージョン、ライセンスは[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)に記載しています。standaloneアプリ内にもライセンス全文を収録します。
 
 ## 自由ライセンスのデモ本
 

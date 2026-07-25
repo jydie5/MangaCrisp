@@ -34,7 +34,7 @@ class EngineRunResult:
 
 def realcugan_executable() -> Path | None:
     frozen_root = bundled_root()
-    env_path = os.environ.get("RAIV_REALCUGAN_PATH")
+    env_path = os.environ.get("MANGACRISP_REALCUGAN_PATH") or os.environ.get("RAIV_REALCUGAN_PATH")
     candidates = [
         Path(env_path).expanduser() if env_path else None,
         ENGINES_DIR / "realcugan-ncnn-vulkan" / "realcugan-ncnn-vulkan",
