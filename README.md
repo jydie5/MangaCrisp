@@ -46,8 +46,9 @@ All versions and the SHA-256 checksum are available on the
 5. Press Left Arrow or Space to advance in the default right-bound mode.
 
 MangaCrisp keeps the source archive untouched. New installations store an
-extracted reading copy in `~/MangaCrisp Library`. Existing RAIV for mac users
-continue using their configured library location.
+extracted reading copy in `~/MangaCrisp Library`. For existing RAIV for mac
+users, the previous default `~/RAIV Library` is renamed to this location on
+first launch. A custom library location selected by the user is left unchanged.
 
 ## Features
 
@@ -137,9 +138,10 @@ reading state. It never deletes the original ZIP or RAR. To uninstall the app,
 remove `MangaCrisp.app`; remove the locations above only if you also want to erase the
 bookshelf and cache.
 
-On first launch, MangaCrisp copies the previous RAIV settings and database into
-the new Application Support location and reuses the configured managed library.
-This preserves existing books and reading positions.
+On first launch, MangaCrisp migrates the previous settings, database, AI cache,
+and default managed-library folder to the MangaCrisp locations. The library
+folder is renamed on the same disk rather than copied. Existing books and
+reading positions are preserved.
 
 ## Current limitations
 

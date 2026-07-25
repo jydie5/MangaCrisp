@@ -13,7 +13,7 @@ from fetch_realcugan import ensure_realcugan, fetch_license_files, write_provena
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
-ENTRYPOINT = ROOT_DIR / "src" / "raiv_app" / "main.py"
+ENTRYPOINT = ROOT_DIR / "src" / "mangacrisp_app" / "main.py"
 DIST_APP = ROOT_DIR / "dist" / "MangaCrisp.app"
 APP_ICON_SOURCE = ROOT_DIR / "assets" / "mangacrisp-app-icon.png"
 APP_ICON = ROOT_DIR / "build" / "MangaCrisp.icns"
@@ -148,8 +148,7 @@ def prepare_license_files(engine_dir: Path | None) -> Path | None:
         "MangaCrisp third-party notices.\n\n"
         "Standalone builds bundle the pinned official realcugan-ncnn-vulkan macOS package.\n"
         "Keep every file in this directory with redistributed app bundles.\n"
-        "Without a bundled engine, set MANGACRISP_REALCUGAN_PATH to a local realcugan-ncnn-vulkan executable.\n"
-        "RAIV_REALCUGAN_PATH remains supported for compatibility.\n",
+        "Without a bundled engine, set MANGACRISP_REALCUGAN_PATH to a local realcugan-ncnn-vulkan executable.\n",
         encoding="utf-8",
     )
     copied += 1
@@ -204,11 +203,11 @@ def main() -> None:
         "--osx-bundle-identifier",
         BUNDLE_IDENTIFIER,
         "--hidden-import",
-        "raiv_app.bookshelf",
+        "mangacrisp_app.bookshelf",
         "--hidden-import",
-        "raiv_app.library",
+        "mangacrisp_app.library",
         "--hidden-import",
-        "raiv_app.page_provider",
+        "mangacrisp_app.page_provider",
         "--hidden-import",
         "PySide6.QtCore",
         "--hidden-import",

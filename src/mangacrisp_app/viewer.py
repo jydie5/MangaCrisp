@@ -13,12 +13,12 @@ from math import ceil
 from pathlib import Path
 
 from PIL import Image
-from raiv_app.branding import APP_NAME, CACHE_DIR, PROJECT_URL, SUPPORT_URL
-from raiv_app.archive_utils import discover_samples, load_sample_pages
-from raiv_app.engine_utils import realcugan_executable, run_realcugan
-from raiv_app.i18n import initialize_language, tr
-from raiv_app.library import migrate_legacy_application_state
-from raiv_app.quality_settings import (
+from mangacrisp_app.branding import APP_NAME, CACHE_DIR, PROJECT_URL, SUPPORT_URL
+from mangacrisp_app.archive_utils import discover_samples, load_sample_pages
+from mangacrisp_app.engine_utils import realcugan_executable, run_realcugan
+from mangacrisp_app.i18n import initialize_language, tr
+from mangacrisp_app.library import migrate_legacy_application_state
+from mangacrisp_app.quality_settings import (
     DEFAULT_QUALITY_SETTINGS_PATH,
     load_quality_preferences,
     save_quality_preferences,
@@ -2108,7 +2108,7 @@ def main() -> None:
     app = QApplication(sys.argv)
     app.setApplicationName(APP_NAME)
     if should_open_bookshelf(args):
-        from raiv_app.bookshelf import BookshelfWindow
+        from mangacrisp_app.bookshelf import BookshelfWindow
 
         window = BookshelfWindow()
         window.show()

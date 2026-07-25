@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from raiv_app.branding import APP_SUPPORT_DIR
+from mangacrisp_app.branding import APP_SUPPORT_DIR
 
 
 DEFAULT_QUALITY_SETTINGS_PATH = APP_SUPPORT_DIR / "settings.json"

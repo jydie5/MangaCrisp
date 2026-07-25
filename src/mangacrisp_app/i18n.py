@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from raiv_app.branding import APP_SUPPORT_DIR
+from mangacrisp_app.branding import APP_SUPPORT_DIR
 
 
 DEFAULT_SETTINGS_PATH = APP_SUPPORT_DIR / "settings.json"
@@ -215,7 +215,7 @@ ENGLISH_TRANSLATIONS = {
 
 
 def detect_system_language() -> str:
-    override = os.environ.get("MANGACRISP_LANGUAGE", os.environ.get("RAIV_LANGUAGE", "")).strip().lower()
+    override = os.environ.get("MANGACRISP_LANGUAGE", "").strip().lower()
     if override in {"en", "ja"}:
         return override
     if sys.platform == "darwin":
@@ -250,7 +250,7 @@ def load_language_preference(settings_path: Path | None = None) -> str:
 
 
 def resolve_language(settings_path: Path | None = None) -> str:
-    override = os.environ.get("MANGACRISP_LANGUAGE", os.environ.get("RAIV_LANGUAGE", "")).strip().lower()
+    override = os.environ.get("MANGACRISP_LANGUAGE", "").strip().lower()
     if override in {"en", "ja"}:
         return override
     preference = load_language_preference(settings_path)

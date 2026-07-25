@@ -67,8 +67,10 @@ Drag any supported item onto the bookshelf:
 - An individual image
 
 After confirmation, MangaCrisp creates a managed reading copy in
-`~/MangaCrisp Library` for new installations and adds its cover to the
-bookshelf. The source file is not deleted.
+`~/MangaCrisp Library` and adds its cover to the bookshelf. On the first launch
+after upgrading, the previous default `~/RAIV Library` is renamed to this
+location without copying its contents. User-selected custom locations remain
+unchanged. The source file is not deleted.
 
 The repository's [`demo`](demo) directory contains freely licensed ZIP files
 that can be used for a first test.

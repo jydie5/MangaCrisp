@@ -6,14 +6,16 @@ viewer previously released as RAIV for mac. The application bundle is now
 
 Existing settings, books, and reading positions are preserved. On first launch,
 small application state is copied into MangaCrisp's Application Support
-directory, while the configured managed library continues to be used in place.
+directory. The previous default managed library is renamed to
+`~/MangaCrisp Library`; user-selected custom locations remain unchanged.
 
 ## Changes
 
 - Renamed the app and public project to MangaCrisp.
 - Changed the bundle identifier to `com.jydie5.mangacrisp`.
-- Added migration coverage for previous RAIV settings, database, and AI cache.
-- Kept `raiv_app` and the `raiv-viewer` command as internal compatibility names.
+- Renamed the source package and CLI to `mangacrisp_app` and `mangacrisp`.
+- Added migration coverage for the previous settings, database, managed library,
+  AI cache, and archive-group identifiers.
 
 # RAIV for mac v0.4.0-beta
 

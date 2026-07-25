@@ -9,15 +9,15 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from PIL import Image
 from PySide6.QtWidgets import QApplication, QAbstractButton, QComboBox, QLabel
 
-from raiv_app.bookshelf import BookshelfWindow
-from raiv_app.i18n import (
+from mangacrisp_app.bookshelf import BookshelfWindow
+from mangacrisp_app.i18n import (
     load_language_preference,
     save_language_preference,
     set_language,
     tr,
 )
-from raiv_app.library import LibraryPaths, LibraryService, save_library_settings
-from raiv_app.viewer import SpreadWindow, help_dialog_html, viewer_shortcuts_text
+from mangacrisp_app.library import LibraryPaths, LibraryService, save_library_settings
+from mangacrisp_app.viewer import SpreadWindow, help_dialog_html, viewer_shortcuts_text
 
 
 JAPANESE_TEXT = re.compile(r"[ぁ-んァ-ン一-龯]")

@@ -14,4 +14,4 @@ DEFAULT_LIBRARY_DIR = Path.home() / f"{APP_NAME} Library"
 
 LEGACY_APP_SUPPORT_DIR = Path.home() / "Library" / "Application Support" / "RAIV"
 LEGACY_CACHE_DIR = Path.home() / "Library" / "Caches" / "RAIV"
-LEGACY_LIBRARY_DIR = Path.home() / "RAIV Library"
+LEGACY_DEFAULT_LIBRARY_DIR = Path.home() / "RAIV Library"

@@ -14,10 +14,10 @@ sys.path.insert(0, str(REPOSITORY_ROOT / "src"))
 
 from PySide6.QtWidgets import QApplication
 
-from raiv_app.bookshelf import BookshelfWindow
-from raiv_app.i18n import set_language
-from raiv_app.library import LibraryPaths, LibraryService, save_library_settings
-from raiv_app.viewer import SpreadWindow
+from mangacrisp_app.bookshelf import BookshelfWindow
+from mangacrisp_app.i18n import set_language
+from mangacrisp_app.library import LibraryPaths, LibraryService, save_library_settings
+from mangacrisp_app.viewer import SpreadWindow
 
 
 def process_events(app: QApplication, seconds: float) -> None:
@@ -36,7 +36,7 @@ def capture(demo_dir: Path, output_dir: Path, language: str = "en") -> None:
     app = QApplication.instance() or QApplication([])
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    with TemporaryDirectory(prefix="raiv-readme-") as temporary_directory:
+    with TemporaryDirectory(prefix="mangacrisp-readme-") as temporary_directory:
         paths = LibraryPaths.for_base_dir(Path(temporary_directory))
         save_library_settings(paths, library_dir_confirmed=True)
         library = LibraryService.open(paths)

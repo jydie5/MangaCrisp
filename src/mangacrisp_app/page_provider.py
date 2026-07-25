@@ -6,7 +6,7 @@ import zipfile
 from collections.abc import Sequence
 from pathlib import Path
 
-from raiv_app.archive_utils import (
+from mangacrisp_app.archive_utils import (
     archive_display_name,
     archive_member_output_path,
     collect_folder_images,
@@ -71,7 +71,7 @@ def open_pages_for_viewer(source_path: Path) -> tuple[Sequence[Path], Path | Non
 
 
 def open_zip_pages_for_viewer(archive_path: Path) -> tuple[LazyZipPageList, Path]:
-    temp_dir = Path(tempfile.mkdtemp(prefix="raiv_pages_"))
+    temp_dir = Path(tempfile.mkdtemp(prefix="mangacrisp_pages_"))
     try:
         with zipfile.ZipFile(archive_path) as archive:
             members = sorted(

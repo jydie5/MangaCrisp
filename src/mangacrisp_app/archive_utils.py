@@ -336,7 +336,7 @@ def load_sample_pages(source_path: Path) -> tuple[list[Path], Path | None]:
     if not is_archive(source_path):
         raise RuntimeError(f"unsupported sample type: {source_path.suffix}")
 
-    temp_dir = Path(tempfile.mkdtemp(prefix="raiv_sample_"))
+    temp_dir = Path(tempfile.mkdtemp(prefix="mangacrisp_sample_"))
     suffix = source_path.suffix.lower()
     try:
         if suffix in {".zip", ".cbz"}:

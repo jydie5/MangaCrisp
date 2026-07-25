@@ -12,8 +12,7 @@ dependencies = [
 ]
 
 [project.scripts]
-mangacrisp = "raiv_app.main:main"
-raiv-viewer = "raiv_app.main:main"
+mangacrisp = "mangacrisp_app.main:main"
 
 [project.optional-dependencies]
 gui = [
@@ -42,4 +41,4 @@ build-backend = "hatchling.build"
 package = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/raiv_app"]
+packages = ["src/mangacrisp_app"]

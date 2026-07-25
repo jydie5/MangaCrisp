@@ -5,15 +5,15 @@ import subprocess
 import threading
 from pathlib import Path
 
-from raiv_app.archive_utils import natural_sort_key
-from raiv_app.branding import APP_NAME
-from raiv_app.i18n import (
+from mangacrisp_app.archive_utils import natural_sort_key
+from mangacrisp_app.branding import APP_NAME
+from mangacrisp_app.i18n import (
     current_language,
     load_language_preference,
     save_language_preference,
     tr,
 )
-from raiv_app.library import (
+from mangacrisp_app.library import (
     Book,
     LibraryPaths,
     LibraryService,
@@ -22,8 +22,8 @@ from raiv_app.library import (
     save_library_settings,
     utc_now_iso,
 )
-from raiv_app.page_provider import open_pages_for_viewer
-from raiv_app.viewer import (
+from mangacrisp_app.page_provider import open_pages_for_viewer
+from mangacrisp_app.viewer import (
     DEFAULT_FORWARD_PREFETCH_COUNT,
     DEFAULT_PREVIOUS_PREFETCH_COUNT,
     PYSIDE_IMPORT_ERROR,

@@ -14,12 +14,13 @@ from typing import Any
 
 from PIL import Image
 
-from raiv_app.branding import (
+from mangacrisp_app.branding import (
     APP_SUPPORT_DIR,
     CACHE_DIR,
     DEFAULT_LIBRARY_DIR,
     LEGACY_APP_SUPPORT_DIR,
     LEGACY_CACHE_DIR,
+    LEGACY_DEFAULT_LIBRARY_DIR,
 )
 
 from .archive_utils import (
@@ -110,7 +111,7 @@ class LibraryPaths:
         root = base_dir.expanduser()
         return cls(
             base_dir=root,
-            database_path=root / "raiv.sqlite3",
+            database_path=root / "mangacrisp.sqlite3",
             library_dir=root / "Library",
             cache_dir=root / "Cache",
             settings_path=root / "settings.json",
@@ -122,12 +123,29 @@ class LibraryPaths:
         migrate_legacy_application_state(app_support)
         settings_path = app_support / "settings.json"
         settings = load_library_settings(settings_path)
+        configured_library_dir = Path(
+            settings.get("library_dir") or DEFAULT_LIBRARY_DIR
+        ).expanduser()
+        legacy_library_dir = LEGACY_APP_SUPPORT_DIR / "Library"
+        if paths_equal(configured_library_dir, LEGACY_DEFAULT_LIBRARY_DIR):
+            migrate_legacy_default_library_root(
+                LEGACY_DEFAULT_LIBRARY_DIR,
+                DEFAULT_LIBRARY_DIR,
+            )
+            configured_library_dir = DEFAULT_LIBRARY_DIR
+            legacy_library_dir = LEGACY_DEFAULT_LIBRARY_DIR
+        elif paths_equal(configured_library_dir, DEFAULT_LIBRARY_DIR):
+            for candidate in (LEGACY_APP_SUPPORT_DIR / "Library", app_support / "Library"):
+                if candidate.exists():
+                    migrate_legacy_default_library_root(candidate, DEFAULT_LIBRARY_DIR)
+                    legacy_library_dir = candidate
+                    break
         return cls(
             base_dir=app_support,
             database_path=app_support / "mangacrisp.sqlite3",
-            library_dir=Path(settings.get("library_dir") or DEFAULT_LIBRARY_DIR).expanduser(),
+            library_dir=configured_library_dir,
             cache_dir=CACHE_DIR,
-            legacy_library_dir=app_support / "Library",
+            legacy_library_dir=legacy_library_dir,
             settings_path=settings_path,
         )
 
@@ -158,23 +176,66 @@ def migrate_legacy_application_state(
     cache_dir: Path = CACHE_DIR,
     legacy_cache_dir: Path = LEGACY_CACHE_DIR,
 ) -> None:
-    """Copy small persistent state and move disposable cache from RAIV once."""
-    if app_support.exists() or not legacy_app_support.exists():
+    """Import persistent state from the previous application name once."""
+    if not app_support.exists() and legacy_app_support.exists():
+        app_support.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(
+            legacy_app_support,
+            app_support,
+            ignore=shutil.ignore_patterns("Library"),
+        )
+        legacy_database = app_support / "raiv.sqlite3"
+        current_database = app_support / "mangacrisp.sqlite3"
+        if legacy_database.exists() and not current_database.exists():
+            legacy_database.replace(current_database)
+
+    migrate_legacy_cache(legacy_cache_dir, cache_dir)
+
+
+def migrate_legacy_cache(legacy_cache_dir: Path, cache_dir: Path) -> None:
+    """Move disposable cached results into the current cache without replacing newer files."""
+    legacy = legacy_cache_dir.expanduser()
+    target = cache_dir.expanduser()
+    if not legacy.exists() or paths_equal(legacy, target):
         return
-
-    app_support.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copytree(legacy_app_support, app_support)
-    legacy_database = app_support / "raiv.sqlite3"
-    current_database = app_support / "mangacrisp.sqlite3"
-    if legacy_database.exists() and not current_database.exists():
-        legacy_database.replace(current_database)
-
-    if legacy_cache_dir.exists() and not cache_dir.exists():
-        cache_dir.parent.mkdir(parents=True, exist_ok=True)
+    if not target.exists():
+        target.parent.mkdir(parents=True, exist_ok=True)
         try:
-            legacy_cache_dir.replace(cache_dir)
+            legacy.replace(target)
+            return
         except OSError:
-            shutil.copytree(legacy_cache_dir, cache_dir)
+            target.mkdir(parents=True, exist_ok=True)
+    _merge_disposable_cache_directory(legacy, target)
+
+
+def _merge_disposable_cache_directory(source_dir: Path, target_dir: Path) -> None:
+    target_dir.mkdir(parents=True, exist_ok=True)
+    for source in source_dir.iterdir():
+        target = target_dir / source.name
+        if not target.exists():
+            shutil.move(str(source), str(target))
+            continue
+        if source.is_dir() and target.is_dir() and not source.is_symlink():
+            _merge_disposable_cache_directory(source, target)
+            continue
+        if source.is_dir() and not source.is_symlink():
+            shutil.rmtree(source)
+        else:
+            source.unlink()
+    source_dir.rmdir()
+
+
+def migrate_legacy_default_library_root(legacy_dir: Path, target_dir: Path) -> bool:
+    """Rename the previous default managed-library root without copying books."""
+    legacy = legacy_dir.expanduser()
+    target = target_dir.expanduser()
+    if not legacy.exists():
+        return target.exists()
+    if target.exists():
+        return False
+    target.parent.mkdir(parents=True, exist_ok=True)
+    legacy.replace(target)
+    return True
 
 
 def save_library_settings(paths: LibraryPaths, *, library_dir_confirmed: bool) -> None:
@@ -254,6 +315,14 @@ class LibraryDatabase:
                 ON books(last_opened_at DESC, updated_at DESC);
             CREATE INDEX IF NOT EXISTS idx_bookmarks_book_page
                 ON bookmarks(book_id, page_index, created_at);
+
+            UPDATE books
+            SET source_uri = replace(
+                source_uri,
+                '#raiv-group=',
+                '#mangacrisp-group='
+            )
+            WHERE instr(source_uri, '#raiv-group=') > 0;
             """
         )
         self.connection.commit()
@@ -275,6 +344,7 @@ class LibraryService:
         resolved_paths.ensure()
         service = cls(resolved_paths, LibraryDatabase(resolved_paths.database_path))
         service.migrate_legacy_library_storage()
+        service.finalize_default_library_migration()
         return service
 
     def close(self) -> None:
@@ -295,6 +365,21 @@ class LibraryService:
 
     def migrate_legacy_library_storage(self) -> int:
         return LibraryStorageMigrator(self.paths, self.books).migrate()
+
+    def finalize_default_library_migration(self) -> None:
+        settings_path = self.paths.settings_path
+        if settings_path is None or not paths_equal(self.paths.library_dir, DEFAULT_LIBRARY_DIR):
+            return
+        settings = load_library_settings(settings_path)
+        configured = Path(settings.get("library_dir") or DEFAULT_LIBRARY_DIR).expanduser()
+        if not paths_equal(configured, LEGACY_DEFAULT_LIBRARY_DIR):
+            return
+        if LEGACY_DEFAULT_LIBRARY_DIR.exists():
+            return
+        save_library_settings(
+            self.paths,
+            library_dir_confirmed=bool(settings.get("library_dir_confirmed")),
+        )
 
 
 class BookshelfRepository:
@@ -383,8 +468,12 @@ class LibraryStorageMigrator:
             return self.rename_managed_book_directories()
         legacy_dir = legacy_dir.expanduser()
         target_dir = target_dir.expanduser()
-        if legacy_dir == target_dir or not legacy_dir.exists():
+        if legacy_dir == target_dir:
             return self.rename_managed_book_directories()
+        if not legacy_dir.exists():
+            updated_count = self._rewrite_book_paths(legacy_dir, target_dir)
+            renamed_count = self.rename_managed_book_directories()
+            return max(updated_count, renamed_count)
 
         target_dir.mkdir(parents=True, exist_ok=True)
         moved_count = self._move_book_directories(legacy_dir, target_dir)
@@ -459,6 +548,10 @@ def rewrite_path_prefix(path_text: str, old_root: Path, new_root: Path) -> str:
     if path_text.startswith(prefix):
         return new + "/" + path_text[len(prefix):]
     return path_text
+
+
+def paths_equal(left: Path, right: Path) -> bool:
+    return left.expanduser().resolve(strict=False) == right.expanduser().resolve(strict=False)
 
 
 class ReadingStateService:
@@ -831,14 +924,14 @@ def local_archive_group_content_id(path: Path, group: ArchiveVolumeGroup) -> str
 
 
 def archive_group_source_uri(path: Path, group_key: str) -> str:
-    return f"{path.resolve()}#raiv-group={group_key}"
+    return f"{path.resolve()}#mangacrisp-group={group_key}"
 
 
 def archive_group_key_from_source_uri(source_uri: str) -> str:
-    marker = "#raiv-group="
-    if marker not in source_uri:
-        return ""
-    return source_uri.split(marker, 1)[1]
+    for marker in ("#mangacrisp-group=", "#raiv-group="):
+        if marker in source_uri:
+            return source_uri.split(marker, 1)[1]
+    return ""
 
 
 def archive_member_names_for_group(archive_path: Path, group_key: str) -> set[str]:

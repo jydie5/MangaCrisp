@@ -15,8 +15,8 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QApplication
 
-import raiv_app.viewer as viewer_module
-from raiv_app.viewer import SpreadWindow
+import mangacrisp_app.viewer as viewer_module
+from mangacrisp_app.viewer import SpreadWindow
 
 
 class ViewerNavigationTests(unittest.TestCase):
@@ -97,7 +97,7 @@ class ViewerNavigationTests(unittest.TestCase):
             return SimpleNamespace(returncode=0, output_exists=True)
 
         settings = {"scale": 2, "noise": 0, "tile": 0, "model": "models-se", "tta": False}
-        with patch("raiv_app.viewer.run_realcugan", side_effect=fake_realcugan):
+        with patch("mangacrisp_app.viewer.run_realcugan", side_effect=fake_realcugan):
             self.window._process_pages_worker(
                 [0, 1, 2],
                 output_paths,
@@ -115,8 +115,8 @@ class ViewerNavigationTests(unittest.TestCase):
         self.window.adaptive_prefetch_count = 2
 
         with (
-            patch("raiv_app.viewer.realcugan_executable", return_value=self.root / "realcugan"),
-            patch("raiv_app.viewer.threading.Thread") as thread,
+            patch("mangacrisp_app.viewer.realcugan_executable", return_value=self.root / "realcugan"),
+            patch("mangacrisp_app.viewer.threading.Thread") as thread,
         ):
             self.window.start_prefetch()
 
@@ -149,7 +149,7 @@ class ViewerNavigationTests(unittest.TestCase):
             time.sleep(0.25)
             return original_decode(*args, **kwargs)
 
-        with patch("raiv_app.viewer.decode_scaled_display_image", side_effect=slow_decode):
+        with patch("mangacrisp_app.viewer.decode_scaled_display_image", side_effect=slow_decode):
             started = time.perf_counter()
             self.window.move_by(2)
             navigation_seconds = time.perf_counter() - started
@@ -179,7 +179,7 @@ class ViewerNavigationTests(unittest.TestCase):
             time.sleep(0.05 if decode_count == 1 else 0.3)
             return original_decode(*args, **kwargs)
 
-        with patch("raiv_app.viewer.decode_scaled_display_image", side_effect=uneven_decode):
+        with patch("mangacrisp_app.viewer.decode_scaled_display_image", side_effect=uneven_decode):
             self.window.move_by(2)
             self.window.display_warm_timer.stop()
             self.window.cache_maintenance_timer.stop()
@@ -226,7 +226,7 @@ class ViewerNavigationTests(unittest.TestCase):
             time.sleep(0.25 if force_grayscale else 0.01)
             return original_decode(*args, **kwargs)
 
-        with patch("raiv_app.viewer.decode_scaled_display_image", side_effect=corrected_is_slow):
+        with patch("mangacrisp_app.viewer.decode_scaled_display_image", side_effect=corrected_is_slow):
             self.window.move_by(2)
             self.window.display_warm_timer.stop()
             self.window.cache_maintenance_timer.stop()
@@ -270,7 +270,7 @@ class ViewerNavigationTests(unittest.TestCase):
             time.sleep(0.5)
             return original_decode(*args, **kwargs)
 
-        with patch("raiv_app.viewer.decode_scaled_display_image", side_effect=slow_decode):
+        with patch("mangacrisp_app.viewer.decode_scaled_display_image", side_effect=slow_decode):
             self.window.move_by(2)
             started = time.perf_counter()
             self.window.close()
@@ -306,7 +306,7 @@ class ViewerNavigationTests(unittest.TestCase):
             time.sleep(0.2)
             return original_decode(*args, **kwargs)
 
-        with patch("raiv_app.viewer.decode_scaled_display_image", side_effect=slow_decode):
+        with patch("mangacrisp_app.viewer.decode_scaled_display_image", side_effect=slow_decode):
             for iteration in range(40):
                 started = time.perf_counter()
                 self.window.move_by(2 if iteration % 2 == 0 else -2)
