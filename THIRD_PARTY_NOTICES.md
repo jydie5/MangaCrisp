@@ -1,6 +1,22 @@
 # Third-Party Notices
 
-MangaCrispのstandalone版は、以下の公式macOSパッケージを同梱します。
+MangaCrispのstandalone版が同梱する第三者コンポーネントと、
+プラットフォームごとの由来を以下に記録します。
+
+## 7-Zip（Windows版）
+
+Windows one-folder版は、RAR/CBRの展開用に公式7-Zip x64版の
+`7z.exe`と`7z.dll`を改変せず同梱します。
+
+- Project: [7-Zip](https://www.7-zip.org/)
+- Version: 26.02 x64
+- License: GNU LGPL 2.1 or later、BSD 3-Clauseの構成要素、unRAR restriction
+- Source: [7-Zip source](https://www.7-zip.org/download.html)
+
+配布物の`licenses/`には7-Zipの`License.txt`、`readme.txt`、
+取得元とSHA-256を記録した`7zip-provenance.json`を収録します。
+7-Zipに含まれるunRARコードはRARアーカイブの展開だけに使用し、
+RAR互換アーカイバの作成には使用しません。
 
 ## Real-CUGAN ncnn Vulkan
 

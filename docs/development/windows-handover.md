@@ -38,6 +38,26 @@ Do not redesign these workflows during the first Windows port.
 Windows on ARM, a native installer, file associations, CUDA-specific builds,
 and automatic updates are later work.
 
+## Current Windows checkpoint (2026-07-27)
+
+- Phase 1 source compatibility is implemented on Windows 11 x64; all 33 shared
+  and platform tests pass.
+- ZIP/CBZ and 7z/CB7 demo flows pass. The pinned 7-Zip 26.02 x64 backend is
+  bundled for RAR/CBR and a RAR5 solid archive was extracted through the app's
+  fallback path.
+- A PyInstaller one-folder development baseline builds, passes the distribution
+  audit, packages as a portable ZIP, and starts after extraction from a separate
+  directory.
+- Original-image reading remains available without the AI engine.
+- The official Windows Real-CUGAN binary runs on the current NVIDIA test machine,
+  but public bundling is blocked until the redistribution route for
+  `vcomp140.dll` is documented. See
+  `docs/development/windows-dependency-provenance.md`.
+
+Remaining release work is Real-CUGAN dependency resolution, Intel/AMD/NVIDIA
+coverage, a clean-account test without development tools, and comparison with
+`pyside6-deploy`.
+
 ## Technology decision
 
 Continue with PySide6 and the existing Python code for the first Windows

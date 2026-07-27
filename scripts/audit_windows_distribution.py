@@ -18,6 +18,13 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 APP_DIR = ROOT_DIR / "dist" / "MangaCrisp"
 APP_EXE = APP_DIR / "MangaCrisp.exe"
 REPORT_PATH = ROOT_DIR / "dist" / "windows-distribution-audit.json"
+ARCHIVE_TOOL_DIR = APP_DIR / "tools" / "7zip"
+ARCHIVE_TOOL_HASHES = {
+    "7z.exe": "83967f1b02b43c4efeda302795722c809e0e81b8307de73558d10484d5676a7d",
+    "7z.dll": "69fd4df057985c40e510e2fac182881c7f85e90aa13ec703f763a8fdb2ce61f8",
+}
+
+
 REQUIRED_PUBLIC_FILES = {
     "INSTALL.windows.md",
     "INSTALL.windows.ja.md",
@@ -25,6 +32,9 @@ REQUIRED_PUBLIC_FILES = {
     "THIRD_PARTY_NOTICES.md",
     "licenses/README.txt",
     "licenses/MangaCrisp-MIT.txt",
+    "licenses/7-Zip-License.txt",
+    "licenses/7-Zip-readme.txt",
+    "licenses/7zip-provenance.json",
 }
 REQUIRED_LICENSE_PREFIXES = {
     "Python-PyInstaller-",
@@ -64,6 +74,45 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: file.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def archive_backend_audit() -> dict[str, object]:
+    files = {name: ARCHIVE_TOOL_DIR / name for name in ARCHIVE_TOOL_HASHES}
+    bundled = all(path.is_file() for path in files.values())
+    hashes = {
+        name: sha256_file(path) if path.is_file() else None
+        for name, path in files.items()
+    }
+    hash_verified = bundled and all(
+        hashes[name] == expected
+        for name, expected in ARCHIVE_TOOL_HASHES.items()
+    )
+    probe_returncode: int | None = None
+    rar_supported = False
+    if bundled:
+        completed = subprocess.run(
+            [str(files["7z.exe"]), "i"],
+            cwd=ARCHIVE_TOOL_DIR,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=15,
+            **subprocess_window_kwargs(),
+        )
+        probe_returncode = completed.returncode
+        formats = completed.stdout.lower()
+        rar_supported = (
+            completed.returncode == 0
+            and " rar " in f" {formats} "
+            and " rar5 " in f" {formats} "
+        )
+    return {
+        "bundled": bundled,
+        "hashes": hashes,
+        "hash_verified": hash_verified,
+        "probe_returncode": probe_returncode,
+        "rar_and_rar5_supported": rar_supported,
+    }
 
 
 def smoke_test() -> dict[str, object]:
@@ -160,6 +209,20 @@ def main() -> None:
     engine_bundled = bool(engine_files)
     engine_provenance = "realcugan-provenance.json" in license_names
     engine_license = "realcugan-ncnn-vulkan-MIT.txt" in license_names
+    engine_provenance_error: str | None = None
+    engine_redistribution_approved = False
+    if engine_provenance:
+        try:
+            provenance_payload = json.loads(
+                (APP_DIR / "licenses" / "realcugan-provenance.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            engine_redistribution_approved = (
+                provenance_payload.get("redistribution_approved") is True
+            )
+        except (OSError, json.JSONDecodeError, AttributeError) as exc:
+            engine_provenance_error = str(exc)
 
     pe = pefile.PE(str(APP_EXE), fast_load=True)
     machine = pe.FILE_HEADER.Machine
@@ -167,6 +230,7 @@ def main() -> None:
     pe.close()
     smoke = smoke_test()
     path_leaks = text_path_leaks(files)
+    archive_backend = archive_backend_audit()
 
     failures: list[str] = []
     if machine != pefile.MACHINE_TYPE["IMAGE_FILE_MACHINE_AMD64"]:
@@ -185,8 +249,16 @@ def main() -> None:
         failures.append("local absolute paths leaked into text files")
     if smoke["returncode"] != 0:
         failures.append("packaged application smoke test failed")
+    if not archive_backend["bundled"]:
+        failures.append("the pinned 7-Zip archive backend is not bundled")
+    elif not archive_backend["hash_verified"]:
+        failures.append("the bundled 7-Zip files do not match pinned hashes")
+    elif not archive_backend["rar_and_rar5_supported"]:
+        failures.append("the bundled 7-Zip backend does not report RAR and RAR5 support")
     if engine_bundled and not (engine_provenance and engine_license):
         failures.append("bundled engine is missing provenance or its license")
+    if engine_bundled and engine_provenance_error:
+        failures.append("bundled engine provenance is not valid JSON")
     if args.require_engine and not engine_bundled:
         failures.append("Real-CUGAN is required but not bundled")
 
@@ -204,9 +276,12 @@ def main() -> None:
         "python_required_for_end_user": False,
         "smoke_test": smoke,
         "engine_bundled": engine_bundled,
+        "archive_backend": archive_backend,
         "engine_files": [str(path) for path in engine_files],
         "engine_provenance": engine_provenance,
         "engine_license": engine_license,
+        "engine_provenance_error": engine_provenance_error,
+        "engine_redistribution_approved": engine_redistribution_approved,
         "missing_public_files": missing_public_files,
         "missing_license_prefixes": missing_license_prefixes,
         "forbidden_paths": forbidden_paths,
@@ -214,7 +289,11 @@ def main() -> None:
         "text_path_leaks": path_leaks,
         "failures": failures,
         "baseline_ready": not failures,
-        "release_ready": not failures and engine_bundled,
+        "release_ready": (
+            not failures
+            and engine_bundled
+            and engine_redistribution_approved
+        ),
     }
     REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
     REPORT_PATH.write_text(
@@ -226,6 +305,7 @@ def main() -> None:
         f"baseline_ready={report['baseline_ready']} "
         f"release_ready={report['release_ready']} "
         f"amd64={report['amd64']} gui={report['gui_subsystem']} "
+        f"archive_backend={archive_backend['bundled']} "
         f"engine_bundled={engine_bundled} files={len(files)}"
     )
     if failures:

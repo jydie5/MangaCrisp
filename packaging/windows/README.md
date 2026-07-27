@@ -11,6 +11,8 @@ dist/MangaCrisp/
   MangaCrisp.exe
   _internal/
   licenses/
+  tools/7zip/
+    7z.exe + 7z.dll
   INSTALL.windows.md
   INSTALL.windows.ja.md
   LICENSE
@@ -26,8 +28,19 @@ uv run python scripts/audit_windows_distribution.py
 uv run python scripts/package_windows_portable.py --skip-build --development-baseline
 ```
 
-The bootstrap build intentionally omits Real-CUGAN. Before it is bundled, pin
-the official Windows release URL and SHA-256 values, document provenance and
-all transitive licenses, and make the distribution audit require those files.
+The build script downloads the pinned official 7-Zip 26.02 x64 assets, verifies
+their SHA-256 values, and bundles the license and provenance. The distribution
+audit rejects missing or modified binaries and checks reported RAR/RAR5 support.
+The baseline intentionally omits Real-CUGAN because the Microsoft runtime
+redistribution route is still under review. Validate the pinned official engine
+locally with:
+
+```powershell
+uv run python scripts/fetch_realcugan_windows.py
+```
+
+That command writes `redistribution_approved=false` into development provenance;
+the normal build does not copy the engine into `dist/`, and the audit cannot
+mark it release-ready without an explicit approved record.
 The `--development-baseline` ZIP is clearly named and must not be published as
 a release.

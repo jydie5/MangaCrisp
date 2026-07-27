@@ -48,3 +48,7 @@ def subprocess_window_kwargs() -> dict[str, int]:
 
 def engine_executable_names(base_name: str) -> tuple[str, ...]:
     return (base_name,)
+
+
+def bundled_archive_tool_candidates() -> tuple[Path, ...]:
+    return ()

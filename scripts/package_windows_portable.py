@@ -118,6 +118,7 @@ def main() -> None:
         "artifact_sha256": checksum,
         "archive": archive_check,
         "python_required_for_end_user": False,
+        "archive_backend": audit.get("archive_backend"),
         "engine_bundled": audit.get("engine_bundled"),
         "baseline_ready": audit.get("baseline_ready"),
         "release_ready": audit.get("release_ready"),

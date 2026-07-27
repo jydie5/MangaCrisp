@@ -6,13 +6,16 @@
 
 The Windows 10/11 x64 port is a development preview. The source application and
 the PyInstaller one-folder baseline run on Windows, but the public portable
-release is not ready yet. In particular, the pinned Windows Real-CUGAN package,
-its checksum, and its complete license bundle still need release validation.
+release is not ready yet. The official Windows Real-CUGAN package is pinned and
+works on the current NVIDIA test machine, but public bundling is blocked until
+the redistribution route for its Microsoft runtime is documented.
 
 Original-image reading remains available when the AI engine is absent.
+RAR/CBR fallback extraction is provided by a pinned, checksum-verified 7-Zip
+26.02 x64 backend whose license and provenance are included with the build.
+
 
 ## Run from source
-
 Install Git and [uv](https://docs.astral.sh/uv/), then run:
 
 ```powershell
@@ -52,10 +55,9 @@ release.
 
 ## Known preview limitations
 
-- Real-CUGAN is not bundled until the official Windows archive and all notices
-  are pinned and verified.
-- RAR/CBR compatibility still needs a selected redistributable extraction
-  backend and license audit.
+- Real-CUGAN is not bundled in the portable baseline because redistribution of
+  its Microsoft runtime dependency is not yet documented. The application
+  continues with original images when the engine is absent.
 - The build is unsigned and has no installer, file associations, or updater.
 - Clean-account testing without Python installed is still required before a
   public release.

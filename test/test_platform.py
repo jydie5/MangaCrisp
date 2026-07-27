@@ -7,10 +7,16 @@ from unittest.mock import patch
 import pytest
 
 from mangacrisp_app import engine_utils
+from mangacrisp_app.archive_utils import (
+    external_archive_extract_command,
+    external_archive_tool,
+)
+from mangacrisp_app.platform import windows as windows_platform
 from mangacrisp_app.platform.macos import application_directories as macos_directories
 from mangacrisp_app.platform.windows import (
     application_directories as windows_directories,
     engine_executable_names,
+    bundled_archive_tool_candidates,
     open_directory as open_windows_directory,
     subprocess_window_kwargs,
 )
@@ -86,3 +92,38 @@ def test_realcugan_detection_finds_windows_executable(
     monkeypatch.delenv("MANGACRISP_REALCUGAN_PATH", raising=False)
 
     assert engine_utils.realcugan_executable() == executable
+
+
+def test_windows_bundled_archive_tool_is_next_to_frozen_executable(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    executable = tmp_path / "MangaCrisp.exe"
+    monkeypatch.setattr(windows_platform.sys, "executable", str(executable))
+    monkeypatch.delattr(windows_platform.sys, "_MEIPASS", raising=False)
+
+    assert bundled_archive_tool_candidates() == (
+        tmp_path / "tools" / "7zip" / "7z.exe",
+        tmp_path / "tools" / "7zip" / "7zz.exe",
+    )
+
+
+def test_configured_archive_tool_takes_precedence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    executable = tmp_path / "custom-7z.exe"
+    executable.write_bytes(b"test")
+    monkeypatch.setenv("MANGACRISP_ARCHIVE_TOOL_PATH", str(executable))
+
+    assert external_archive_tool("7zz", "7z") == str(executable)
+    assert external_archive_extract_command(
+        tmp_path / "book.cbr",
+        tmp_path / "pages",
+    ) == [
+        str(executable),
+        "x",
+        "-y",
+        f"-o{tmp_path / 'pages'}",
+        str(tmp_path / "book.cbr"),
+    ]

@@ -12,6 +12,8 @@ from tempfile import TemporaryDirectory
 
 from PIL import Image
 
+from fetch_7zip_windows import ensure_7zip, write_provenance
+
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 ENTRYPOINT = ROOT_DIR / "src" / "mangacrisp_app" / "main.py"
@@ -109,7 +111,7 @@ def write_qt_source_notice(destination: Path) -> None:
     )
 
 
-def prepare_license_files() -> Path:
+def prepare_license_files(archive_tool_dir: Path | None) -> Path:
     shutil.rmtree(LICENSES_DIR, ignore_errors=True)
     LICENSES_DIR.mkdir(parents=True, exist_ok=True)
     shutil.copy2(ROOT_DIR / "LICENSE", LICENSES_DIR / "MangaCrisp-MIT.txt")
@@ -120,19 +122,41 @@ def prepare_license_files() -> Path:
     copy_distribution_licenses(LICENSES_DIR)
     copy_python_license(LICENSES_DIR)
     write_qt_source_notice(LICENSES_DIR)
+    if archive_tool_dir is not None:
+        shutil.copy2(
+            archive_tool_dir / "License.txt",
+            LICENSES_DIR / "7-Zip-License.txt",
+        )
+        shutil.copy2(
+            archive_tool_dir / "readme.txt",
+            LICENSES_DIR / "7-Zip-readme.txt",
+        )
+        write_provenance(LICENSES_DIR, archive_tool_dir)
+    archive_summary = (
+        "The pinned 7-Zip command-line backend is bundled for RAR/CBR fallback extraction. "
+        if archive_tool_dir is not None
+        else "The 7-Zip archive backend is omitted from this diagnostic build. "
+    )
+
     (LICENSES_DIR / "README.txt").write_text(
         "MangaCrisp third-party notices for the Windows one-folder build.\n\n"
         "Keep every file in this directory with redistributed builds.\n"
-        "This bootstrap build does not bundle Real-CUGAN. Original-image reading "
-        "remains available while the pinned Windows engine package and notices "
-        "are validated.\n",
+        f"{archive_summary}"
+        "This development build does not bundle Real-CUGAN. Original-image "
+        "reading remains available while the Microsoft runtime redistribution "
+        "route is reviewed.\n",
         encoding="utf-8",
     )
     return LICENSES_DIR
 
 
-def copy_public_files(licenses_dir: Path) -> None:
+def copy_public_files(
+    licenses_dir: Path,
+    archive_tool_dir: Path | None,
+) -> None:
     shutil.copytree(licenses_dir, DIST_APP / "licenses")
+    if archive_tool_dir is not None:
+        shutil.copytree(archive_tool_dir, DIST_APP / "tools" / "7zip")
     for filename in (
         "LICENSE",
         "THIRD_PARTY_NOTICES.md",
@@ -175,6 +199,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="build without launching the isolated packaged-app smoke test",
     )
+    parser.add_argument(
+        "--without-archive-tool",
+        action="store_true",
+        help="omit the pinned 7-Zip RAR/CBR backend (audit will reject the baseline)",
+    )
     return parser.parse_args()
 
 
@@ -190,7 +219,12 @@ def main() -> None:
     shutil.rmtree(BUILD_DIR, ignore_errors=True)
     shutil.rmtree(DIST_APP, ignore_errors=True)
     app_icon = build_app_icon()
-    licenses_dir = prepare_license_files()
+    archive_tool_dir = (
+        None
+        if args.without_archive_tool
+        else ensure_7zip(ROOT_DIR / "build" / "vendor")
+    )
+    licenses_dir = prepare_license_files(archive_tool_dir)
     command = [
         sys.executable,
         "-m",
@@ -229,7 +263,7 @@ def main() -> None:
     subprocess.run(command, cwd=ROOT_DIR, check=True)
     if not DIST_EXE.is_file():
         raise SystemExit(f"build did not create {DIST_EXE}")
-    copy_public_files(licenses_dir)
+    copy_public_files(licenses_dir, archive_tool_dir)
     if not args.skip_smoke_test:
         smoke_test(DIST_EXE)
     print(f"built: {DIST_APP}")

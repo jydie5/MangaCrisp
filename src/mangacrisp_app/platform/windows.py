@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+import sys
 from collections.abc import Mapping
 from pathlib import Path
 
@@ -40,3 +41,15 @@ def subprocess_window_kwargs() -> dict[str, int]:
 
 def engine_executable_names(base_name: str) -> tuple[str, ...]:
     return (f"{base_name}.exe", base_name)
+
+
+def bundled_archive_tool_candidates() -> tuple[Path, ...]:
+    roots = [Path(sys.executable).resolve().parent]
+    bundle_root = getattr(sys, "_MEIPASS", None)
+    if bundle_root:
+        roots.append(Path(bundle_root))
+    return tuple(
+        root / "tools" / "7zip" / executable_name
+        for root in roots
+        for executable_name in ("7z.exe", "7zz.exe")
+    )
