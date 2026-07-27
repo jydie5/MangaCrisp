@@ -48,6 +48,9 @@ and automatic updates are later work.
 - A PyInstaller one-folder development baseline builds, passes the distribution
   audit, packages as a portable ZIP, and starts after extraction from a separate
   directory.
+- PyInstaller remains the selected first-release packager after a measured
+  pyside6-deploy/Nuitka comparison. See
+  `docs/development/windows-packaging-comparison.md`.
 - Original-image reading remains available without the AI engine.
 - The official Windows Real-CUGAN binary runs on the current NVIDIA test machine,
   but public bundling is blocked until the redistribution route for
@@ -55,8 +58,7 @@ and automatic updates are later work.
   `docs/development/windows-dependency-provenance.md`.
 
 Remaining release work is Real-CUGAN dependency resolution, Intel/AMD/NVIDIA
-coverage, a clean-account test without development tools, and comparison with
-`pyside6-deploy`.
+coverage, and a clean-account test without development tools.
 
 ## Technology decision
 
@@ -64,10 +66,10 @@ Continue with PySide6 and the existing Python code for the first Windows
 release. Do not port the UI to C#, C++, Rust, or a web runtime before measuring
 an actual blocker.
 
-Compare these packaging candidates on Windows:
+The packaging comparison is complete:
 
-1. PyInstaller one-folder for the quickest compatible baseline.
-2. `pyside6-deploy` standalone for startup time and package-size optimization.
+1. PyInstaller one-folder is selected for the first release.
+2. `pyside6-deploy` standalone is deferred as a later optimization experiment.
 
 Do not use one-file packaging for the first release. Qt and the AI models are
 better kept as visible application files, and one-file extraction can delay

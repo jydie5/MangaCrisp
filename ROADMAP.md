@@ -77,7 +77,8 @@ M4 Pro実測（15〜19MBの補正版PNG、1600×1000ウィンドウ）:
 状態: 実装中（Windows x64開発baseline検証済み）
 
 Windows 11 x64で、共通コードのプラットフォーム分離、7-Zipを使ったRAR/CBR対応、
-PyInstaller one-folder、配布監査、展開後スモーク起動まで検証済みです。
+PyInstaller one-folder、配布監査、展開後スモーク起動、`pyside6-deploy`との
+実測比較まで完了し、初版はPyInstallerを採用します。
 公式Windows版Real-CUGANの動作確認も完了していますが、同梱されるMicrosoftランタイムの
 再配布経路を確定するまで正式リリース判定は保留します。
 
@@ -89,7 +90,7 @@ Mac版で完成した本棚、見開き、次巻移動、原画比較、画質�
 - Real-CUGAN ncnn Vulkan Windows版とモデルを同梱
 - Intel、AMD、NVIDIAのVulkan対応GPUを対象
 - AI補正が利用できない場合も原画で即時閲覧
-- PyInstaller one-folderと`pyside6-deploy` standaloneを実測比較
+- PyInstaller one-folderと`pyside6-deploy` standaloneを実測比較済み
 - Windows固有の保存先、D&D、フォルダ表示、プロセス起動を分離
 - Windows ARM64、インストーラ、CUDA専用高速化は初版後に評価
 
