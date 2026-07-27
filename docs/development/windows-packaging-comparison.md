@@ -56,6 +56,7 @@ The audited PyInstaller development artifact is:
 - Extracted-copy smoke test: passed
 - Distribution audit: `baseline_ready=true`, `release_ready=false`
 
-The release-ready flag remains false only because the Windows Real-CUGAN
-runtime redistribution route is not approved and clean-machine/GPU coverage
-is incomplete.
+This measured artifact predates the audited Zig-built Real-CUGAN integration.
+Its release-ready flag is false because that artifact omitted the engine and
+clean-machine/GPU coverage was incomplete. The packaging selection remains
+valid; current engine readiness is tracked by the distribution audit.

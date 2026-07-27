@@ -40,57 +40,71 @@ Validation on 2026-07-27:
 
 ## Real-CUGAN ncnn Vulkan
 
-Status: technically validated, blocked from the public Windows release pending
-redistribution review of the Microsoft runtime binary.
+Status: approved for the Windows development baseline and portable packaging.
+Public release still requires Intel, AMD, and separate clean-account evidence.
 
 - Upstream: https://github.com/nihui/realcugan-ncnn-vulkan
+- Selected source commit: `395302c5c70f1bff604c974e92e0a87e45c9f9ee`
+- Source submodules are pinned in `scripts/build_realcugan_windows.py`.
+- Compiler/toolchain: Zig 0.16.0 targeting `x86_64-windows-gnu`
+- Zig archive URL: https://ziglang.org/download/0.16.0/zig-x86_64-windows-0.16.0.zip
+- Zig archive SHA-256: `68659eb5f1e4eb1437a722f1dd889c5a322c9954607f5edcf337bc3684a75a7e`
+- Build frontend: CMake 4.4.0 and Ninja 1.13.0
+- Vulkan SDK: 1.4.350.0, used only at build time
+- Vulkan SDK installer URL: https://sdk.lunarg.com/sdk/download/1.4.350.0/windows/vulkansdk-windows-X64-1.4.350.0.exe
+- Vulkan SDK installer SHA-256: `855b27ba05d2d8119c5114c5d4ff870ca38f2c632b11e1bb9923b9b7e6ecfe7b`
+- OpenMP: disabled
+- ncnn CPU AVX kernels: disabled; the selected path is Vulkan GPU execution
+- Upstream project license: MIT
+
+The build verifies the source and every submodule commit, downloads and verifies
+the Zig toolchain, uses the copy-only Vulkan SDK, and stages models from the
+verified official 20220728 package. The staged provenance records every model,
+license, executable, import, tool version, and source hash. Notices for
+Real-CUGAN, ncnn, glslang, libwebp, Zig, MinGW-w64, libc++, libc++abi, and
+libunwind are bundled.
+
+The resulting executable imports only Windows system API/UCRT API-set DLLs and
+the Vulkan loader supplied by the graphics driver. It does not import or bundle
+`vcomp140.dll`, `vcruntime`, `msvcp`, `libgcc`, `libstdc++`, or
+`libwinpthread` DLLs. The Vulkan SDK is not redistributed.
+
+### Official package used as the model and behavioral reference
+
 - Release: 20220728
 - Archive: `realcugan-ncnn-vulkan-20220728-windows.zip`
 - Archive URL: https://github.com/nihui/realcugan-ncnn-vulkan/releases/download/20220728/realcugan-ncnn-vulkan-20220728-windows.zip
 - Archive SHA-256: `c6e08d46c11704b1e3a1ada9ddd591cb5005f52f132136c8633ba25def400e01`
-- Executable SHA-256: `af5a36b124c993c77d0e69e42f640cdc108060874ed060d34ceef66d52c77a9d`
-- `vcomp140.dll` SHA-256: `54fe6b087528b33c2969143d811eb62f1bd49071d37de9db0745fc079764d698`
-- Upstream project license: MIT
+- Upstream executable SHA-256: `af5a36b124c993c77d0e69e42f640cdc108060874ed060d34ceef66d52c77a9d`
+- Upstream `vcomp140.dll` SHA-256: `54fe6b087528b33c2969143d811eb62f1bd49071d37de9db0745fc079764d698`
 
-The official archive includes the executable, models, project license, and
-`vcomp140.dll`. The reproducible validation command is:
+The official archive supplies the verified model files and a behavioral
+reference. Its executable and `vcomp140.dll` are not copied into MangaCrisp.
+The reproducible validation command for the selected Zig build is:
 
 ```powershell
 uv run python scripts/validate_realcugan_windows.py --gpu-label "machine label"
 ```
 
 On the current NVIDIA GeForce RTX 2070 SUPER, the pinned engine processed the
-first 1200 x 1660 Pepper and Carrot demo page to 2400 x 3320 in 2.08-2.11 seconds.
-The ignored JSON report records GPU name/driver, input and engine hashes,
-settings, dimensions, runtime, output size, and stdout without personal paths.
-Intel and AMD reports are still required.
+first 1200 x 1660 Pepper and Carrot demo page to 2400 x 3320 in 2.216 seconds.
+The path-sanitized JSON evidence is committed under
+`packaging/windows/validation/`. It records the actual execution GPU,
+name/driver inventory, input and engine hashes, settings, dimensions, runtime,
+output size, and stdout without personal paths. The release gate also pins the
+evidence-file SHA-256. Intel, AMD, and separate clean-account reports are still
+required.
 
-The alternate system-runtime route was also validated:
+### Historical runtime investigation
 
-```powershell
-uv run python scripts/validate_realcugan_windows.py --system-vcomp-only
-```
+The official upstream executable was also tested after removing its local
+`vcomp140.dll`; it ran through the supported system VC++ runtime. That route was
+not selected because it would add an end-user runtime prerequisite and Microsoft
+redistribution eligibility question. The selected Zig build instead removes
+the VC/OpenMP dependency from the executable itself. This is the audited
+compliant-build route identified by the investigation.
 
-This mode copies the engine to a temporary directory, removes its local
-`vcomp140.dll`, and passed in 2.09-2.13 seconds using the supported x64 VC++
-runtime already installed under Windows System32. This proves the technical
-route can omit Microsoft's DLL from MangaCrisp. It does not prove that the
-runtime exists on a clean machine, remove the need for an install/preflight
-decision, or grant redistribution rights.
-
-Microsoft documents Visual C++ runtime redistribution as subject to Visual
-Studio license eligibility and recommends the supported Visual C++
-Redistributable. The upstream MIT license does not itself establish permission
-to redistribute Microsoft's `vcomp140.dll`. Therefore MangaCrisp must not
-bundle or publish this Windows engine archive until one of these routes is
-documented:
-
-1. Confirm that the release publisher has the required Microsoft redistribution
-   rights and reproduce the required notices.
-2. Require/install the official Microsoft Visual C++ Redistributable and omit
-   `vcomp140.dll` from MangaCrisp.
-3. Produce and audit a compliant engine build whose runtime dependencies have a
-   documented redistribution path.
-
-The distribution audit intentionally keeps `release_ready=false` while the
-Windows Real-CUGAN engine is absent.
+The distribution audit verifies the staged executable, imports, provenance,
+models, notices, and absence of bundled DLLs. It can mark the packaged baseline
+ready with Real-CUGAN present, while `release_ready` remains false until the
+engine-matched Intel, AMD, NVIDIA, and separate clean-account evidence all pass.

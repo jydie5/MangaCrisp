@@ -40,14 +40,14 @@ and automatic updates are later work.
 
 ## Current Windows checkpoint (2026-07-27)
 
-- Phase 1 source compatibility is implemented on Windows 11 x64; all 33 shared
+- Phase 1 source compatibility is implemented on Windows 11 x64; all 44 shared
   and platform tests pass.
 - ZIP/CBZ and 7z/CB7 demo flows pass. The pinned 7-Zip 26.02 x64 backend is
   bundled for RAR/CBR and a RAR5 solid archive was extracted through the app's
   fallback path.
-- A PyInstaller one-folder development baseline builds, passes the distribution
-  audit, packages as a portable ZIP, and starts after extraction from a separate
-  directory.
+- A PyInstaller one-folder development baseline bundles the audited Zig-built
+  Real-CUGAN engine, passes the distribution audit, packages as a portable ZIP,
+  and starts after extraction from a separate directory.
 - The extracted ZIP passes the sanitized-environment smoke test with Python,
   uv, and virtual-environment paths removed. A separate clean-account test is
   still required.
@@ -55,14 +55,19 @@ and automatic updates are later work.
   pyside6-deploy/Nuitka comparison. See
   `docs/development/windows-packaging-comparison.md`.
 - Original-image reading remains available without the AI engine.
-- The reproducible Real-CUGAN validation passes on the NVIDIA GeForce RTX 2070
-  SUPER (2.08-2.11 seconds for the fixed demo page). Intel and AMD reports remain.
-  Public bundling is blocked until the redistribution route for `vcomp140.dll`
-  is documented. See
-  `docs/development/windows-dependency-provenance.md`.
+- The fixed-recipe Real-CUGAN validation passes on the NVIDIA GeForce RTX 2070
+  SUPER (2.216 seconds for the latest fixed demo run). The pinned Zig build
+  imports no Microsoft VC/OpenMP or MinGW runtime DLL and bundles its complete
+  notices and provenance. The path-sanitized source report is committed and
+  revalidated by the distribution audit.
+- The current development account passed interactive launch, bookshelf import,
+  reader rendering, and original/enhanced comparison on 2026-07-27. This does
+  not replace the separate clean-account gate.
 
-Remaining release work is Real-CUGAN dependency resolution, Intel/AMD
-coverage, and a clean-account test without development tools.
+Remaining release work is Intel/AMD coverage and a clean-account test without
+development tools. Reports are registered with their evidence SHA-256 and must
+match the bundled engine. See
+`docs/development/windows-release-validation.md`.
 
 ## Technology decision
 
@@ -112,11 +117,12 @@ screenshots, and automated checks.
 
 ### Phase 3: AI engine
 
-- Download a pinned official Windows Real-CUGAN ncnn Vulkan release.
-- Record source URL, release identifier, SHA-256, and all licenses.
+- Build the pinned Real-CUGAN source with the pinned Zig toolchain and copy-only
+  Vulkan SDK; use the official package only for verified model files.
+- Record source/submodule commits, tool and archive SHA-256 values, PE imports,
+  model hashes, and all licenses in generated provenance.
 - Detect engine availability without blocking bookshelf or reader startup.
-- Verify Intel integrated graphics, AMD, and NVIDIA where test machines are
-  available.
+- Require engine-matched Intel, AMD, and NVIDIA evidence before release.
 - Retain original-image fallback when Vulkan or the engine fails.
 
 ### Phase 4: portable release

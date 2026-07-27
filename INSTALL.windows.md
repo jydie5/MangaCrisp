@@ -6,9 +6,10 @@
 
 The Windows 10/11 x64 port is a development preview. The source application and
 the PyInstaller one-folder baseline run on Windows, but the public portable
-release is not ready yet. The official Windows Real-CUGAN package is pinned and
-works on the current NVIDIA test machine, but public bundling is blocked until
-the redistribution route for its Microsoft runtime is documented.
+release is not ready yet. The baseline bundles a pinned Zig-built Real-CUGAN
+engine whose source, tools, PE imports, models, licenses, and hashes are audited.
+It works on the current NVIDIA test machine without a Microsoft VC/OpenMP or
+MinGW runtime DLL.
 
 Original-image reading remains available when the AI engine is absent.
 RAR/CBR fallback extraction is provided by a pinned, checksum-verified 7-Zip
@@ -43,8 +44,10 @@ delete the source ZIP, RAR, or 7z archive.
 
 ```powershell
 uv sync --extra dev --extra app
+uv run python scripts/fetch_vulkan_sdk_windows.py --accept-licenses
+uv run python scripts/build_realcugan_windows.py --clean
 uv run python scripts/build_windows_app.py
-uv run python scripts/audit_windows_distribution.py
+uv run python scripts/audit_windows_distribution.py --require-engine
 uv run python scripts/package_windows_portable.py --skip-build --development-baseline
 ```
 
@@ -55,9 +58,8 @@ release.
 
 ## Known preview limitations
 
-- Real-CUGAN is not bundled in the portable baseline because redistribution of
-  its Microsoft runtime dependency is not yet documented. The application
-  continues with original images when the engine is absent.
+- The bundled engine still needs validation on Intel and AMD Vulkan graphics.
+  The application continues with original images if enhancement is unavailable.
 - The build is unsigned and has no installer, file associations, or updater.
 - Clean-account testing without Python installed is still required before a
   public release.

@@ -6,8 +6,9 @@
 
 Windows 10/11 x64版は開発プレビューです。ソース版とPyInstaller
 one-folderの基礎ビルドはWindowsで動作しますが、公開用ポータブル版はまだ完成していません。
-公式Windows版Real-CUGANは固定・動作検証済みですが、同梱されるMicrosoftランタイムの
-再配布経路を文書化するまで、公開用ビルドへの同梱を保留します。
+baselineには固定ソースをZigでビルドしたReal-CUGANを同梱し、ソース、ツール、PE import、
+モデル、ライセンス、ハッシュを監査します。現在のNVIDIA実機では、Microsoft VC/OpenMPや
+MinGWのランタイムDLLを同梱せずに動作します。
 
 
 AIエンジンがない場合も原画で閲覧できます。
@@ -42,8 +43,10 @@ uv run mangacrisp
 
 ```powershell
 uv sync --extra dev --extra app
+uv run python scripts/fetch_vulkan_sdk_windows.py --accept-licenses
+uv run python scripts/build_realcugan_windows.py --clean
 uv run python scripts/build_windows_app.py
-uv run python scripts/audit_windows_distribution.py
+uv run python scripts/audit_windows_distribution.py --require-engine
 uv run python scripts/package_windows_portable.py --skip-build --development-baseline
 ```
 
@@ -53,8 +56,8 @@ baseline ZIPはローカル検証専用で、正式リリースとして公開�
 
 ## 開発プレビューの既知の制限
 
-- Microsoftランタイムの再配布経路が未確定のため、portable baselineへReal-CUGANを
-  同梱しません。エンジンがなくても原画で閲覧できます。
+- 同梱エンジンはIntelおよびAMDのVulkan対応GPUで実機検証が必要です。
+  補正を利用できない場合も原画で閲覧できます。
 - 未署名で、インストーラー、ファイル関連付け、自動更新はありません。
 - 公開前に、Python未導入のクリーンなWindowsアカウントで検証する必要があります。
 

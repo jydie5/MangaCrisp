@@ -74,14 +74,17 @@ M4 Pro実測（15〜19MBの補正版PNG、1600×1000ウィンドウ）:
 
 ## P1: Windowsポータブル版
 
-状態: 実装中（Windows x64開発baseline検証済み）
+状態: 実装中（Windows x64エンジン同梱baseline検証中）
 
 Windows 11 x64で、共通コードのプラットフォーム分離、7-Zipを使ったRAR/CBR対応、
 PyInstaller one-folder、配布監査、展開後スモーク起動、`pyside6-deploy`との
 実測比較まで完了し、初版はPyInstallerを採用します。
-公式Windows版Real-CUGANの動作確認も完了していますが、同梱されるMicrosoftランタイムの
-再配布経路を確定するまで正式リリース判定は保留します。
-NVIDIA RTX 2070 SUPERで固定demoの自動検証は通過し、Intel/AMD実機レポートが残っています。
+Real-CUGANは固定ソースをZigでビルドし、Microsoft VC/OpenMPおよびMinGWのランタイムDLLを
+同梱しない経路へ切り替えました。実行ファイル、PE import、モデル、ライセンス、来歴を
+配布監査で検証します。NVIDIA RTX 2070 SUPERで固定demoの自動検証は通過済みです。
+正式リリース前に、同一エンジンSHA-256でIntel/AMD実機と開発ツールのない別Windows
+アカウントの検証を完了させます。検証JSONはGPUベンダー、実行GPU、固定demo、出力寸法、
+エンジンSHA-256、証跡SHA-256を自動監査してからリリースゲートへ登録します。
 
 
 Mac版で完成した本棚、見開き、次巻移動、原画比較、画質モード、

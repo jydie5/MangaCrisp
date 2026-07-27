@@ -30,6 +30,17 @@ RAR互換アーカイバの作成には使用しません。
 
 実行ファイルとモデルは公式リリースZIPから取得し、内容を改変せずアプリへ収録します。ビルドスクリプトはダウンロードしたZIPと実行ファイルのSHA256を照合します。
 
+### Windows x64ビルド
+
+Windows版は`20220728`タグの固定ソースとsubmoduleをZig 0.16.0で
+`x86_64-windows-gnu`向けにビルドします。公式WindowsリリースZIPは
+検証済みモデルの取得と動作参照にだけ使い、同梱の実行ファイルおよび
+`vcomp140.dll`は配布しません。
+
+Windows配布物の`realcugan-provenance.json`には、ソースcommit、submodule、
+ツール、取得物、実行ファイル、PE import、モデル、ライセンスのSHA-256を
+記録します。Vulkan SDKはビルド時だけ使用し、配布しません。
+
 ## Real-CUGAN models
 
 - Project: [bilibili/ailab Real-CUGAN](https://github.com/bilibili/ailab/tree/main/Real-CUGAN)
@@ -48,6 +59,13 @@ RAR互換アーカイバの作成には使用しません。
 - [LLVM OpenMP 11.0.0](https://github.com/llvm/llvm-project/tree/llvmorg-11.0.0/openmp): Apache License 2.0 with LLVM Exceptions
 
 ライセンス全文は`MangaCrisp.app/Contents/Resources/licenses/`へ収録されます。PyInstallerのmacOSバンドル構造によっては、同じ場所へのシンボリックリンクが`Contents/Frameworks`側にも作られます。
+
+Windows ZigビルドはReal-CUGAN、ncnn、glslang、libwebpに加え、Zig、
+MinGW-w64、libc++、libc++abi、libunwindのライセンス通知を収録します。
+これらは`MangaCrisp/licenses/`と
+`MangaCrisp/_internal/engines/realcugan-ncnn-vulkan/licenses/`に配置されます。
+Windows実行ファイルはMicrosoft VC/OpenMPおよびMinGWのランタイムDLLを
+importまたは同梱しません。
 
 ## Python runtime and libraries
 

@@ -10,10 +10,9 @@ import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from PIL import Image
-
+from build_realcugan_windows import ensure_built_realcugan
 from fetch_7zip_windows import ensure_7zip, write_provenance
-
+from PIL import Image
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 ENTRYPOINT = ROOT_DIR / "src" / "mangacrisp_app" / "main.py"
@@ -70,7 +69,9 @@ def copy_distribution_licenses(destination: Path) -> int:
             if source.is_file():
                 sources.append(source)
         if not sources:
-            raise RuntimeError(f"no license file found for runtime dependency: {package_name}")
+            raise RuntimeError(
+                f"no license file found for runtime dependency: {package_name}"
+            )
         for index, source in enumerate(sources, start=1):
             suffix = "" if len(sources) == 1 else f"-{index}"
             filename = (
@@ -89,7 +90,9 @@ def copy_python_license(destination: Path) -> Path:
     )
     source = next((path for path in candidates if path.is_file()), None)
     if source is None:
-        raise RuntimeError(f"Python runtime license was not found under {sys.base_prefix}")
+        raise RuntimeError(
+            f"Python runtime license was not found under {sys.base_prefix}"
+        )
     target = destination / f"Python-{platform.python_version()}-{source.name}"
     shutil.copy2(source, target)
     return target
@@ -111,7 +114,10 @@ def write_qt_source_notice(destination: Path) -> None:
     )
 
 
-def prepare_license_files(archive_tool_dir: Path | None) -> Path:
+def prepare_license_files(
+    archive_tool_dir: Path | None,
+    engine_dir: Path | None,
+) -> Path:
     shutil.rmtree(LICENSES_DIR, ignore_errors=True)
     LICENSES_DIR.mkdir(parents=True, exist_ok=True)
     shutil.copy2(ROOT_DIR / "LICENSE", LICENSES_DIR / "MangaCrisp-MIT.txt")
@@ -132,19 +138,30 @@ def prepare_license_files(archive_tool_dir: Path | None) -> Path:
             LICENSES_DIR / "7-Zip-readme.txt",
         )
         write_provenance(LICENSES_DIR, archive_tool_dir)
+    if engine_dir is not None:
+        shutil.copy2(
+            engine_dir / "realcugan-provenance.json",
+            LICENSES_DIR / "realcugan-provenance.json",
+        )
+        for source in sorted((engine_dir / "licenses").iterdir()):
+            if source.is_file():
+                shutil.copy2(source, LICENSES_DIR / source.name)
     archive_summary = (
         "The pinned 7-Zip command-line backend is bundled for RAR/CBR fallback extraction. "
         if archive_tool_dir is not None
         else "The 7-Zip archive backend is omitted from this diagnostic build. "
     )
+    engine_summary = (
+        "The pinned Zig-built Real-CUGAN engine, model files, provenance, "
+        "and notices are bundled without a Microsoft VC/OpenMP runtime DLL.\n"
+        if engine_dir is not None
+        else "Real-CUGAN is omitted from this diagnostic build.\n"
+    )
 
     (LICENSES_DIR / "README.txt").write_text(
         "MangaCrisp third-party notices for the Windows one-folder build.\n\n"
         "Keep every file in this directory with redistributed builds.\n"
-        f"{archive_summary}"
-        "This development build does not bundle Real-CUGAN. Original-image "
-        "reading remains available while the Microsoft runtime redistribution "
-        "route is reviewed.\n",
+        f"{archive_summary}{engine_summary}",
         encoding="utf-8",
     )
     return LICENSES_DIR
@@ -153,10 +170,16 @@ def prepare_license_files(archive_tool_dir: Path | None) -> Path:
 def copy_public_files(
     licenses_dir: Path,
     archive_tool_dir: Path | None,
+    engine_dir: Path | None,
 ) -> None:
     shutil.copytree(licenses_dir, DIST_APP / "licenses")
     if archive_tool_dir is not None:
         shutil.copytree(archive_tool_dir, DIST_APP / "tools" / "7zip")
+    if engine_dir is not None:
+        shutil.copytree(
+            engine_dir,
+            DIST_APP / "_internal" / "engines" / "realcugan-ncnn-vulkan",
+        )
     for filename in (
         "LICENSE",
         "THIRD_PARTY_NOTICES.md",
@@ -204,6 +227,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="omit the pinned 7-Zip RAR/CBR backend (audit will reject the baseline)",
     )
+    parser.add_argument(
+        "--without-engine",
+        action="store_true",
+        help="omit Real-CUGAN from a diagnostic build (release audit will reject it)",
+    )
     return parser.parse_args()
 
 
@@ -216,7 +244,10 @@ def main() -> None:
     if not ENTRYPOINT.is_file():
         raise SystemExit(f"missing entrypoint: {ENTRYPOINT}")
 
-    shutil.rmtree(BUILD_DIR, ignore_errors=True)
+    shutil.rmtree(BUILD_DIR / "pyinstaller", ignore_errors=True)
+    shutil.rmtree(LICENSES_DIR, ignore_errors=True)
+    APP_ICON.unlink(missing_ok=True)
+    (BUILD_DIR / "MangaCrisp.spec").unlink(missing_ok=True)
     shutil.rmtree(DIST_APP, ignore_errors=True)
     app_icon = build_app_icon()
     archive_tool_dir = (
@@ -224,7 +255,8 @@ def main() -> None:
         if args.without_archive_tool
         else ensure_7zip(ROOT_DIR / "build" / "vendor")
     )
-    licenses_dir = prepare_license_files(archive_tool_dir)
+    engine_dir = None if args.without_engine else ensure_built_realcugan()
+    licenses_dir = prepare_license_files(archive_tool_dir, engine_dir)
     command = [
         sys.executable,
         "-m",
@@ -263,7 +295,7 @@ def main() -> None:
     subprocess.run(command, cwd=ROOT_DIR, check=True)
     if not DIST_EXE.is_file():
         raise SystemExit(f"build did not create {DIST_EXE}")
-    copy_public_files(licenses_dir, archive_tool_dir)
+    copy_public_files(licenses_dir, archive_tool_dir, engine_dir)
     if not args.skip_smoke_test:
         smoke_test(DIST_EXE)
     print(f"built: {DIST_APP}")

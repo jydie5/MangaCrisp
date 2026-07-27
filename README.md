@@ -41,7 +41,8 @@ All versions and the SHA-256 checksum are available on the
 
 The Windows 10/11 x64 source application and PyInstaller one-folder baseline
 are under active development. There is no public Windows portable release yet,
-and the development build does not bundle Real-CUGAN. See
+but the development baseline now bundles an audited Zig-built Real-CUGAN
+engine. Intel, AMD, and separate clean-account validation remain. See
 [INSTALL.windows.md](INSTALL.windows.md) for the verified source and build
 workflow.
 

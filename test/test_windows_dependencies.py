@@ -2,12 +2,17 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import sys
 import zipfile
 from pathlib import Path
 
 import pytest
 
-SCRIPT_PATH = Path(__file__).resolve().parents[1] / "scripts" / "fetch_realcugan_windows.py"
+SCRIPTS_DIR = Path(__file__).resolve().parents[1] / "scripts"
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+SCRIPT_PATH = SCRIPTS_DIR / "fetch_realcugan_windows.py"
 SPEC = importlib.util.spec_from_file_location("fetch_realcugan_windows", SCRIPT_PATH)
 assert SPEC is not None and SPEC.loader is not None
 FETCH_REALCUGAN = importlib.util.module_from_spec(SPEC)
@@ -17,6 +22,15 @@ FILE_SHA256 = FETCH_REALCUGAN.FILE_SHA256
 safe_extract = FETCH_REALCUGAN.safe_extract
 write_provenance = FETCH_REALCUGAN.write_provenance
 
+BUILD_SCRIPT_PATH = SCRIPTS_DIR / "build_realcugan_windows.py"
+BUILD_SPEC = importlib.util.spec_from_file_location(
+    "build_realcugan_windows",
+    BUILD_SCRIPT_PATH,
+)
+assert BUILD_SPEC is not None and BUILD_SPEC.loader is not None
+BUILD_REALCUGAN = importlib.util.module_from_spec(BUILD_SPEC)
+BUILD_SPEC.loader.exec_module(BUILD_REALCUGAN)
+
 
 def test_realcugan_zip_rejects_path_traversal(tmp_path: Path) -> None:
     archive_path = tmp_path / "unsafe.zip"
@@ -25,9 +39,11 @@ def test_realcugan_zip_rejects_path_traversal(tmp_path: Path) -> None:
 
     output = tmp_path / "output"
     output.mkdir()
-    with zipfile.ZipFile(archive_path) as archive:
-        with pytest.raises(RuntimeError, match="unsafe ZIP member"):
-            safe_extract(archive, output)
+    with (
+        zipfile.ZipFile(archive_path) as archive,
+        pytest.raises(RuntimeError, match="unsafe ZIP member"),
+    ):
+        safe_extract(archive, output)
 
     assert not (tmp_path / "escape.txt").exists()
 
@@ -45,3 +61,42 @@ def test_realcugan_provenance_is_not_redistribution_approved(
 
     assert provenance["redistribution_approved"] is False
     assert "vcomp140.dll" in provenance["redistribution_blocker"]
+
+
+def test_zig_archive_rejects_path_traversal(tmp_path: Path) -> None:
+    archive_path = tmp_path / "unsafe-zig.zip"
+    with zipfile.ZipFile(archive_path, "w") as archive:
+        archive.writestr("../escape.txt", "blocked")
+
+    output = tmp_path / "output"
+    output.mkdir()
+    with (
+        zipfile.ZipFile(archive_path) as archive,
+        pytest.raises(RuntimeError, match="unsafe ZIP member"),
+    ):
+        BUILD_REALCUGAN.safe_extract(archive, output)
+
+    assert not (tmp_path / "escape.txt").exists()
+
+
+def test_zig_engine_runtime_imports_accept_system_apis() -> None:
+    BUILD_REALCUGAN.validate_runtime_imports(
+        [
+            "api-ms-win-crt-runtime-l1-1-0.dll",
+            "kernel32.dll",
+            "ole32.dll",
+            "oleaut32.dll",
+            "vulkan-1.dll",
+        ]
+    )
+
+
+@pytest.mark.parametrize(
+    "runtime",
+    ["vcomp140.dll", "libwinpthread-1.dll", "unexpected-runtime.dll"],
+)
+def test_zig_engine_runtime_imports_reject_non_system_runtime(runtime: str) -> None:
+    with pytest.raises(RuntimeError, match="runtime imports"):
+        BUILD_REALCUGAN.validate_runtime_imports(
+            ["kernel32.dll", "vulkan-1.dll", runtime]
+        )

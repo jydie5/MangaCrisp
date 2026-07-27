@@ -9,7 +9,6 @@ import sys
 import zipfile
 from pathlib import Path
 
-
 ROOT_DIR = Path(__file__).resolve().parents[1]
 APP_DIR = ROOT_DIR / "dist" / "MangaCrisp"
 AUDIT_PATH = ROOT_DIR / "dist" / "windows-distribution-audit.json"
@@ -74,7 +73,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--development-baseline",
         action="store_true",
-        help="allow a clearly named local ZIP before Real-CUGAN is bundled",
+        help="allow a clearly named local ZIP before external release validation passes",
     )
     return parser.parse_args()
 
@@ -83,7 +82,13 @@ def main() -> None:
     args = parse_args()
     if not args.skip_build:
         run([sys.executable, "scripts/build_windows_app.py"])
-    run([sys.executable, "scripts/audit_windows_distribution.py"])
+    run(
+        [
+            sys.executable,
+            "scripts/audit_windows_distribution.py",
+            "--require-engine",
+        ]
+    )
     audit = json.loads(AUDIT_PATH.read_text(encoding="utf-8"))
     if not audit.get("baseline_ready"):
         raise SystemExit("Windows distribution baseline audit did not pass")
@@ -110,6 +115,15 @@ def main() -> None:
         )
 
     checksum = sha256_file(artifact)
+    if audit.get("release_ready"):
+        clean_account = (
+            audit.get("release_validation", {})
+            .get("checks", {})
+            .get("clean_windows_account", {})
+        )
+        if clean_account.get("archive_sha256") != checksum:
+            artifact.unlink(missing_ok=True)
+            raise SystemExit("clean-account evidence does not match the candidate ZIP")
     checksum_path = artifact.with_suffix(artifact.suffix + ".sha256")
     checksum_path.write_text(f"{checksum}  {artifact.name}\n", encoding="ascii")
     manifest = {
@@ -120,6 +134,8 @@ def main() -> None:
         "python_required_for_end_user": False,
         "archive_backend": audit.get("archive_backend"),
         "engine_bundled": audit.get("engine_bundled"),
+        "engine_sha256": audit.get("engine", {}).get("sha256"),
+        "release_blockers": audit.get("release_blockers"),
         "baseline_ready": audit.get("baseline_ready"),
         "release_ready": audit.get("release_ready"),
         "development_baseline": not audit.get("release_ready"),

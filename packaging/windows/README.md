@@ -10,6 +10,11 @@ directory.
 dist/MangaCrisp/
   MangaCrisp.exe
   _internal/
+    engines/realcugan-ncnn-vulkan/
+      realcugan-ncnn-vulkan.exe
+      models-*/
+      licenses/
+      realcugan-provenance.json
   licenses/
   tools/7zip/
     7z.exe + 7z.dll
@@ -23,8 +28,10 @@ Build and audit on Windows x64:
 
 ```powershell
 uv sync --extra dev --extra app
+uv run python scripts/fetch_vulkan_sdk_windows.py --accept-licenses
+uv run python scripts/build_realcugan_windows.py --clean
 uv run python scripts/build_windows_app.py
-uv run python scripts/audit_windows_distribution.py
+uv run python scripts/audit_windows_distribution.py --require-engine
 uv run python scripts/package_windows_portable.py --skip-build --development-baseline
 uv run python scripts/test_windows_portable_sanitized_environment.py
 ```
@@ -37,23 +44,37 @@ final test on a separate clean Windows account.
 The build script downloads the pinned official 7-Zip 26.02 x64 assets, verifies
 their SHA-256 values, and bundles the license and provenance. The distribution
 audit rejects missing or modified binaries and checks reported RAR/RAR5 support.
-The baseline intentionally omits Real-CUGAN because the Microsoft runtime
-redistribution route is still under review. Validate the pinned official engine
-locally with:
+
+The Real-CUGAN build verifies the pinned source and submodule commits, Zig
+toolchain, Vulkan SDK, official model archive, PE imports, model hashes, and
+licenses. It disables OpenMP and produces an executable that does not require or
+bundle Microsoft VC/OpenMP or MinGW runtime DLLs. The Vulkan SDK is build-time
+only. Validate that staged engine locally with:
 
 ```powershell
-uv run python scripts/fetch_realcugan_windows.py
 uv run python scripts/validate_realcugan_windows.py --gpu-label "machine label"
-uv run python scripts/validate_realcugan_windows.py --system-vcomp-only
 ```
 
 The validation script processes one freely redistributable demo page and writes
 a path-sanitized JSON report under ignored `build/windows/`. Collect reports on
-Intel and AMD machines before release; the NVIDIA report already passes.
+Intel and AMD machines before release; the NVIDIA report already passes. Each
+report must be registered rather than copied into the gate file by hand:
 
-The fetch command writes `redistribution_approved=false` into development provenance;
-the normal build does not copy the engine into `dist/`, and the audit cannot
-mark it release-ready without an explicit approved record.
+```powershell
+uv run python scripts/record_windows_release_validation.py `
+  --gpu-family intel `
+  --report build\windows\realcugan-validation.json
+```
 
-The `--development-baseline` ZIP is clearly named and must not be published as
-a release.
+Registration verifies the GPU vendor, fixed demo and recipe, output,
+provenance, runtime mode, evidence hash, and engine SHA-256. All passed reports
+must match the executable bundled in the candidate distribution.
+
+A separate clean Windows account must also pass the standalone PowerShell
+validator. The complete GPU and clean-account procedure is documented in
+`docs/development/windows-release-validation.md`.
+
+The distribution audit can mark this implementation baseline ready while
+keeping `release_ready=false` until all external evidence passes. Therefore the
+`--development-baseline` ZIP is clearly named and must not be published as a
+release.

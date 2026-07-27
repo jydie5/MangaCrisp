@@ -1,0 +1,41 @@
+{
+  "schema_version": 3,
+  "required": {
+    "clean_windows_account": {
+      "passed": false,
+      "engine_sha256": null,
+      "evidence": null
+    },
+    "gpu_families": {
+      "nvidia": {
+        "passed": true,
+        "engine_sha256": "58de999f0558c73573f7e6bfa68e947762be81cc248fc1e205096645d3cbe906",
+        "device": "NVIDIA GeForce RTX 2070 SUPER",
+        "driver_version": "32.0.16.2002",
+        "demo": "Pepper-and-Carrot v01 The-Potion-of-Flight.zip/01.jpg",
+        "input_dimensions": [
+          1200,
+          1660
+        ],
+        "output_dimensions": [
+          2400,
+          3320
+        ],
+        "elapsed_sec": 2.216,
+        "validated_on": "2026-07-27",
+        "evidence": "packaging/windows/validation/gpu-nvidia.json",
+        "evidence_sha256": "618873471a81d81d733b92dc06ec72e8bb117bfef0cd5f4ef2c3e2bcb60911b0"
+      },
+      "intel": {
+        "passed": false,
+        "engine_sha256": null,
+        "evidence": null
+      },
+      "amd": {
+        "passed": false,
+        "engine_sha256": null,
+        "evidence": null
+      }
+    }
+  }
+}
