@@ -64,6 +64,8 @@ jobs:
         with:
           path: build/vendor
           key: windows-vendor-v1-${{ hashFiles('scripts/build_realcugan_windows.py', 'scripts/fetch_realcugan_windows.py', 'scripts/fetch_vulkan_sdk_windows.py') }}
+          restore-keys: |
+            windows-vendor-v1-
 
       - name: Install project dependencies
         run: uv sync --extra dev --extra app

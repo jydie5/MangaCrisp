@@ -6,6 +6,7 @@ import json
 import os
 import platform
 import shutil
+import struct
 import subprocess
 import urllib.request
 import zipfile
@@ -59,6 +60,11 @@ ZIG_ARCHIVE_SHA256 = "68659eb5f1e4eb1437a722f1dd889c5a322c9954607f5edcf337bc3684
 EXPECTED_CMAKE_VERSION = "4.4.0"
 EXPECTED_NINJA_VERSION_PREFIX = "1.13.0"
 ENGINE_NAME = "realcugan-ncnn-vulkan.exe"
+# LLD derives these PE/CodeView metadata fields from a per-build hash. They are
+# not used at runtime, but make otherwise identical builds differ byte-for-byte.
+# These canonical values preserve the exact binary used for the NVIDIA evidence.
+CANONICAL_PE_TIMESTAMP = 0x8571046E
+CANONICAL_LLD_PDB_HASH = bytes.fromhex("b610d34f41fa34bc")
 FORBIDDEN_IMPORT_PREFIXES = (
     "libgcc",
     "libgomp",
@@ -281,6 +287,48 @@ def write_build_helpers(build_dir: Path, zig: Path) -> tuple[Path, Path, Path]:
     return zig_ar, zig_ranlib, hook
 
 
+def apply_lld_metadata_normalization(
+    data: bytearray,
+    *,
+    file_timestamp_offset: int,
+    debug_timestamp_offsets: list[int],
+    codeview_offset: int,
+) -> None:
+    codeview_header = bytes(data[codeview_offset : codeview_offset + 20])
+    if (
+        len(codeview_header) != 20
+        or codeview_header[:4] != b"RSDS"
+        or codeview_header[12:20] != b"LLD PDB."
+    ):
+        raise RuntimeError("unexpected LLD CodeView build-id format")
+
+    timestamp = struct.pack("<I", CANONICAL_PE_TIMESTAMP)
+    data[file_timestamp_offset : file_timestamp_offset + 4] = timestamp
+    for offset in debug_timestamp_offsets:
+        data[offset : offset + 4] = timestamp
+    data[codeview_offset + 4 : codeview_offset + 12] = CANONICAL_LLD_PDB_HASH
+
+
+def normalize_lld_metadata(executable: Path) -> None:
+    data = bytearray(executable.read_bytes())
+    pe = pefile.PE(data=bytes(data))
+    debug_entries = getattr(pe, "DIRECTORY_ENTRY_DEBUG", [])
+    codeview_entries = [entry for entry in debug_entries if entry.struct.Type == 2]
+    if len(codeview_entries) != 1:
+        raise RuntimeError("expected exactly one LLD CodeView debug entry")
+
+    apply_lld_metadata_normalization(
+        data,
+        file_timestamp_offset=pe.FILE_HEADER.get_field_absolute_offset("TimeDateStamp"),
+        debug_timestamp_offsets=[
+            entry.struct.get_field_absolute_offset("TimeDateStamp")
+            for entry in debug_entries
+        ],
+        codeview_offset=codeview_entries[0].struct.PointerToRawData,
+    )
+    executable.write_bytes(data)
+
+
 def build_engine(
     source_dir: Path,
     build_dir: Path,
@@ -353,6 +401,7 @@ def build_engine(
     executable = build_dir / ENGINE_NAME
     if not executable.is_file():
         raise RuntimeError(f"build did not create {executable}")
+    normalize_lld_metadata(executable)
     imports = executable_imports(executable)
     validate_runtime_imports(imports)
     versions = {
@@ -453,6 +502,11 @@ def stage_package(
                 "installer_sha256": VULKAN_INSTALLER_SHA256,
                 "build_time_only": True,
             },
+            "lld_metadata_normalization": {
+                "pe_timestamp": CANONICAL_PE_TIMESTAMP,
+                "codeview_pdb_hash": CANONICAL_LLD_PDB_HASH.hex(),
+                "scope": "non-runtime PE and CodeView build metadata only",
+            },
         },
         "engine": {
             "filename": ENGINE_NAME,
@@ -520,8 +574,11 @@ def verify_package_recipe(package_dir: Path) -> None:
     ):
         raise RuntimeError("staged Real-CUGAN provenance has invalid sections")
     toolchain = build.get("toolchain", {})
+    normalization = build.get("lld_metadata_normalization", {})
     if not isinstance(toolchain, dict):
         raise TypeError("staged Real-CUGAN toolchain provenance is invalid")
+    if not isinstance(normalization, dict):
+        raise TypeError("staged Real-CUGAN normalization provenance is invalid")
     if (
         payload.get("schema_version") != 2
         or source.get("commit") != SOURCE_COMMIT
@@ -534,6 +591,10 @@ def verify_package_recipe(package_dir: Path) -> None:
         or build.get("webp_simd") is not True
         or toolchain.get("version") != ZIG_VERSION
         or toolchain.get("archive_sha256") != ZIG_ARCHIVE_SHA256
+        or normalization.get("pe_timestamp") != CANONICAL_PE_TIMESTAMP
+        or normalization.get("codeview_pdb_hash") != CANONICAL_LLD_PDB_HASH.hex()
+        or normalization.get("scope")
+        != "non-runtime PE and CodeView build metadata only"
         or runtime.get("bundled_dlls") != []
         or runtime.get("vcomp_required") is not False
         or runtime.get("visual_cpp_redistributable_required") is not False

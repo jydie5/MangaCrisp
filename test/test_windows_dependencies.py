@@ -102,6 +102,28 @@ def test_zig_engine_runtime_imports_accept_system_apis() -> None:
     )
 
 
+def test_lld_metadata_normalization_is_deterministic() -> None:
+    data = bytearray(96)
+    data[12:16] = bytes.fromhex("01020304")
+    data[28:32] = bytes.fromhex("05060708")
+    data[44:48] = bytes.fromhex("090a0b0c")
+    data[60:80] = b"RSDS" + b"random!!" + b"LLD PDB."
+
+    BUILD_REALCUGAN.apply_lld_metadata_normalization(
+        data,
+        file_timestamp_offset=12,
+        debug_timestamp_offsets=[28, 44],
+        codeview_offset=60,
+    )
+
+    timestamp = BUILD_REALCUGAN.CANONICAL_PE_TIMESTAMP.to_bytes(4, "little")
+    assert data[12:16] == timestamp
+    assert data[28:32] == timestamp
+    assert data[44:48] == timestamp
+    assert data[64:72] == BUILD_REALCUGAN.CANONICAL_LLD_PDB_HASH
+    assert data[72:80] == b"LLD PDB."
+
+
 def test_vulkan_download_uses_cdn_compatible_headers(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

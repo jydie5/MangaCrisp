@@ -64,6 +64,13 @@ license, executable, import, tool version, and source hash. Notices for
 Real-CUGAN, ncnn, glslang, libwebp, Zig, MinGW-w64, libc++, libc++abi, and
 libunwind are bundled.
 
+LLD derives the PE timestamp and CodeView build ID from a per-build hash even
+when all runtime sections are byte-identical. The build normalizes only those
+non-runtime metadata fields to the values in the NVIDIA-tested executable.
+The resulting complete executable SHA-256 remains the release-evidence key;
+changes to code, read-only data, imports, or any other section still invalidate
+the evidence.
+
 The resulting executable imports only Windows system API/UCRT API-set DLLs and
 the Vulkan loader supplied by the graphics driver. It does not import or bundle
 `vcomp140.dll`, `vcruntime`, `msvcp`, `libgcc`, `libstdc++`, or
