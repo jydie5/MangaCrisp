@@ -48,6 +48,9 @@ and automatic updates are later work.
 - A PyInstaller one-folder development baseline builds, passes the distribution
   audit, packages as a portable ZIP, and starts after extraction from a separate
   directory.
+- The extracted ZIP passes the sanitized-environment smoke test with Python,
+  uv, and virtual-environment paths removed. A separate clean-account test is
+  still required.
 - PyInstaller remains the selected first-release packager after a measured
   pyside6-deploy/Nuitka comparison. See
   `docs/development/windows-packaging-comparison.md`.
