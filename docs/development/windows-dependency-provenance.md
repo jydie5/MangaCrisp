@@ -65,6 +65,19 @@ The ignored JSON report records GPU name/driver, input and engine hashes,
 settings, dimensions, runtime, output size, and stdout without personal paths.
 Intel and AMD reports are still required.
 
+The alternate system-runtime route was also validated:
+
+```powershell
+uv run python scripts/validate_realcugan_windows.py --system-vcomp-only
+```
+
+This mode copies the engine to a temporary directory, removes its local
+`vcomp140.dll`, and passed in 2.09-2.13 seconds using the supported x64 VC++
+runtime already installed under Windows System32. This proves the technical
+route can omit Microsoft's DLL from MangaCrisp. It does not prove that the
+runtime exists on a clean machine, remove the need for an install/preflight
+decision, or grant redistribution rights.
+
 Microsoft documents Visual C++ runtime redistribution as subject to Visual
 Studio license eligibility and recommends the supported Visual C++
 Redistributable. The upstream MIT license does not itself establish permission

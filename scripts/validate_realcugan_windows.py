@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 import zipfile
 from pathlib import Path
@@ -44,6 +45,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--demo", type=Path, default=DEFAULT_DEMO)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     parser.add_argument("--gpu-label", default="")
+    parser.add_argument(
+        "--system-vcomp-only",
+        action="store_true",
+        help=(
+            "remove the package-local vcomp140.dll in a temporary engine copy "
+            "and require the official system VC++ runtime"
+        ),
+    )
     return parser.parse_args()
 
 
@@ -101,13 +110,30 @@ def main() -> None:
         )
     if not demo.is_file():
         raise SystemExit(f"demo archive was not found: {demo}")
+    system_root = Path(os.environ.get("SystemRoot", r"C:\Windows"))
+    system_vcomp = system_root / "System32" / "vcomp140.dll"
+    if args.system_vcomp_only and not system_vcomp.is_file():
+        raise SystemExit(
+            "system vcomp140.dll was not found; install the supported "
+            "Microsoft Visual C++ x64 Redistributable"
+        )
 
     with TemporaryDirectory(prefix="mangacrisp-realcugan-validation-") as temporary:
         temporary_path = Path(temporary)
+        engine_to_run = engine
+        if args.system_vcomp_only:
+            engine_copy = temporary_path / "engine"
+            shutil.copytree(engine.parent, engine_copy)
+            (engine_copy / "vcomp140.dll").unlink(missing_ok=True)
+            engine_to_run = engine_copy / engine.name
+        validation_vcomp_present = (
+            engine_to_run.parent / "vcomp140.dll"
+        ).is_file()
+
         member_name, input_path = first_demo_image(demo, temporary_path)
         output_path = temporary_path / "output.png"
         previous_engine = os.environ.get("MANGACRISP_REALCUGAN_PATH")
-        os.environ["MANGACRISP_REALCUGAN_PATH"] = str(engine)
+        os.environ["MANGACRISP_REALCUGAN_PATH"] = str(engine_to_run)
         try:
             result = run_realcugan(
                 input_path,
@@ -153,6 +179,15 @@ def main() -> None:
             "noise": 0,
             "tile": 0,
             "tta": False,
+        },
+        "runtime_dependency": {
+            "mode": "system" if args.system_vcomp_only else "package-local",
+            "source_package_vcomp_present": (engine.parent / "vcomp140.dll").is_file(),
+            "validation_copy_vcomp_present": validation_vcomp_present,
+            "system_vcomp_present": system_vcomp.is_file(),
+            "system_vcomp_sha256": (
+                sha256_file(system_vcomp) if system_vcomp.is_file() else None
+            ),
         },
         "result": {
             "returncode": result.returncode,
