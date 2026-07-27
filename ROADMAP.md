@@ -72,6 +72,26 @@ M4 Pro実測（15〜19MBの補正版PNG、1600×1000ウィンドウ）:
 - バックグラウンドでの補正版見開き完成: 181.64ms
 - 補正版予熱済みのページ送り: 0.57ms
 
+## P1: Windowsポータブル版
+
+状態: 要件定義済み、実装前
+
+Mac版で完成した本棚、見開き、次巻移動、原画比較、画質モード、
+適応先読みを共通コードとして維持し、Windows 10/11 x64へ移植します。
+
+- PySide6と現在の共通コードを継続利用
+- Python、uv、CUDA不要のポータブルZIP
+- Real-CUGAN ncnn Vulkan Windows版とモデルを同梱
+- Intel、AMD、NVIDIAのVulkan対応GPUを対象
+- AI補正が利用できない場合も原画で即時閲覧
+- PyInstaller one-folderと`pyside6-deploy` standaloneを実測比較
+- Windows固有の保存先、D&D、フォルダ表示、プロセス起動を分離
+- Windows ARM64、インストーラ、CUDA専用高速化は初版後に評価
+
+開発の引き継ぎと競合防止ルールは
+`docs/development/windows-handover.md`および
+`docs/development/cross-platform-workflow.md`で管理します。
+
 ## 完了済み
 
 - 本棚への複数アーカイブ登録、表紙表示、削除
