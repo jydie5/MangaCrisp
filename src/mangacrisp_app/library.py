@@ -540,14 +540,14 @@ class LibraryStorageMigrator:
 
 
 def rewrite_path_prefix(path_text: str, old_root: Path, new_root: Path) -> str:
-    old = str(old_root.expanduser())
-    new = str(new_root.expanduser())
-    if path_text == old:
-        return new
-    prefix = old + "/"
-    if path_text.startswith(prefix):
-        return new + "/" + path_text[len(prefix):]
-    return path_text
+    path = Path(path_text).expanduser()
+    old = old_root.expanduser()
+    new = new_root.expanduser()
+    try:
+        relative = path.relative_to(old)
+    except ValueError:
+        return path_text
+    return str(new / relative)
 
 
 def paths_equal(left: Path, right: Path) -> bool:

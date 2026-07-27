@@ -74,7 +74,20 @@ M4 Pro実測（15〜19MBの補正版PNG、1600×1000ウィンドウ）:
 
 ## P1: Windowsポータブル版
 
-状態: 要件定義済み、実装前
+状態: Development Preview公開中（正式版の外部実機証跡は未完了）
+
+Windows 11 x64で、共通コードのプラットフォーム分離、7-Zipを使ったRAR/CBR対応、
+PyInstaller one-folder、配布監査、展開後スモーク起動、`pyside6-deploy`との
+実測比較まで完了し、初版はPyInstallerを採用します。
+Real-CUGANは固定ソースをZigでビルドし、Microsoft VC/OpenMPおよびMinGWのランタイムDLLを
+同梱しない経路へ切り替えました。実行ファイル、PE import、モデル、ライセンス、来歴を
+配布監査で検証します。NVIDIA RTX 2070 SUPERで固定demoの自動検証は通過済みです。
+正式リリース前に、同一エンジンSHA-256でIntel/AMD実機と開発ツールのない別Windows
+アカウントの検証を完了させます。検証JSONはGPUベンダー、実行GPU、固定demo、出力寸法、
+エンジンSHA-256、証跡SHA-256を自動監査してからリリースゲートへ登録します。
+それまでの間は、NVIDIA証跡と同じエンジンをGitHub Actionsで再現できた場合に限り、
+Intel／AMD／別アカウント未検証を明記したDevelopment Previewとして配布します。
+
 
 Mac版で完成した本棚、見開き、次巻移動、原画比較、画質モード、
 適応先読みを共通コードとして維持し、Windows 10/11 x64へ移植します。
@@ -84,7 +97,7 @@ Mac版で完成した本棚、見開き、次巻移動、原画比較、画質�
 - Real-CUGAN ncnn Vulkan Windows版とモデルを同梱
 - Intel、AMD、NVIDIAのVulkan対応GPUを対象
 - AI補正が利用できない場合も原画で即時閲覧
-- PyInstaller one-folderと`pyside6-deploy` standaloneを実測比較
+- PyInstaller one-folderと`pyside6-deploy` standaloneを実測比較済み
 - Windows固有の保存先、D&D、フォルダ表示、プロセス起動を分離
 - Windows ARM64、インストーラ、CUDA専用高速化は初版後に評価
 

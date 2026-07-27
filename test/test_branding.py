@@ -22,6 +22,7 @@ from mangacrisp_app.library import (
     archive_group_source_uri,
     managed_book_dir_for_book,
     migrate_legacy_application_state,
+    rewrite_path_prefix,
 )
 
 
@@ -185,3 +186,17 @@ def test_default_library_root_migration_rewrites_managed_paths(tmp_path: Path) -
     settings = json.loads(settings_path.read_text(encoding="utf-8"))
     assert settings["library_dir"] == str(current_library)
     assert settings["library_dir_confirmed"] is True
+
+
+def test_rewrite_path_prefix_respects_path_component_boundaries(tmp_path: Path) -> None:
+    legacy_library = tmp_path / "RAIV Library"
+    current_library = tmp_path / "MangaCrisp Library"
+    managed_path = legacy_library / "Volume 1" / "pages"
+    unrelated_path = tmp_path / "RAIV Library Backup" / "Volume 1" / "pages"
+
+    assert rewrite_path_prefix(str(managed_path), legacy_library, current_library) == str(
+        current_library / "Volume 1" / "pages"
+    )
+    assert rewrite_path_prefix(str(unrelated_path), legacy_library, current_library) == str(
+        unrelated_path
+    )

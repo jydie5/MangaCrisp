@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import re
 import shutil
 import subprocess
@@ -8,8 +9,29 @@ import zipfile
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 
+from mangacrisp_app.platform import (
+    bundled_archive_tool_candidates,
+    subprocess_window_kwargs,
+)
+
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".tif", ".tiff", ".avif"}
 ARCHIVE_EXTENSIONS = {".zip", ".cbz", ".rar", ".cbr", ".7z", ".cb7"}
+
+
+def external_archive_tool(*command_names: str) -> str | None:
+    configured = os.environ.get("MANGACRISP_ARCHIVE_TOOL_PATH")
+    if configured:
+        configured_path = Path(configured).expanduser()
+        if configured_path.is_file():
+            return str(configured_path)
+    for candidate in bundled_archive_tool_candidates():
+        if candidate.is_file():
+            return str(candidate)
+    for command_name in command_names:
+        resolved = shutil.which(command_name)
+        if resolved:
+            return resolved
+    return None
 
 
 @dataclass(frozen=True)
@@ -148,6 +170,7 @@ def list_external_archive_image_members(
             check=False,
             capture_output=True,
             text=True,
+            **subprocess_window_kwargs(),
         )
         if result.returncode == 0:
             return sorted(
@@ -158,12 +181,14 @@ def list_external_archive_image_members(
                 ],
                 key=lambda member: natural_sort_key(member.name),
             )
-    if shutil.which("7zz"):
+    seven_zip = external_archive_tool("7zz", "7z")
+    if seven_zip:
         result = subprocess.run(
-            ["7zz", "l", "-slt", str(archive_path)],
+            [seven_zip, "l", "-slt", str(archive_path)],
             check=False,
             capture_output=True,
             text=True,
+            **subprocess_window_kwargs(),
         )
         if result.returncode == 0:
             names = [
@@ -299,7 +324,13 @@ def extract_external_archive_images(
         if primary_error is not None:
             raise RuntimeError(message) from primary_error
         raise RuntimeError(message)
-    result = subprocess.run(command, check=False, capture_output=True, text=True)
+    result = subprocess.run(
+        command,
+        check=False,
+        capture_output=True,
+        text=True,
+        **subprocess_window_kwargs(),
+    )
     if result.returncode != 0:
         message = result.stderr.strip() or result.stdout.strip() or f"external archive extractor failed: {command[0]}"
         if primary_error is not None:
@@ -316,12 +347,14 @@ def extract_external_archive_images(
 
 
 def external_archive_extract_command(archive_path: Path, output_dir: Path) -> list[str] | None:
-    if shutil.which("bsdtar"):
-        return ["bsdtar", "-xf", str(archive_path), "-C", str(output_dir)]
+    seven_zip = external_archive_tool("7zz", "7z")
+    if seven_zip:
+        return [seven_zip, "x", "-y", f"-o{output_dir}", str(archive_path)]
     if shutil.which("unar"):
         return ["unar", "-quiet", "-force-overwrite", "-output-directory", str(output_dir), str(archive_path)]
-    if shutil.which("7zz"):
-        return ["7zz", "x", "-y", f"-o{output_dir}", str(archive_path)]
+    bsdtar = shutil.which("bsdtar")
+    if bsdtar:
+        return [bsdtar, "-xf", str(archive_path), "-C", str(output_dir)]
     return None
 
 

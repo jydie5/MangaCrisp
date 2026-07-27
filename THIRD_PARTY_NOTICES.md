@@ -1,6 +1,22 @@
 # Third-Party Notices
 
-MangaCrispのstandalone版は、以下の公式macOSパッケージを同梱します。
+MangaCrispのstandalone版が同梱する第三者コンポーネントと、
+プラットフォームごとの由来を以下に記録します。
+
+## 7-Zip（Windows版）
+
+Windows one-folder版は、RAR/CBRの展開用に公式7-Zip x64版の
+`7z.exe`と`7z.dll`を改変せず同梱します。
+
+- Project: [7-Zip](https://www.7-zip.org/)
+- Version: 26.02 x64
+- License: GNU LGPL 2.1 or later、BSD 3-Clauseの構成要素、unRAR restriction
+- Source: [7-Zip source](https://www.7-zip.org/download.html)
+
+配布物の`licenses/`には7-Zipの`License.txt`、`readme.txt`、
+取得元とSHA-256を記録した`7zip-provenance.json`を収録します。
+7-Zipに含まれるunRARコードはRARアーカイブの展開だけに使用し、
+RAR互換アーカイバの作成には使用しません。
 
 ## Real-CUGAN ncnn Vulkan
 
@@ -13,6 +29,17 @@ MangaCrispのstandalone版は、以下の公式macOSパッケージを同梱し�
 - Copyright: Copyright (c) 2019 nihui
 
 実行ファイルとモデルは公式リリースZIPから取得し、内容を改変せずアプリへ収録します。ビルドスクリプトはダウンロードしたZIPと実行ファイルのSHA256を照合します。
+
+### Windows x64ビルド
+
+Windows版は`20220728`タグの固定ソースとsubmoduleをZig 0.16.0で
+`x86_64-windows-gnu`向けにビルドします。公式WindowsリリースZIPは
+検証済みモデルの取得と動作参照にだけ使い、同梱の実行ファイルおよび
+`vcomp140.dll`は配布しません。
+
+Windows配布物の`realcugan-provenance.json`には、ソースcommit、submodule、
+ツール、取得物、実行ファイル、PE import、モデル、ライセンスのSHA-256を
+記録します。Vulkan SDKはビルド時だけ使用し、配布しません。
 
 ## Real-CUGAN models
 
@@ -32,6 +59,13 @@ MangaCrispのstandalone版は、以下の公式macOSパッケージを同梱し�
 - [LLVM OpenMP 11.0.0](https://github.com/llvm/llvm-project/tree/llvmorg-11.0.0/openmp): Apache License 2.0 with LLVM Exceptions
 
 ライセンス全文は`MangaCrisp.app/Contents/Resources/licenses/`へ収録されます。PyInstallerのmacOSバンドル構造によっては、同じ場所へのシンボリックリンクが`Contents/Frameworks`側にも作られます。
+
+Windows ZigビルドはReal-CUGAN、ncnn、glslang、libwebpに加え、Zig、
+MinGW-w64、libc++、libc++abi、libunwindのライセンス通知を収録します。
+これらは`MangaCrisp/licenses/`と
+`MangaCrisp/_internal/engines/realcugan-ncnn-vulkan/licenses/`に配置されます。
+Windows実行ファイルはMicrosoft VC/OpenMPおよびMinGWのランタイムDLLを
+importまたは同梱しません。
 
 ## Python runtime and libraries
 

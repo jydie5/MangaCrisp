@@ -1,0 +1,207 @@
+name: Windows portable preview
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/windows-preview.yml"
+      - "src/**"
+      - "scripts/*windows*.py"
+      - "scripts/validate_windows_clean_account.ps1"
+      - "packaging/windows/**"
+      - "test/test_windows*.py"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "INSTALL.windows*.md"
+      - "THIRD_PARTY_NOTICES.md"
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the verified ZIP as a GitHub prerelease
+        required: true
+        type: boolean
+        default: false
+      tag:
+        description: New prerelease tag
+        required: true
+        type: string
+        default: windows-preview-0.5.0b0.1
+
+concurrency:
+  group: windows-preview-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and audit Windows preview
+    runs-on: windows-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    env:
+      PYTHONUTF8: "1"
+      UV_FROZEN: "1"
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        run: python -m pip install --disable-pip-version-check uv==0.11.15
+
+      - name: Restore verified vendor downloads
+        id: vendor-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: build/vendor
+          key: windows-vendor-v1-${{ hashFiles('scripts/build_realcugan_windows.py', 'scripts/fetch_realcugan_windows.py', 'scripts/fetch_vulkan_sdk_windows.py') }}
+          restore-keys: |
+            windows-vendor-v1-
+
+      - name: Install project dependencies
+        run: uv sync --extra dev --extra app
+
+      - name: Run Windows source checks
+        shell: pwsh
+        run: |
+          $files = @(
+            "scripts/audit_windows_distribution.py",
+            "scripts/build_realcugan_windows.py",
+            "scripts/build_windows_app.py",
+            "scripts/fetch_vulkan_sdk_windows.py",
+            "scripts/package_windows_portable.py",
+            "scripts/record_windows_release_validation.py",
+            "scripts/test_windows_portable_sanitized_environment.py",
+            "scripts/validate_realcugan_windows.py",
+            "scripts/windows_release_validation.py",
+            "test/test_windows_dependencies.py",
+            "test/test_windows_distribution_audit.py",
+            "test/test_windows_portable_packaging.py",
+            "test/test_windows_release_validation.py"
+          )
+          uv run ruff check $files
+          uv run ruff format --check $files
+          uv run python -m compileall -q src scripts test
+          uv run pytest -q
+
+      - name: Fetch pinned Vulkan SDK
+        run: uv run python scripts/fetch_vulkan_sdk_windows.py --accept-licenses
+
+      - name: Build pinned Real-CUGAN engine
+        run: uv run python scripts/build_realcugan_windows.py --clean
+
+      - name: Build portable application
+        run: uv run python scripts/build_windows_app.py
+
+      - name: Package audited development preview
+        run: >-
+          uv run python scripts/package_windows_portable.py
+          --skip-build
+          --development-preview
+
+      - name: Test extracted preview without development tools
+        id: preview
+        shell: pwsh
+        run: |
+          $archive = Get-ChildItem `
+            -Path "dist/MangaCrisp-*-windows-x64-portable-preview.zip" |
+            Select-Object -First 1
+          if ($null -eq $archive) {
+            throw "Windows preview ZIP was not created"
+          }
+          uv run python scripts/test_windows_portable_sanitized_environment.py `
+            --archive $archive.FullName
+          "archive=$($archive.FullName)" >> $env:GITHUB_OUTPUT
+
+      - name: Upload verified workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MangaCrisp-windows-x64-preview-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            dist/MangaCrisp-*-windows-x64-portable-preview.zip
+            dist/MangaCrisp-*-windows-x64-portable-preview.zip.sha256
+            dist/windows-distribution-audit.json
+            dist/windows-portable-manifest.json
+
+      - name: Publish GitHub prerelease
+        if: github.event_name == 'workflow_dispatch' && inputs.publish
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:RELEASE_TAG)) {
+            throw "A non-empty prerelease tag is required"
+          }
+          gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            throw "Release tag already exists: $env:RELEASE_TAG"
+          }
+
+          $archive = Get-Item "${{ steps.preview.outputs.archive }}"
+          $checksum = Get-Item ($archive.FullName + ".sha256")
+          $notesPath = Join-Path $env:RUNNER_TEMP "windows-preview-notes.md"
+          @'
+          ## Windows Development Preview
+
+          This unsigned preview was built and audited automatically from
+          `main`. It does not require Python, uv, CUDA, or an installer.
+
+          Verified:
+
+          - Windows x64 PyInstaller one-folder build
+          - pinned 7-Zip RAR/CBR backend
+          - pinned Zig-built Real-CUGAN engine matching the NVIDIA evidence
+          - full Python test suite
+          - distribution audit and sanitized-environment extracted ZIP smoke test
+
+          Known preview limitations:
+
+          - Intel and AMD Vulkan enhancement still need engine-matched evidence
+          - a separate clean Windows account test is still pending
+          - the application is unsigned and may show a Windows security warning
+          - original-image reading remains available if enhancement is unavailable
+
+          The ZIP checksum, audit report, and portable manifest are attached.
+          '@ | Set-Content -LiteralPath $notesPath -Encoding utf8
+
+          gh release create $env:RELEASE_TAG `
+            $archive.FullName `
+            $checksum.FullName `
+            "dist/windows-distribution-audit.json" `
+            "dist/windows-portable-manifest.json" `
+            --repo $env:GITHUB_REPOSITORY `
+            --target $env:GITHUB_SHA `
+            --title "MangaCrisp Windows Development Preview" `
+            --notes-file $notesPath `
+            --prerelease
+
+      - name: Upload failed-build diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: MangaCrisp-windows-preview-diagnostics-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 7
+          path: |
+            build/vendor/realcugan-ncnn-vulkan-20220728-windows-zig/realcugan-ncnn-vulkan.exe
+            build/vendor/realcugan-ncnn-vulkan-20220728-windows-zig/realcugan-provenance.json
+            dist/windows-distribution-audit.json
+
+      - name: Save verified vendor cache
+        if: always() && steps.vendor-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: build/vendor
+          key: ${{ steps.vendor-cache.outputs.cache-primary-key }}

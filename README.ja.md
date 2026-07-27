@@ -13,7 +13,7 @@
 スクリーンショットと`demo`の画像はDavid Revoy氏の*Pepper&Carrot*を
 [CC BY 4.0](demo/ATTRIBUTION.md)に基づいて使用しています。商業漫画の画像は含みません。
 
-MangaCrispは、Apple Silicon Mac向けの無料・オープンソース漫画／コミックビューアです。CBZ、CBR、ZIP、RAR、7z、画像フォルダを読み込み、本棚、右綴じ見開き表示、Real-CUGANによるAI補正を利用できます。
+MangaCrispは、macOS／Windows向けの無料・オープンソース漫画／コミックビューアです。CBZ、CBR、ZIP、RAR、7z、画像フォルダを読み込み、本棚、右綴じ見開き表示、Real-CUGANによるAI補正を利用できます。
 
 旧称RAIV for macとして[nalltama/RAIV](https://github.com/nalltama/RAIV)に着想を得て独立実装しました。現在はMangaCrispとして独自の製品方針で開発しており、本家RAIVの公式リリースではありません。
 
@@ -34,6 +34,16 @@ MangaCrispは、Apple Silicon Mac向けの無料・オープンソース漫画�
 
 > 現在のβ版は署名・Apple notarization未実施です。初回の通常ダブルクリックはmacOSに止められることがあります。
 
+### Windows開発プレビュー
+
+**[Windows 10/11 x64 Development Previewをダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.5.0b0.1/MangaCrisp-0.5.0b0-windows-x64-portable-preview.zip)**
+
+未署名のポータブルZIPで、Python、uv、CUDA、インストーラーは不要です。
+監査済みのZig版Real-CUGANを同梱し、NVIDIA GPUで操作と補正を確認しています。
+Intel／AMD GPUの補正証跡と、別のクリーンなWindowsアカウントでの検証は
+正式Windows版までの残項目です。補正できない場合も原画で閲覧できます。
+導入方法と制限は[INSTALL.windows.ja.md](INSTALL.windows.ja.md)を参照してください。
+
 ## 最初の一冊を読む
 
 1. MangaCrispを起動すると本棚が開きます。
@@ -46,7 +56,10 @@ MangaCrispは、Apple Silicon Mac向けの無料・オープンソース漫画�
 
 ## AI補正と原画比較
 
-standalone版には、公式の`realcugan-ncnn-vulkan 20220728 macOS`実行ファイルとモデルを同梱しています。追加セットアップは不要です。
+正式macOS standalone版には、公式の`realcugan-ncnn-vulkan 20220728 macOS`
+実行ファイルとモデルを同梱しています。Windows Development Previewには、
+固定・監査済みのZig版Windowsエンジンと同じモデルを同梱しています。
+どちらも追加セットアップは不要です。
 
 - 読書中は現在の見開きと前後のページをバックグラウンドで自動補正します。
 - 読む速さに応じて前方12〜24ページ、後方4ページを循環保持します。
@@ -55,7 +68,8 @@ standalone版には、公式の`realcugan-ncnn-vulkan 20220728 macOS`実行フ�
 - `状態: 補正済み`になる前は、切り替えても同じ原画が表示される場合があります。
 - 縦2234px以上の画像は標準設定では補正を省略します。
 
-補正処理はApple Silicon GPUをVulkan/Metal経由で使用します。補正を待っている間も原画で読み進められます。
+macOS版の補正処理はApple Silicon GPUをVulkan/Metal経由で使用します。
+Windows版はVulkan対応GPUを使用します。補正を待っている間も原画で読み進められます。
 
 ## 画質モード
 
@@ -85,13 +99,13 @@ standalone版には、公式の`realcugan-ncnn-vulkan 20220728 macOS`実行フ�
 - かんたん／マニュアル画質設定とカスタム設定保存
 - 原画と補正版の即時切り替え
 - 本棚からの削除と保存先表示
-- macOS言語に追従する英語／日本語UI
+- OS言語に追従する英語／日本語UI
 
 開発中の機能、既知の改善項目、実装順は[ROADMAP.md](ROADMAP.md)で確認できます。
 
 ## 表示言語
 
-初期状態ではmacOSの優先言語に従います。本棚右上の`言語`から`システム設定`、
+初期状態ではmacOS／Windowsの優先言語に従います。本棚右上の`言語`から`システム設定`、
 `英語`、`日本語`を選択できます。変更後にMangaCrispを再起動すると、本棚、ビューワ、
 確認画面、ヘルプ、状態表示が同じ言語へ切り替わります。
 
@@ -117,6 +131,8 @@ standalone版には、公式の`realcugan-ncnn-vulkan 20220728 macOS`実行フ�
 - AI補正キャッシュ: `~/Library/Caches/MangaCrisp`
 - 本棚データベース: `~/Library/Application Support/MangaCrisp`
 
+Windowsの保存場所は[INSTALL.windows.ja.md](INSTALL.windows.ja.md)に記載しています。
+
 元のZIP/RARは取り込み後も元の場所に残ります。本棚から削除するとMangaCrispが作った展開済みコピーと読書状態を削除します。
 
 旧RAIV for macを利用していた場合、初回起動時に設定、データベース、AIキャッシュと
@@ -134,8 +150,10 @@ standalone版には、公式の`realcugan-ncnn-vulkan 20220728 macOS`実行フ�
 
 ## 現在の制限
 
-- Apple Silicon Mac専用です。
-- 署名・Apple notarization未実施です。
+- 正式macOS版はApple Silicon専用で、Intel Macには対応していません。
+- Windows x64版はDevelopment Previewで、Intel／AMD／別アカウントの
+  リリース証跡が未完了です。
+- 両OS版とも未署名で、macOS版はApple notarizationも未実施です。
 - β版のためUIと設定の互換性が変わる可能性があります。
 - RAR形式によってはmacOS側の展開機能との相性で開けない場合があります。
 - 自動アップデートは未実装です。新しいZIPをReleasesから取得してください。

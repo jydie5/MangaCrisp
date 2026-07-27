@@ -1,0 +1,92 @@
+{
+  "schema_version": 2,
+  "validated_on": "2026-07-27",
+  "gpu_label": "NVIDIA GeForce RTX 2070 SUPER",
+  "gpu_inventory": [
+    {
+      "Name": "NVIDIA GeForce RTX 2070 SUPER",
+      "DriverVersion": "32.0.16.2002"
+    }
+  ],
+  "engine": {
+    "release": "20220728",
+    "filename": "realcugan-ncnn-vulkan.exe",
+    "sha256": "58de999f0558c73573f7e6bfa68e947762be81cc248fc1e205096645d3cbe906",
+    "imports": [
+      "api-ms-win-crt-convert-l1-1-0.dll",
+      "api-ms-win-crt-environment-l1-1-0.dll",
+      "api-ms-win-crt-heap-l1-1-0.dll",
+      "api-ms-win-crt-locale-l1-1-0.dll",
+      "api-ms-win-crt-math-l1-1-0.dll",
+      "api-ms-win-crt-multibyte-l1-1-0.dll",
+      "api-ms-win-crt-private-l1-1-0.dll",
+      "api-ms-win-crt-runtime-l1-1-0.dll",
+      "api-ms-win-crt-stdio-l1-1-0.dll",
+      "api-ms-win-crt-string-l1-1-0.dll",
+      "api-ms-win-crt-time-l1-1-0.dll",
+      "api-ms-win-crt-utility-l1-1-0.dll",
+      "kernel32.dll",
+      "ole32.dll",
+      "oleaut32.dll",
+      "vulkan-1.dll"
+    ],
+    "provenance_hash": "58de999f0558c73573f7e6bfa68e947762be81cc248fc1e205096645d3cbe906",
+    "provenance_hash_verified": true
+  },
+  "input": {
+    "archive": "Pepper-and-Carrot v01 The-Potion-of-Flight.zip",
+    "archive_sha256": "eae7b064a393cdfda43325f97c4790b92d72c339003de4467f62985c8e9fce07",
+    "member": "01.jpg",
+    "dimensions": [
+      1200,
+      1660
+    ]
+  },
+  "settings": {
+    "model": "models-se",
+    "scale": 2,
+    "noise": 0,
+    "tile": 0,
+    "tta": false
+  },
+  "runtime_dependency": {
+    "mode": "windows-system-api-and-vulkan-loader",
+    "imports": [
+      "api-ms-win-crt-convert-l1-1-0.dll",
+      "api-ms-win-crt-environment-l1-1-0.dll",
+      "api-ms-win-crt-heap-l1-1-0.dll",
+      "api-ms-win-crt-locale-l1-1-0.dll",
+      "api-ms-win-crt-math-l1-1-0.dll",
+      "api-ms-win-crt-multibyte-l1-1-0.dll",
+      "api-ms-win-crt-private-l1-1-0.dll",
+      "api-ms-win-crt-runtime-l1-1-0.dll",
+      "api-ms-win-crt-stdio-l1-1-0.dll",
+      "api-ms-win-crt-string-l1-1-0.dll",
+      "api-ms-win-crt-time-l1-1-0.dll",
+      "api-ms-win-crt-utility-l1-1-0.dll",
+      "kernel32.dll",
+      "ole32.dll",
+      "oleaut32.dll",
+      "vulkan-1.dll"
+    ],
+    "vcomp_imported": false,
+    "source_package_vcomp_present": false,
+    "validation_copy_vcomp_present": false,
+    "system_vcomp_present": true,
+    "system_vcomp_sha256": "55aba23cdcd6484fbb06f4155b8ca75adfce7a881f10afd0c49457165e677164"
+  },
+  "result": {
+    "returncode": 0,
+    "elapsed_sec": 2.216,
+    "output_exists": true,
+    "output_bytes": 7180558,
+    "output_dimensions": [
+      2400,
+      3320
+    ],
+    "gpu_device": "NVIDIA GeForce RTX 2070 SUPER",
+    "stdout": "[0 NVIDIA GeForce RTX 2070 SUPER]  queueC=2[8]  queueG=0[16]  queueT=1[2]\n[0 NVIDIA GeForce RTX 2070 SUPER]  bugsbn1=0  bugbilz=0  bugcopc=0  bugihfa=0\n[0 NVIDIA GeForce RTX 2070 SUPER]  fp16-p/s/a=1/1/1  int8-p/s/a=1/1/1\n[0 NVIDIA GeForce RTX 2070 SUPER]  subgroup=32  basic=1  vote=1  ballot=1  shuffle=1"
+  },
+  "passed": true,
+  "redistribution_approved": true
+}

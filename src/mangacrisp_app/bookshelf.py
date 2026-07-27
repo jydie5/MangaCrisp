@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import re
-import subprocess
 import threading
 from pathlib import Path
 
@@ -22,6 +21,7 @@ from mangacrisp_app.library import (
     save_library_settings,
     utc_now_iso,
 )
+from mangacrisp_app.platform import open_directory
 from mangacrisp_app.page_provider import open_pages_for_viewer
 from mangacrisp_app.viewer import (
     DEFAULT_FORWARD_PREFETCH_COUNT,
@@ -194,7 +194,7 @@ def bookshelf_shortcuts_text() -> str:
             "読む: 選択中の本を開く",
             "Delete: 選択中の本を本棚から削除。元ZIP/RARは残す",
             "本棚から削除: 確認後、MangaCrisp管理フォルダを削除。元ZIP/RARは残す",
-            "保存先を開く: FinderでMangaCrisp Libraryを表示",
+            "保存先を開く: ファイル管理画面でMangaCrisp Libraryを表示",
             "H / ?: このヘルプを表示",
         ]
     )
@@ -351,7 +351,7 @@ class BookshelfWindow(QMainWindow):
         message.setText(tr("MangaCrispの本棚保存先を確認してください。"))
         message.setInformativeText(
             tr(
-                "展開済み漫画は容量が大きくなるため、Finderで見つけやすい場所に保存します。\n\n現在の保存先:\n{path}",
+                "展開済み漫画は容量が大きくなるため、ファイル管理画面で見つけやすい場所に保存します。\n\n現在の保存先:\n{path}",
                 path=self.library.paths.library_dir,
             )
         )
@@ -599,7 +599,7 @@ class BookshelfWindow(QMainWindow):
     def open_library_folder(self) -> None:
         self.library.paths.library_dir.mkdir(parents=True, exist_ok=True)
         try:
-            subprocess.Popen(["open", str(self.library.paths.library_dir)])
+            open_directory(self.library.paths.library_dir)
         except Exception as exc:
             self.status_label.setText(tr("保存先を開けません: {error}", error=exc))
 

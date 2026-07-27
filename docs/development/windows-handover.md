@@ -38,16 +38,51 @@ Do not redesign these workflows during the first Windows port.
 Windows on ARM, a native installer, file associations, CUDA-specific builds,
 and automatic updates are later work.
 
+## Current Windows checkpoint (2026-07-27)
+
+- Phase 1 source compatibility is implemented on Windows 11 x64; all 46 shared
+  and platform tests pass.
+- ZIP/CBZ and 7z/CB7 demo flows pass. The pinned 7-Zip 26.02 x64 backend is
+  bundled for RAR/CBR and a RAR5 solid archive was extracted through the app's
+  fallback path.
+- A PyInstaller one-folder development baseline bundles the audited Zig-built
+  Real-CUGAN engine, passes the distribution audit, packages as a portable ZIP,
+  and starts after extraction from a separate directory.
+- The extracted ZIP passes the sanitized-environment smoke test with Python,
+  uv, and virtual-environment paths removed. A separate clean-account test is
+  still required.
+- PyInstaller remains the selected first-release packager after a measured
+  pyside6-deploy/Nuitka comparison. See
+  `docs/development/windows-packaging-comparison.md`.
+- Original-image reading remains available without the AI engine.
+- The fixed-recipe Real-CUGAN validation passes on the NVIDIA GeForce RTX 2070
+  SUPER (2.216 seconds for the latest fixed demo run). The pinned Zig build
+  imports no Microsoft VC/OpenMP or MinGW runtime DLL and bundles its complete
+  notices and provenance. The path-sanitized source report is committed and
+  revalidated by the distribution audit.
+- The current development account passed interactive launch, bookshelf import,
+  reader rendering, and original/enhanced comparison on 2026-07-27. This does
+  not replace the separate clean-account gate.
+- `.github/workflows/windows-preview.yml` rebuilds and audits the exact Windows
+  package on GitHub Actions. It can publish a clearly marked prerelease only
+  when the engine matches the committed NVIDIA evidence and no blockers other
+  than Intel, AMD, and separate clean-account validation remain.
+
+Remaining release work is Intel/AMD coverage and a clean-account test without
+development tools. Reports are registered with their evidence SHA-256 and must
+match the bundled engine. See
+`docs/development/windows-release-validation.md`.
+
 ## Technology decision
 
 Continue with PySide6 and the existing Python code for the first Windows
 release. Do not port the UI to C#, C++, Rust, or a web runtime before measuring
 an actual blocker.
 
-Compare these packaging candidates on Windows:
+The packaging comparison is complete:
 
-1. PyInstaller one-folder for the quickest compatible baseline.
-2. `pyside6-deploy` standalone for startup time and package-size optimization.
+1. PyInstaller one-folder is selected for the first release.
+2. `pyside6-deploy` standalone is deferred as a later optimization experiment.
 
 Do not use one-file packaging for the first release. Qt and the AI models are
 better kept as visible application files, and one-file extraction can delay
@@ -86,11 +121,12 @@ screenshots, and automated checks.
 
 ### Phase 3: AI engine
 
-- Download a pinned official Windows Real-CUGAN ncnn Vulkan release.
-- Record source URL, release identifier, SHA-256, and all licenses.
+- Build the pinned Real-CUGAN source with the pinned Zig toolchain and copy-only
+  Vulkan SDK; use the official package only for verified model files.
+- Record source/submodule commits, tool and archive SHA-256 values, PE imports,
+  model hashes, and all licenses in generated provenance.
 - Detect engine availability without blocking bookshelf or reader startup.
-- Verify Intel integrated graphics, AMD, and NVIDIA where test machines are
-  available.
+- Require engine-matched Intel, AMD, and NVIDIA evidence before release.
 - Retain original-image fallback when Vulkan or the engine fails.
 
 ### Phase 4: portable release
