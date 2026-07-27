@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import hashlib
 import importlib.util
+import io
 import json
 import sys
 import zipfile
@@ -30,6 +32,15 @@ BUILD_SPEC = importlib.util.spec_from_file_location(
 assert BUILD_SPEC is not None and BUILD_SPEC.loader is not None
 BUILD_REALCUGAN = importlib.util.module_from_spec(BUILD_SPEC)
 BUILD_SPEC.loader.exec_module(BUILD_REALCUGAN)
+
+VULKAN_SCRIPT_PATH = SCRIPTS_DIR / "fetch_vulkan_sdk_windows.py"
+VULKAN_SPEC = importlib.util.spec_from_file_location(
+    "fetch_vulkan_sdk_windows",
+    VULKAN_SCRIPT_PATH,
+)
+assert VULKAN_SPEC is not None and VULKAN_SPEC.loader is not None
+FETCH_VULKAN = importlib.util.module_from_spec(VULKAN_SPEC)
+VULKAN_SPEC.loader.exec_module(FETCH_VULKAN)
 
 
 def test_realcugan_zip_rejects_path_traversal(tmp_path: Path) -> None:
@@ -89,6 +100,32 @@ def test_zig_engine_runtime_imports_accept_system_apis() -> None:
             "vulkan-1.dll",
         ]
     )
+
+
+def test_vulkan_download_uses_cdn_compatible_headers(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload = b"verified Vulkan SDK installer"
+    expected_sha256 = hashlib.sha256(payload).hexdigest()
+    captured: dict[str, object] = {}
+
+    def fake_urlopen(request: object) -> io.BytesIO:
+        captured["request"] = request
+        return io.BytesIO(payload)
+
+    monkeypatch.setattr(FETCH_VULKAN.urllib.request, "urlopen", fake_urlopen)
+    destination = tmp_path / "vulkan-sdk.exe"
+    FETCH_VULKAN.download_verified(
+        "https://sdk.lunarg.com/sdk/download/example.exe",
+        destination,
+        expected_sha256,
+    )
+
+    request = captured["request"]
+    assert request.get_header("Accept") == "application/octet-stream"
+    assert request.get_header("User-agent").startswith("MangaCrisp/")
+    assert destination.read_bytes() == payload
 
 
 @pytest.mark.parametrize(

@@ -22,6 +22,10 @@ REQUIRED_FILES = (
     Path("Bin/glslc.exe"),
     Path("Licenses/LICENSE.txt"),
 )
+DOWNLOAD_HEADERS = {
+    "Accept": "application/octet-stream",
+    "User-Agent": "MangaCrisp/0.5 (+https://github.com/jydie5/MangaCrisp)",
+}
 
 
 def sha256_file(path: Path) -> str:
@@ -38,7 +42,8 @@ def download_verified(url: str, destination: Path, expected_sha256: str) -> Path
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = destination.with_suffix(destination.suffix + ".part")
     temporary.unlink(missing_ok=True)
-    with urllib.request.urlopen(url) as response, temporary.open("wb") as output:
+    request = urllib.request.Request(url, headers=DOWNLOAD_HEADERS)
+    with urllib.request.urlopen(request) as response, temporary.open("wb") as output:
         shutil.copyfileobj(response, output)
     actual = sha256_file(temporary)
     if actual != expected_sha256:
