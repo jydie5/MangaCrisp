@@ -74,7 +74,7 @@ M4 Pro実測（15〜19MBの補正版PNG、1600×1000ウィンドウ）:
 
 ## P1: Windowsポータブル版
 
-状態: 実装中（Windows x64エンジン同梱baseline検証中）
+状態: Development Preview公開中（正式版の外部実機証跡は未完了）
 
 Windows 11 x64で、共通コードのプラットフォーム分離、7-Zipを使ったRAR/CBR対応、
 PyInstaller one-folder、配布監査、展開後スモーク起動、`pyside6-deploy`との
@@ -85,6 +85,8 @@ Real-CUGANは固定ソースをZigでビルドし、Microsoft VC/OpenMPおよび
 正式リリース前に、同一エンジンSHA-256でIntel/AMD実機と開発ツールのない別Windows
 アカウントの検証を完了させます。検証JSONはGPUベンダー、実行GPU、固定demo、出力寸法、
 エンジンSHA-256、証跡SHA-256を自動監査してからリリースゲートへ登録します。
+それまでの間は、NVIDIA証跡と同じエンジンをGitHub Actionsで再現できた場合に限り、
+Intel／AMD／別アカウント未検証を明記したDevelopment Previewとして配布します。
 
 
 Mac版で完成した本棚、見開き、次巻移動、原画比較、画質モード、

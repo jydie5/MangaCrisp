@@ -40,7 +40,7 @@ and automatic updates are later work.
 
 ## Current Windows checkpoint (2026-07-27)
 
-- Phase 1 source compatibility is implemented on Windows 11 x64; all 44 shared
+- Phase 1 source compatibility is implemented on Windows 11 x64; all 46 shared
   and platform tests pass.
 - ZIP/CBZ and 7z/CB7 demo flows pass. The pinned 7-Zip 26.02 x64 backend is
   bundled for RAR/CBR and a RAR5 solid archive was extracted through the app's
@@ -63,6 +63,10 @@ and automatic updates are later work.
 - The current development account passed interactive launch, bookshelf import,
   reader rendering, and original/enhanced comparison on 2026-07-27. This does
   not replace the separate clean-account gate.
+- `.github/workflows/windows-preview.yml` rebuilds and audits the exact Windows
+  package on GitHub Actions. It can publish a clearly marked prerelease only
+  when the engine matches the committed NVIDIA evidence and no blockers other
+  than Intel, AMD, and separate clean-account validation remain.
 
 Remaining release work is Intel/AMD coverage and a clean-account test without
 development tools. Reports are registered with their evidence SHA-256 and must

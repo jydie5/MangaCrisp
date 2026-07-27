@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 import argparse
-import os
 import importlib.metadata
+import os
 import subprocess
 import zipfile
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from mangacrisp_app.platform import subprocess_window_kwargs
-
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_ARCHIVE = (
@@ -59,9 +58,7 @@ def sanitized_environment(profile: Path) -> dict[str, str]:
             "APPDATA": str(profile / "AppData" / "Roaming"),
             "LOCALAPPDATA": str(profile / "AppData" / "Local"),
             "MANGACRISP_LANGUAGE": "en",
-            "PATH": os.pathsep.join(
-                (str(system_root / "System32"), str(system_root))
-            ),
+            "PATH": os.pathsep.join((str(system_root / "System32"), str(system_root))),
             "QT_QPA_PLATFORM": "offscreen",
             "USERPROFILE": str(profile),
         }
@@ -100,9 +97,7 @@ def main() -> None:
     print("sanitized_environment_smoke=passed")
     print(r"path=C:\Windows\System32;C:\Windows")
     print("python_uv_virtualenv_removed=true")
-    print(
-        "note=this is not a substitute for a separate clean Windows account test"
-    )
+    print("note=this is not a substitute for a separate clean Windows account test")
 
 
 if __name__ == "__main__":

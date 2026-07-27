@@ -76,5 +76,22 @@ validator. The complete GPU and clean-account procedure is documented in
 
 The distribution audit can mark this implementation baseline ready while
 keeping `release_ready=false` until all external evidence passes. Therefore the
-`--development-baseline` ZIP is clearly named and must not be published as a
-release.
+`--development-baseline` ZIP is clearly named and remains local-only.
+
+## Public Development Preview
+
+The GitHub Actions workflow `.github/workflows/windows-preview.yml` rebuilds the
+engine and application from `main`, runs all tests and audits, and creates a
+separately named preview:
+
+```powershell
+uv run python scripts/package_windows_portable.py `
+  --skip-build `
+  --development-preview
+```
+
+Preview packaging succeeds only when the distribution baseline passes and the
+remaining blockers are Intel GPU, AMD GPU, and separate clean-account
+validation. In particular, the rebuilt engine must match the committed NVIDIA
+evidence SHA-256. A manual workflow dispatch can publish the verified ZIP,
+checksum, audit, and manifest as a GitHub prerelease.

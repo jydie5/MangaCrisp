@@ -13,6 +13,11 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 APP_DIR = ROOT_DIR / "dist" / "MangaCrisp"
 AUDIT_PATH = ROOT_DIR / "dist" / "windows-distribution-audit.json"
 MANIFEST_PATH = ROOT_DIR / "dist" / "windows-portable-manifest.json"
+ALLOWED_PREVIEW_BLOCKERS = {
+    "clean_windows_account has not passed",
+    "gpu_intel has not passed",
+    "gpu_amd has not passed",
+}
 
 
 def run(command: list[str]) -> None:
@@ -61,6 +66,38 @@ def validate_archive(artifact: Path) -> dict[str, object]:
     }
 
 
+def development_suffix(
+    *,
+    release_ready: bool,
+    development_baseline: bool,
+    development_preview: bool,
+) -> str:
+    if release_ready:
+        return ""
+    if development_preview:
+        return "-preview"
+    if development_baseline:
+        return "-baseline"
+    raise SystemExit(
+        "Windows release audit is incomplete. Use --development-baseline for "
+        "local verification or --development-preview for a clearly marked "
+        "GitHub prerelease."
+    )
+
+
+def validate_preview_blockers(audit: dict[str, object]) -> None:
+    blockers = audit.get("release_blockers")
+    if not isinstance(blockers, list) or not all(
+        isinstance(blocker, str) for blocker in blockers
+    ):
+        raise SystemExit("Windows preview audit blockers are missing or invalid")
+    unexpected = sorted(set(blockers) - ALLOWED_PREVIEW_BLOCKERS)
+    if unexpected:
+        raise SystemExit(
+            "Windows preview has unexpected release blockers:\n" + "\n".join(unexpected)
+        )
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Create the audited Windows x64 MangaCrisp portable ZIP."
@@ -70,10 +107,19 @@ def parse_args() -> argparse.Namespace:
         default=importlib.metadata.version("mangacrisp"),
     )
     parser.add_argument("--skip-build", action="store_true")
-    parser.add_argument(
+    development = parser.add_mutually_exclusive_group()
+    development.add_argument(
         "--development-baseline",
         action="store_true",
-        help="allow a clearly named local ZIP before external release validation passes",
+        help="allow a clearly named local-only ZIP before release validation passes",
+    )
+    development.add_argument(
+        "--development-preview",
+        action="store_true",
+        help=(
+            "allow a GitHub prerelease only when the remaining blockers are "
+            "Intel, AMD, and clean-account validation"
+        ),
     )
     return parser.parse_args()
 
@@ -92,18 +138,26 @@ def main() -> None:
     audit = json.loads(AUDIT_PATH.read_text(encoding="utf-8"))
     if not audit.get("baseline_ready"):
         raise SystemExit("Windows distribution baseline audit did not pass")
-    if not audit.get("release_ready") and not args.development_baseline:
-        raise SystemExit(
-            "Windows release audit is incomplete. Use --development-baseline "
-            "only for a clearly marked local artifact."
-        )
+    release_ready = audit.get("release_ready") is True
+    suffix = development_suffix(
+        release_ready=release_ready,
+        development_baseline=args.development_baseline,
+        development_preview=args.development_preview,
+    )
+    if args.development_preview and not release_ready:
+        validate_preview_blockers(audit)
 
-    suffix = "-baseline" if not audit.get("release_ready") else ""
     artifact = (
         ROOT_DIR
         / "dist"
         / f"MangaCrisp-{args.version}-windows-x64-portable{suffix}.zip"
     )
+    if args.development_preview and release_ready:
+        print(
+            "release validation is complete; creating the normal release artifact "
+            "instead of a development preview"
+        )
+
     create_archive(artifact)
     archive_check = validate_archive(artifact)
     if archive_check["corrupt_member"]:
@@ -115,7 +169,7 @@ def main() -> None:
         )
 
     checksum = sha256_file(artifact)
-    if audit.get("release_ready"):
+    if release_ready:
         clean_account = (
             audit.get("release_validation", {})
             .get("checks", {})
@@ -137,8 +191,9 @@ def main() -> None:
         "engine_sha256": audit.get("engine", {}).get("sha256"),
         "release_blockers": audit.get("release_blockers"),
         "baseline_ready": audit.get("baseline_ready"),
-        "release_ready": audit.get("release_ready"),
-        "development_baseline": not audit.get("release_ready"),
+        "release_ready": release_ready,
+        "development_baseline": suffix == "-baseline",
+        "development_preview": suffix == "-preview",
     }
     MANIFEST_PATH.write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",

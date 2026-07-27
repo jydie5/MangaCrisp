@@ -1,9 +1,11 @@
 # Windows release validation
 
 This document defines how MangaCrisp records the external evidence required for
-a Windows portable release. A development baseline may be built without all
-evidence, but a public release must pass every check against the exact bundled
-Real-CUGAN executable.
+a Windows portable release. A local development baseline may be built without
+all evidence. A clearly marked GitHub Development Preview may be published
+while only Intel, AMD, and separate clean-account evidence remains. A stable
+public release must pass every check against the exact bundled Real-CUGAN
+executable.
 
 ## Release gates
 
@@ -111,5 +113,7 @@ uv run python scripts/audit_windows_distribution.py --require-engine
 ```
 
 `baseline_ready=true` confirms that the local package itself passes. A public
-release candidate additionally requires `release_ready=true`. Never edit a
-`passed` value by hand; record the source report so the audit can verify it.
+Development Preview additionally requires the rebuilt engine to match the
+committed NVIDIA evidence and permits only the three documented external
+blockers. A stable release candidate requires `release_ready=true`. Never edit
+a `passed` value by hand; record the source report so the audit can verify it.

@@ -6,8 +6,8 @@
   <img src="assets/mangacrisp-app-icon.png" width="160" alt="MangaCrisp app icon">
 </p>
 
-MangaCrisp is a free, open-source manga and comic viewer for
-Apple Silicon. It reads CBZ, CBR, ZIP, RAR, 7z, image folders, and individual
+MangaCrisp is a free, open-source manga and comic viewer for macOS and Windows.
+It reads CBZ, CBR, ZIP, RAR, 7z, image folders, and individual
 images, combining a visual bookshelf, two-page manga reading, and automatic
 Real-CUGAN AI upscaling in a native desktop application.
 
@@ -39,12 +39,14 @@ All versions and the SHA-256 checksum are available on the
 
 ### Windows development preview
 
-The Windows 10/11 x64 source application and PyInstaller one-folder baseline
-are under active development. There is no public Windows portable release yet,
-but the development baseline now bundles an audited Zig-built Real-CUGAN
-engine. Intel, AMD, and separate clean-account validation remain. See
-[INSTALL.windows.md](INSTALL.windows.md) for the verified source and build
-workflow.
+**[Download the Windows 10/11 x64 Development Preview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.5.0b0.1/MangaCrisp-0.5.0b0-windows-x64-portable-preview.zip)**
+
+The unsigned portable ZIP needs no Python, uv, CUDA, or installer. It bundles
+the audited Zig-built Real-CUGAN engine and has passed interactive validation
+on NVIDIA graphics. Intel and AMD enhancement evidence and a separate clean
+Windows account test remain before the stable Windows release. Original-image
+reading remains available if enhancement is unavailable. See
+[INSTALL.windows.md](INSTALL.windows.md) for installation and limitations.
 
 ## Read your first book
 
@@ -74,22 +76,24 @@ first launch. A custom library location selected by the user is left unchanged.
 - Simple quality modes and saved manual presets
 - Instant original/enhanced comparison
 - Managed library removal without deleting the source archive
-- English and Japanese UI with macOS language detection
+- English and Japanese UI with operating-system language detection
 
 See [ROADMAP.md](ROADMAP.md) for planned work and known improvement areas.
 
 ## Language
 
-MangaCrisp follows the first preferred language in macOS. English and Japanese are
-included. Use the **Language** selector in the bookshelf header to choose
-**System**, **English**, or **Japanese**. Restart MangaCrisp after changing it so the
-bookshelf, reader, dialogs, help, and status messages all use the same language.
+MangaCrisp follows the operating-system language preference on macOS and
+Windows. English and Japanese are included. Use the **Language** selector in the
+bookshelf header to choose **System**, **English**, or **Japanese**. Restart
+MangaCrisp after changing it so the bookshelf, reader, dialogs, help, and status
+messages all use the same language.
 
 ## AI enhancement
 
-The standalone package bundles the official
-`realcugan-ncnn-vulkan 20220728 macOS` executable and models. It uses the Apple
-Silicon GPU through Vulkan/Metal and needs no additional engine setup.
+The stable macOS standalone package bundles the official
+`realcugan-ncnn-vulkan 20220728 macOS` executable and models. The Windows
+Development Preview bundles the pinned, audited Zig-built Windows engine and
+the same models. Both need no additional engine setup.
 
 MangaCrisp automatically processes the visible spread and nearby pages in the
 background. The cache revolves as you read: normally 12-24 pages ahead and four
@@ -142,6 +146,8 @@ beside and inside every archive.
 - AI enhancement cache: `~/Library/Caches/MangaCrisp`
 - Database and settings: `~/Library/Application Support/MangaCrisp`
 
+Windows locations are listed in [INSTALL.windows.md](INSTALL.windows.md).
+
 Removing a book from the bookshelf deletes MangaCrisp's managed reading copy and
 reading state. It never deletes the original ZIP or RAR. To uninstall the app,
 remove `MangaCrisp.app`; remove the locations above only if you also want to erase the
@@ -154,8 +160,11 @@ reading positions are preserved.
 
 ## Current limitations
 
-- Apple Silicon only; Intel Macs are not currently supported.
-- The beta is unsigned and not notarized.
+- The stable macOS beta supports Apple Silicon only; Intel Macs are not
+  currently supported.
+- The Windows x64 build is a Development Preview with Intel, AMD, and clean
+  account release evidence still pending.
+- Both builds are unsigned; the macOS beta is also not notarized.
 - Some RAR variants may not be compatible with the available macOS extraction
   backend.
 - Updates are manual; download a newer build from Releases.
