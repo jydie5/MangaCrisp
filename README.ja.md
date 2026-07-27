@@ -34,6 +34,13 @@ MangaCrispは、Apple Silicon Mac向けの無料・オープンソース漫画�
 
 > 現在のβ版は署名・Apple notarization未実施です。初回の通常ダブルクリックはmacOSに止められることがあります。
 
+### Windows開発プレビュー
+
+Windows 10/11 x64向けのソース版とPyInstaller one-folder基礎ビルドを開発中です。
+公開用Windowsポータブル版はまだなく、開発ビルドにはReal-CUGANを同梱していません。
+確認済みのソース起動・ビルド手順は
+[INSTALL.windows.ja.md](INSTALL.windows.ja.md)を参照してください。
+
 ## 最初の一冊を読む
 
 1. MangaCrispを起動すると本棚が開きます。

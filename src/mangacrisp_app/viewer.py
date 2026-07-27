@@ -11,6 +11,7 @@ from hashlib import sha1
 from html import escape
 from math import ceil
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from PIL import Image
 from mangacrisp_app.branding import APP_NAME, CACHE_DIR, PROJECT_URL, SUPPORT_URL
@@ -2026,6 +2027,7 @@ def parse_args(argv: list[str]) -> Namespace:
     parser = ArgumentParser(description="Manual two-page spread smoke viewer.")
     parser.add_argument("sample", nargs="?", help="folder/archive/image sample path")
     parser.add_argument("--bookshelf", action="store_true", help=f"open the {APP_NAME} bookshelf window")
+    parser.add_argument("--smoke-test", action="store_true", help="open and close an isolated bookshelf for build validation")
     parser.add_argument("--processed-dir", help="directory containing processed images")
     parser.add_argument("--original", action="store_true", help="ignore processed images")
     parser.add_argument("--use-processed", action="store_true", help="auto-load processed benchmark images when available")
@@ -2103,12 +2105,32 @@ def main() -> None:
     if PYSIDE_IMPORT_ERROR is not None:
         raise SystemExit("PySide6 is required: python3 -m pip install PySide6") from PYSIDE_IMPORT_ERROR
     args = parse_args(sys.argv)
-    migrate_legacy_application_state()
+    if not args.smoke_test:
+        migrate_legacy_application_state()
     initialize_language(DEFAULT_QUALITY_SETTINGS_PATH)
     app = QApplication(sys.argv)
     app.setApplicationName(APP_NAME)
     if should_open_bookshelf(args):
         from mangacrisp_app.bookshelf import BookshelfWindow
+
+        if args.smoke_test:
+            from mangacrisp_app.library import (
+                LibraryPaths,
+                LibraryService,
+                save_library_settings,
+            )
+
+            with TemporaryDirectory(prefix="mangacrisp-smoke-") as temporary_directory:
+                paths = LibraryPaths.for_base_dir(Path(temporary_directory))
+                save_library_settings(paths, library_dir_confirmed=True)
+                window = BookshelfWindow(LibraryService.open(paths))
+                window.show()
+                QTimer.singleShot(500, app.quit)
+                exit_code = app.exec()
+                window.close()
+                if exit_code:
+                    raise SystemExit(exit_code)
+            return
 
         window = BookshelfWindow()
         window.show()

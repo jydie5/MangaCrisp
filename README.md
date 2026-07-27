@@ -37,6 +37,14 @@ The current beta is not signed or notarized. See
 All versions and the SHA-256 checksum are available on the
 [Releases page](https://github.com/jydie5/MangaCrisp/releases).
 
+### Windows development preview
+
+The Windows 10/11 x64 source application and PyInstaller one-folder baseline
+are under active development. There is no public Windows portable release yet,
+and the development build does not bundle Real-CUGAN. See
+[INSTALL.windows.md](INSTALL.windows.md) for the verified source and build
+workflow.
+
 ## Read your first book
 
 1. Launch MangaCrisp to open the bookshelf.

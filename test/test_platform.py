@@ -14,6 +14,14 @@ from mangacrisp_app.platform.windows import (
     open_directory as open_windows_directory,
     subprocess_window_kwargs,
 )
+from mangacrisp_app.viewer import parse_args, should_open_bookshelf
+
+
+def test_smoke_test_opens_isolated_bookshelf() -> None:
+    args = parse_args(["mangacrisp", "--smoke-test"])
+
+    assert args.smoke_test is True
+    assert should_open_bookshelf(args) is True
 
 
 def test_macos_application_directories_preserve_existing_layout(tmp_path: Path) -> None:
