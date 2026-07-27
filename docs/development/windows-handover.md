@@ -55,12 +55,13 @@ and automatic updates are later work.
   pyside6-deploy/Nuitka comparison. See
   `docs/development/windows-packaging-comparison.md`.
 - Original-image reading remains available without the AI engine.
-- The official Windows Real-CUGAN binary runs on the current NVIDIA test machine,
-  but public bundling is blocked until the redistribution route for
-  `vcomp140.dll` is documented. See
+- The reproducible Real-CUGAN validation passes on the NVIDIA GeForce RTX 2070
+  SUPER (2.08-2.11 seconds for the fixed demo page). Intel and AMD reports remain.
+  Public bundling is blocked until the redistribution route for `vcomp140.dll`
+  is documented. See
   `docs/development/windows-dependency-provenance.md`.
 
-Remaining release work is Real-CUGAN dependency resolution, Intel/AMD/NVIDIA
+Remaining release work is Real-CUGAN dependency resolution, Intel/AMD
 coverage, and a clean-account test without development tools.
 
 ## Technology decision

@@ -53,14 +53,22 @@ redistribution review of the Microsoft runtime binary.
 - Upstream project license: MIT
 
 The official archive includes the executable, models, project license, and
-`vcomp140.dll`. A one-page run using the repository''s freely redistributable
-demo completed successfully on an NVIDIA GeForce RTX 2070 SUPER in about 4.2
-seconds.
+`vcomp140.dll`. The reproducible validation command is:
+
+```powershell
+uv run python scripts/validate_realcugan_windows.py --gpu-label "machine label"
+```
+
+On the current NVIDIA GeForce RTX 2070 SUPER, the pinned engine processed the
+first 1200 x 1660 Pepper and Carrot demo page to 2400 x 3320 in 2.08-2.11 seconds.
+The ignored JSON report records GPU name/driver, input and engine hashes,
+settings, dimensions, runtime, output size, and stdout without personal paths.
+Intel and AMD reports are still required.
 
 Microsoft documents Visual C++ runtime redistribution as subject to Visual
 Studio license eligibility and recommends the supported Visual C++
 Redistributable. The upstream MIT license does not itself establish permission
-to redistribute Microsoft''s `vcomp140.dll`. Therefore MangaCrisp must not
+to redistribute Microsoft's `vcomp140.dll`. Therefore MangaCrisp must not
 bundle or publish this Windows engine archive until one of these routes is
 documented:
 

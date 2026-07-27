@@ -81,6 +81,8 @@ PyInstaller one-folder、配布監査、展開後スモーク起動、`pyside6-d
 実測比較まで完了し、初版はPyInstallerを採用します。
 公式Windows版Real-CUGANの動作確認も完了していますが、同梱されるMicrosoftランタイムの
 再配布経路を確定するまで正式リリース判定は保留します。
+NVIDIA RTX 2070 SUPERで固定demoの自動検証は通過し、Intel/AMD実機レポートが残っています。
+
 
 Mac版で完成した本棚、見開き、次巻移動、原画比較、画質モード、
 適応先読みを共通コードとして維持し、Windows 10/11 x64へ移植します。

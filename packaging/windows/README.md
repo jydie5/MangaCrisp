@@ -43,9 +43,14 @@ locally with:
 
 ```powershell
 uv run python scripts/fetch_realcugan_windows.py
+uv run python scripts/validate_realcugan_windows.py --gpu-label "machine label"
 ```
 
-That command writes `redistribution_approved=false` into development provenance;
+The validation script processes one freely redistributable demo page and writes
+a path-sanitized JSON report under ignored `build/windows/`. Collect reports on
+Intel, AMD, and NVIDIA machines before release.
+
+The fetch command writes `redistribution_approved=false` into development provenance;
 the normal build does not copy the engine into `dist/`, and the audit cannot
 mark it release-ready without an explicit approved record.
 
