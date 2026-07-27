@@ -9,6 +9,7 @@ import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from mangacrisp_app.platform import engine_executable_names, subprocess_window_kwargs
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 ENGINES_DIR = ROOT_DIR / "test" / "engines"
@@ -35,23 +36,23 @@ class EngineRunResult:
 def realcugan_executable() -> Path | None:
     frozen_root = bundled_root()
     env_path = os.environ.get("MANGACRISP_REALCUGAN_PATH")
-    candidates = [
-        Path(env_path).expanduser() if env_path else None,
-        ENGINES_DIR / "realcugan-ncnn-vulkan" / "realcugan-ncnn-vulkan",
-        ENGINES_DIR / "realcugan-ncnn-vulkan-20220728-macos" / "realcugan-ncnn-vulkan",
-        ROOT_DIR / "engines" / "realcugan-ncnn-vulkan" / "realcugan-ncnn-vulkan",
-        ROOT_DIR / "engines" / "realcugan-ncnn-vulkan-20220728-macos" / "realcugan-ncnn-vulkan",
-        ROOT_DIR / "tools" / "realcugan-ncnn-vulkan" / "realcugan-ncnn-vulkan",
-        ROOT_DIR / "tools" / "realcugan-ncnn-vulkan" / "realcugan-ncnn-vulkan.exe",
+    package_names = [
+        "realcugan-ncnn-vulkan",
+        "realcugan-ncnn-vulkan-20220728-macos",
+        "realcugan-ncnn-vulkan-20220728-windows",
     ]
+    package_dirs = [ENGINES_DIR / name for name in package_names]
+    package_dirs.extend(ROOT_DIR / parent / name for parent in ("engines", "tools") for name in package_names)
     if frozen_root is not None:
-        candidates = [
-            frozen_root / "engines" / "realcugan-ncnn-vulkan" / "realcugan-ncnn-vulkan",
-            frozen_root / "engines" / "realcugan-ncnn-vulkan-20220728-macos" / "realcugan-ncnn-vulkan",
-            *candidates,
-        ]
+        package_dirs[:0] = [frozen_root / "engines" / name for name in package_names]
+    candidates = [Path(env_path).expanduser()] if env_path else []
+    candidates.extend(
+        package_dir / executable_name
+        for package_dir in package_dirs
+        for executable_name in engine_executable_names("realcugan-ncnn-vulkan")
+    )
     for candidate in candidates:
-        if candidate is not None and candidate.is_file():
+        if candidate.is_file():
             return candidate
     return None
 
@@ -98,6 +99,7 @@ def run_realcugan(
         text=True,
         errors="replace",
         check=False,
+        **subprocess_window_kwargs(),
     )
     elapsed = time.perf_counter() - started
     return EngineRunResult(

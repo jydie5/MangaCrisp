@@ -29,7 +29,7 @@ ENGLISH_TRANSLATIONS = {
     "読む: 選択中の本を開く": "Read: open the selected book",
     "Delete: 選択中の本を本棚から削除。元ZIP/RARは残す": "Delete: remove the selected book; keep the source archive",
     "本棚から削除: 確認後、MangaCrisp管理フォルダを削除。元ZIP/RARは残す": "Remove: delete MangaCrisp's managed copy after confirmation; keep the source archive",
-    "保存先を開く: FinderでMangaCrisp Libraryを表示": "Open Library: reveal the managed library in Finder",
+    "保存先を開く: ファイル管理画面でMangaCrisp Libraryを表示": "Open Library: reveal the managed library in the file manager",
     "?: このヘルプを表示": "?: show this help",
     "H / ?: このヘルプを表示": "H / ?: show this help",
     "ショートカットを表示": "Show keyboard shortcuts",
@@ -49,7 +49,7 @@ ENGLISH_TRANSLATIONS = {
     "{count}冊 / タイトル昇順": "{count} books / title order",
     "本棚保存先": "Bookshelf Location",
     "MangaCrispの本棚保存先を確認してください。": "Confirm the location of your MangaCrisp library.",
-    "展開済み漫画は容量が大きくなるため、Finderで見つけやすい場所に保存します。\n\n現在の保存先:\n{path}": "Extracted books can use substantial storage. Choose a location that is easy to find in Finder.\n\nCurrent location:\n{path}",
+    "展開済み漫画は容量が大きくなるため、ファイル管理画面で見つけやすい場所に保存します。\n\n現在の保存先:\n{path}": "Extracted books can use substantial storage. Choose a location that is easy to find in the file manager.\n\nCurrent location:\n{path}",
     "この場所を使う": "Use This Location",
     "変更...": "Change...",
     "後で": "Later",
@@ -236,7 +236,8 @@ def detect_system_language() -> str:
         except (OSError, subprocess.SubprocessError):
             pass
     language = locale.getlocale()[0] or os.environ.get("LANG", "")
-    return "ja" if str(language).lower().startswith("ja") else "en"
+    normalized = str(language).lower().replace("-", "_")
+    return "ja" if normalized.startswith(("ja", "japanese")) else "en"
 
 
 def load_language_preference(settings_path: Path | None = None) -> str:

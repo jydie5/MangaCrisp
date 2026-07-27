@@ -8,6 +8,8 @@ import zipfile
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 
+from mangacrisp_app.platform import subprocess_window_kwargs
+
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".tif", ".tiff", ".avif"}
 ARCHIVE_EXTENSIONS = {".zip", ".cbz", ".rar", ".cbr", ".7z", ".cb7"}
 
@@ -148,6 +150,7 @@ def list_external_archive_image_members(
             check=False,
             capture_output=True,
             text=True,
+            **subprocess_window_kwargs(),
         )
         if result.returncode == 0:
             return sorted(
@@ -164,6 +167,7 @@ def list_external_archive_image_members(
             check=False,
             capture_output=True,
             text=True,
+            **subprocess_window_kwargs(),
         )
         if result.returncode == 0:
             names = [
@@ -299,7 +303,13 @@ def extract_external_archive_images(
         if primary_error is not None:
             raise RuntimeError(message) from primary_error
         raise RuntimeError(message)
-    result = subprocess.run(command, check=False, capture_output=True, text=True)
+    result = subprocess.run(
+        command,
+        check=False,
+        capture_output=True,
+        text=True,
+        **subprocess_window_kwargs(),
+    )
     if result.returncode != 0:
         message = result.stderr.strip() or result.stdout.strip() or f"external archive extractor failed: {command[0]}"
         if primary_error is not None:

@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import re
 from pathlib import Path
+from unittest.mock import patch
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -11,6 +12,7 @@ from PySide6.QtWidgets import QApplication, QAbstractButton, QComboBox, QLabel
 
 from mangacrisp_app.bookshelf import BookshelfWindow
 from mangacrisp_app.i18n import (
+    detect_system_language,
     load_language_preference,
     save_language_preference,
     set_language,
@@ -39,6 +41,14 @@ def visible_widget_texts(window) -> list[str]:
         if combo.isVisible():
             texts.extend(combo.itemText(index) for index in range(combo.count()))
     return texts
+
+
+def test_windows_japanese_locale_is_detected() -> None:
+    with (
+        patch.dict(os.environ, {"MANGACRISP_LANGUAGE": ""}),
+        patch("mangacrisp_app.i18n.locale.getlocale", return_value=("Japanese_Japan", "932")),
+    ):
+        assert detect_system_language() == "ja"
 
 
 def test_language_preference_round_trip(tmp_path: Path) -> None:
