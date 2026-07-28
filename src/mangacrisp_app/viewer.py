@@ -245,6 +245,10 @@ def display_cache_path_for(display_path: Path) -> Path | None:
     return DISPLAY_CACHE_DIR / f"{key}.png"
 
 
+def remove_legacy_display_cache() -> None:
+    shutil.rmtree(DISPLAY_CACHE_DIR, ignore_errors=True)
+
+
 def prefetch_window_indexes(
     current_index: int,
     total_pages: int,
@@ -307,13 +311,16 @@ def decode_scaled_display_image(
     target_width: int,
     target_height: int,
     high_quality: bool,
-    force_grayscale: bool,
+    normalize_color: bool,
 ) -> QImage:
     image = QImage(str(display_path))
     if image.isNull():
         return image
-    if force_grayscale:
-        image = image.convertToFormat(QImage.Format_Grayscale8)
+    if normalize_color:
+        target_format = (
+            QImage.Format_RGBA8888 if image.hasAlphaChannel() else QImage.Format_RGB888
+        )
+        image = image.convertToFormat(target_format)
     transform_mode = Qt.SmoothTransformation if high_quality else Qt.FastTransformation
     return image.scaled(
         QSize(target_width, target_height),
@@ -331,7 +338,7 @@ class DisplayRenderTask(QRunnable if QRunnable is not None else object):
         target_width: int,
         target_height: int,
         high_quality: bool,
-        force_grayscale: bool,
+        normalize_color: bool,
     ) -> None:
         super().__init__()
         self.signals = signals
@@ -340,7 +347,7 @@ class DisplayRenderTask(QRunnable if QRunnable is not None else object):
         self.target_width = target_width
         self.target_height = target_height
         self.high_quality = high_quality
-        self.force_grayscale = force_grayscale
+        self.normalize_color = normalize_color
 
     def run(self) -> None:
         started = time.perf_counter()
@@ -349,7 +356,7 @@ class DisplayRenderTask(QRunnable if QRunnable is not None else object):
             self.target_width,
             self.target_height,
             self.high_quality,
-            self.force_grayscale,
+            self.normalize_color,
         )
         elapsed_ms = round((time.perf_counter() - started) * 1000)
         try:
@@ -1373,7 +1380,7 @@ class SpreadWindow(QMainWindow):
             label.setText("")
             label.setPixmap(QPixmap())
             return
-        display_path, force_grayscale = self.display_source_for_index(index)
+        display_path, normalize_color = self.display_source_for_index(index)
         original_path = self.pages[index]
         fallback_key = None
         if display_path != original_path:
@@ -1381,14 +1388,14 @@ class SpreadWindow(QMainWindow):
                 original_path,
                 label.size(),
                 high_quality=high_quality,
-                force_grayscale=False,
+                normalize_color=False,
                 visible=True,
             )
         _cached, cache_key = self.request_display_pixmap(
             display_path,
             label.size(),
             high_quality=high_quality,
-            force_grayscale=force_grayscale,
+            normalize_color=normalize_color,
             visible=True,
         )
         self.desired_display_keys[id(label)] = cache_key
@@ -1403,9 +1410,8 @@ class SpreadWindow(QMainWindow):
         display_path = self.pages[index] if show_original else self.processed_pages[index] or self.pages[index]
         if display_path == self.pages[index]:
             return display_path, False
-        cached_path = display_cache_path_for(display_path)
-        if cached_path is not None and cached_path.exists():
-            return cached_path, False
+        # Old display-cache files were intentionally grayscale. Processed engine
+        # output is already lossless PNG, so normalize that file directly.
         return display_path, True
 
     def visible_spread_uses_original(self, visible_indexes: list[int] | None = None) -> bool:
@@ -1422,7 +1428,7 @@ class SpreadWindow(QMainWindow):
         display_path: Path,
         target,
         high_quality: bool,
-        force_grayscale: bool,
+        normalize_color: bool,
     ) -> tuple | None:
         if target.width() <= 0 or target.height() <= 0:
             return None
@@ -1435,7 +1441,7 @@ class SpreadWindow(QMainWindow):
                 target.width(),
                 target.height(),
                 1 if high_quality else 0,
-                1 if force_grayscale else 0,
+                1 if normalize_color else 0,
             )
         except OSError:
             return None
@@ -1446,10 +1452,10 @@ class SpreadWindow(QMainWindow):
         target,
         *,
         high_quality: bool = True,
-        force_grayscale: bool = False,
+        normalize_color: bool = False,
         visible: bool = False,
     ) -> tuple[QPixmap | None, tuple | None]:
-        key = self.display_cache_key(display_path, target, high_quality, force_grayscale)
+        key = self.display_cache_key(display_path, target, high_quality, normalize_color)
         if key is None:
             return None, None
         cached = self.display_pixmap_cache.get(key)
@@ -1467,7 +1473,7 @@ class SpreadWindow(QMainWindow):
                 target.width(),
                 target.height(),
                 high_quality,
-                force_grayscale,
+                normalize_color,
             )
             pool = self.visible_display_pool if visible else self.warm_display_pool
             pool.start(task)
@@ -1539,13 +1545,13 @@ class SpreadWindow(QMainWindow):
         for index in indexes:
             if index < 0 or index >= len(self.pages):
                 continue
-            display_path, force_grayscale = self.display_source_for_index(index)
+            display_path, normalize_color = self.display_source_for_index(index)
             for target in targets:
                 self.request_display_pixmap(
                     display_path,
                     target,
                     high_quality=True,
-                    force_grayscale=force_grayscale,
+                    normalize_color=normalize_color,
                     visible=False,
                 )
 
@@ -2107,6 +2113,7 @@ def main() -> None:
     args = parse_args(sys.argv)
     if not args.smoke_test:
         migrate_legacy_application_state()
+        remove_legacy_display_cache()
     initialize_language(DEFAULT_QUALITY_SETTINGS_PATH)
     app = QApplication(sys.argv)
     app.setApplicationName(APP_NAME)

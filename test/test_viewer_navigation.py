@@ -12,7 +12,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PIL import Image
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import QApplication
 
 import mangacrisp_app.viewer as viewer_module
@@ -222,8 +222,8 @@ class ViewerNavigationTests(unittest.TestCase):
         original_decode = viewer_module.decode_scaled_display_image
 
         def corrected_is_slow(*args, **kwargs):
-            force_grayscale = bool(args[4])
-            time.sleep(0.25 if force_grayscale else 0.01)
+            normalize_color = bool(args[4])
+            time.sleep(0.25 if normalize_color else 0.01)
             return original_decode(*args, **kwargs)
 
         with patch("mangacrisp_app.viewer.decode_scaled_display_image", side_effect=corrected_is_slow):
@@ -249,6 +249,51 @@ class ViewerNavigationTests(unittest.TestCase):
         self.assertTrue(all(key in self.window.display_pixmap_cache for key in desired_keys))
         self.assertFalse(self.window.left.pixmap().isNull())
         self.assertFalse(self.window.right.pixmap().isNull())
+
+    def test_corrected_color_page_preserves_rgb_channels(self) -> None:
+        corrected = self.root / "corrected-color.png"
+        Image.new("RGB", (120, 180), (20, 90, 220)).save(corrected)
+
+        image = viewer_module.decode_scaled_display_image(
+            corrected,
+            120,
+            180,
+            True,
+            True,
+        )
+
+        self.assertFalse(image.isNull())
+        self.assertEqual(image.format(), QImage.Format_RGB888)
+        pixel = image.pixelColor(60, 90)
+        self.assertEqual((pixel.red(), pixel.green(), pixel.blue()), (20, 90, 220))
+
+    def test_corrected_page_ignores_legacy_grayscale_display_cache(self) -> None:
+        corrected = self.root / "corrected-color.png"
+        Image.new("RGB", (120, 180), (20, 90, 220)).save(corrected)
+        self.window.processed_pages[0] = corrected
+
+        with (
+            patch.object(viewer_module, "DISPLAY_CACHE_DIR", self.root / "display-cache"),
+            patch.object(self.window, "visible_spread_uses_original", return_value=False),
+        ):
+            legacy_cache = viewer_module.display_cache_path_for(corrected)
+            self.assertIsNotNone(legacy_cache)
+            legacy_cache.parent.mkdir(parents=True, exist_ok=True)
+            Image.new("L", (120, 180), 100).save(legacy_cache)
+            display_path, normalize_color = self.window.display_source_for_index(0)
+
+        self.assertEqual(display_path, corrected)
+        self.assertTrue(normalize_color)
+
+    def test_legacy_grayscale_display_cache_is_removed(self) -> None:
+        display_cache = self.root / "display-cache"
+        display_cache.mkdir()
+        Image.new("L", (120, 180), 100).save(display_cache / "legacy.png")
+
+        with patch.object(viewer_module, "DISPLAY_CACHE_DIR", display_cache):
+            viewer_module.remove_legacy_display_cache()
+
+        self.assertFalse(display_cache.exists())
 
     def test_display_cache_remains_bounded(self) -> None:
         for index in range(self.window.display_pixmap_cache_limit + 10):
