@@ -39,7 +39,7 @@ All versions and the SHA-256 checksum are available on the
 
 ### Windows development preview
 
-**[Download the Windows 10/11 x64 Development Preview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.5.0b0.1/MangaCrisp-0.5.0b0-windows-x64-portable-preview.zip)**
+**[Download the Windows 10/11 x64 Development Preview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.5.0b0.2/MangaCrisp-0.5.0b0-windows-x64-portable-preview.zip)**
 
 The unsigned portable ZIP needs no Python, uv, CUDA, or installer. It bundles
 the audited Zig-built Real-CUGAN engine and has passed interactive validation
