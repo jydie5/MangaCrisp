@@ -12,7 +12,7 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parents[1]
 APP_PATH = ROOT_DIR / "dist" / "MangaCrisp.app"
 AUDIT_PATH = ROOT_DIR / "dist" / "distribution-audit.json"
-DEFAULT_VERSION = "0.5.0-beta"
+DEFAULT_VERSION = "0.6.0-beta"
 FORBIDDEN_ARCHIVE_TERMS = (
     "sample/",
     "test/",

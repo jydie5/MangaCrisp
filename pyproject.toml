@@ -1,6 +1,6 @@
 [project]
 name = "mangacrisp"
-version = "0.5.0b0"
+version = "0.6.0b0"
 description = "AI-enhanced manga and comic viewer for macOS and Windows"
 readme = "README.md"
 requires-python = ">=3.11"
