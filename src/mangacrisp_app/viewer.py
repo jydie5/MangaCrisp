@@ -76,6 +76,8 @@ PREFETCH_DEBOUNCE_MS = 90
 DISPLAY_WARM_DEBOUNCE_MS = 180
 CACHE_MAINTENANCE_DEBOUNCE_MS = 900
 PAGE_STATE_SAVE_DEBOUNCE_MS = 350
+CLICK_ZONE_EDGE_FRACTION = 0.4
+CLICK_DRAG_TOLERANCE_PX = 12
 MODEL_NOISE_OPTIONS = {
     "models-pro": ["3"],
     "models-se": ["-1", "0", "1", "2", "3"],
@@ -160,7 +162,10 @@ def viewer_shortcuts_text(reading_direction: str) -> str:
             tr("P: 右設定パネル表示/非表示"),
             tr("O: 原画/補正版を切り替え"),
             tr("B: しおり追加"),
-            tr("画像クリック: ページ情報を表示/非表示"),
+            tr("画面左右クリック: 次へ/前へ（読書方向に連動）"),
+            tr("Shift+画面左右クリック: 1ページ進む/戻す"),
+            tr("画面中央クリック: ページ情報を表示/非表示"),
+            tr("右クリック: 前へ"),
             tr("Esc: 全画面解除 / 本棚へ戻る"),
             tr("H / ?: このヘルプを表示"),
         ]
@@ -192,8 +197,8 @@ def show_help_dialog(parent, shortcuts_text: str) -> None:
 
 def compact_shortcuts_text(reading_direction: str) -> str:
     if reading_direction == "rtl":
-        return tr("← 次 / → 前 / Shift+← 1p進む / Shift+→ 1p戻す / O 原画比較 / P 設定 / H ヘルプ")
-    return tr("→ 次 / ← 前 / Shift+→ 1p進む / Shift+← 1p戻す / O 原画比較 / P 設定 / H ヘルプ")
+        return tr("左側クリック/← 次 / 右側クリック/→ 前 / 中央クリック 情報 / Shift+クリック 1p / O 原画比較 / P 設定 / H ヘルプ")
+    return tr("右側クリック/→ 次 / 左側クリック/← 前 / 中央クリック 情報 / Shift+クリック 1p / O 原画比較 / P 設定 / H ヘルプ")
 
 
 def display_preset_name(name: str) -> str:
@@ -215,6 +220,25 @@ def visible_file_names(pages: Sequence[Path], visible_indexes: list[int]) -> str
 
 def should_handle_global_shortcut(active_modal_widget: object | None) -> bool:
     return active_modal_widget is None
+
+
+def reader_click_action(
+    x: float,
+    width: float,
+    reading_direction: str,
+    button: str = "left",
+) -> str | None:
+    if button == "right":
+        return "previous"
+    if button != "left" or width <= 0 or x < 0 or x > width:
+        return None
+    position = x / width
+    if CLICK_ZONE_EDGE_FRACTION <= position <= 1.0 - CLICK_ZONE_EDGE_FRACTION:
+        return "info"
+    clicked_left = position < CLICK_ZONE_EDGE_FRACTION
+    if reading_direction == "rtl":
+        return "next" if clicked_left else "previous"
+    return "previous" if clicked_left else "next"
 
 
 def standard_spread_index(index: int, cover_single: bool) -> int:
@@ -430,6 +454,9 @@ class SpreadWindow(QMainWindow):
         self.adaptive_prefetch_count = prefetch_count
         self.controls_visible = True
         self.reading_info_visible = False
+        self.mouse_press_button = None
+        self.mouse_press_global_position = None
+        self.suppress_next_mouse_release = False
         self.image_size_cache: dict[int, tuple[int, int]] = {}
         self.display_pixmap_cache: OrderedDict[tuple, QPixmap] = OrderedDict()
         self.display_pixmap_cache_limit = 18
@@ -1151,15 +1178,61 @@ class SpreadWindow(QMainWindow):
         return self.spread_order == "rtl"
 
     def eventFilter(self, watched, event) -> bool:
-        if watched in {getattr(self, "left", None), getattr(self, "right", None)} and event.type() == QEvent.MouseButtonPress:
-            if event.button() == Qt.LeftButton:
-                self.toggle_reading_info()
+        if watched in {getattr(self, "left", None), getattr(self, "right", None)}:
+            if event.type() == QEvent.MouseButtonDblClick and event.button() in {Qt.LeftButton, Qt.RightButton}:
+                self.suppress_next_mouse_release = True
+                return True
+            if event.type() == QEvent.MouseButtonPress and event.button() in {Qt.LeftButton, Qt.RightButton}:
+                self.mouse_press_button = event.button()
+                self.mouse_press_global_position = event.globalPosition()
+                return True
+            if event.type() == QEvent.MouseButtonRelease and event.button() in {Qt.LeftButton, Qt.RightButton}:
+                if self.suppress_next_mouse_release:
+                    self.suppress_next_mouse_release = False
+                    self.clear_mouse_press()
+                    return True
+                if event.button() != self.mouse_press_button or self.mouse_press_global_position is None:
+                    self.clear_mouse_press()
+                    return True
+                release_position = event.globalPosition()
+                moved = (
+                    abs(release_position.x() - self.mouse_press_global_position.x())
+                    + abs(release_position.y() - self.mouse_press_global_position.y())
+                )
+                self.clear_mouse_press()
+                if moved > CLICK_DRAG_TOLERANCE_PX:
+                    return True
+                image_position = self.image_host.mapFromGlobal(release_position.toPoint())
+                button = "right" if event.button() == Qt.RightButton else "left"
+                action = reader_click_action(
+                    image_position.x(),
+                    self.image_host.width(),
+                    self.reading_direction,
+                    button,
+                )
+                self.handle_reader_click(action, bool(event.modifiers() & Qt.ShiftModifier))
                 return True
         if event.type() == QEvent.KeyPress and not should_handle_global_shortcut(QApplication.activeModalWidget()):
             return False
         if event.type() == QEvent.KeyPress and self.handle_navigation_event(event):
             return True
         return super().eventFilter(watched, event)
+
+    def clear_mouse_press(self) -> None:
+        self.mouse_press_button = None
+        self.mouse_press_global_position = None
+
+    def handle_reader_click(self, action: str | None, one_page: bool = False) -> bool:
+        if action == "info":
+            self.toggle_reading_info()
+            return True
+        if action == "next":
+            self.move_by(1 if one_page else 2)
+            return True
+        if action == "previous":
+            self.move_by(-1 if one_page else -2)
+            return True
+        return False
 
     def resizeEvent(self, event) -> None:
         super().resizeEvent(event)
