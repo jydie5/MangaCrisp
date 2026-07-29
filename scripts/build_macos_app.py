@@ -18,7 +18,7 @@ DIST_APP = ROOT_DIR / "dist" / "MangaCrisp.app"
 APP_ICON_SOURCE = ROOT_DIR / "assets" / "mangacrisp-app-icon.png"
 APP_ICON = ROOT_DIR / "build" / "MangaCrisp.icns"
 BUNDLE_IDENTIFIER = "com.jydie5.mangacrisp"
-APP_VERSION = "0.5.0"
+APP_VERSION = "0.6.0"
 LICENSES_DIR = ROOT_DIR / "build" / "licenses"
 RUNTIME_DISTRIBUTIONS = (
     "PyInstaller",

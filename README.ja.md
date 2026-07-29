@@ -21,7 +21,7 @@ MangaCrispは、macOS／Windows向けの無料・オープンソース漫画／�
 
 一般ユーザーにPython、uv、ターミナル操作は不要です。
 
-### [MangaCrisp v0.5.0-beta Apple Silicon版をダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/v0.5.0-beta/MangaCrisp-v0.5.0-beta-macos-apple-silicon-standalone.zip)
+### [MangaCrisp v0.6.0-beta Apple Silicon版をダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/v0.6.0-beta/MangaCrisp-v0.6.0-beta-macos-apple-silicon-standalone.zip)
 
 1. 上のリンクからstandalone ZIPをダウンロードします。
 2. ZIPをダブルクリックして展開します。

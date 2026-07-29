@@ -26,7 +26,7 @@ The screenshots use *Pepper&Carrot* by David Revoy under
 
 The standalone build does not require Python, uv, or Terminal.
 
-### [Download MangaCrisp v0.5.0-beta for Apple Silicon](https://github.com/jydie5/MangaCrisp/releases/download/v0.5.0-beta/MangaCrisp-v0.5.0-beta-macos-apple-silicon-standalone.zip)
+### [Download MangaCrisp v0.6.0-beta for Apple Silicon](https://github.com/jydie5/MangaCrisp/releases/download/v0.6.0-beta/MangaCrisp-v0.6.0-beta-macos-apple-silicon-standalone.zip)
 
 1. Download the standalone ZIP from the link above.
 2. Unzip it and move `MangaCrisp.app` to Applications.

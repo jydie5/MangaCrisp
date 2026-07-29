@@ -1,21 +1,29 @@
-# MangaCrisp v0.5.0-beta
+# MangaCrisp v0.6.0-beta
 
-MangaCrisp is the new product name for the independent macOS manga and comic
-viewer previously released as RAIV for mac. The application bundle is now
-`MangaCrisp.app`, and the repository is `jydie5/MangaCrisp`.
-
-Existing settings, books, and reading positions are preserved. On first launch,
-small application state is copied into MangaCrisp's Application Support
-directory. The previous default managed library is renamed to
-`~/MangaCrisp Library`; user-selected custom locations remain unchanged.
+This beta preserves color in AI-enhanced pages and adds mouse-first reading for
+right-bound manga and left-bound comics.
 
 ## Changes
 
-- Renamed the app and public project to MangaCrisp.
-- Changed the bundle identifier to `com.jydie5.mangacrisp`.
-- Renamed the source package and CLI to `mangacrisp_app` and `mangacrisp`.
-- Added migration coverage for the previous settings, database, managed library,
-  AI cache, and archive-group identifiers.
+- Preserve RGB color channels when displaying Real-CUGAN output.
+- Remove incompatible legacy grayscale display caches automatically.
+- Click the forward or backward side of the reader to turn a spread.
+- Use `Shift` with a side click to move one page.
+- Click the center to show or hide reading progress and file information.
+- Right-click to return to the previous spread.
+- Ignore drags and suppress duplicate page turns from double-clicks.
+- Keep mouse behavior consistent in windowed and full-screen reading.
+- Update English and Japanese help and installation links.
+
+## 日本語
+
+- Real-CUGAN補正版のカラー原稿をRGBのまま表示します。
+- 旧版が作成した互換性のないモノクロ表示キャッシュを自動削除します。
+- 読書方向に連動した左右クリックで見開きを進む／戻る操作を追加しました。
+- `Shift+クリック`で1ページ単位の調整ができます。
+- 中央クリックで進行情報を表示／非表示にします。
+- 右クリックで前の見開きへ戻ります。
+- ドラッグとダブルクリックによる意図しない複数ページ送りを防止します。
 
 # RAIV for mac v0.4.0-beta
 
