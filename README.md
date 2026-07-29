@@ -132,6 +132,22 @@ These are the defaults for right-bound manga.
 | `H` / `?` | Show keyboard help and project links |
 | `Esc` | Leave full screen or return to the bookshelf |
 
+## Mouse controls
+
+The click zones follow the selected reading direction and work the same in
+windowed and full-screen reading.
+
+| Input | Action |
+|---|---|
+| Click the forward-side 40% | Next spread |
+| Click the backward-side 40% | Previous spread |
+| `Shift` + side click | Move one page forward or backward |
+| Click the center 20% | Show or hide reading information |
+| Right-click | Previous spread |
+
+For right-bound manga, the left side advances and the right side goes back.
+Left-bound comics use the opposite mapping. Dragging does not turn a page.
+
 ## Free demo books
 
 The [`demo`](demo) directory contains three small ZIP files that can be dropped

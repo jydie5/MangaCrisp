@@ -11,12 +11,13 @@ from unittest.mock import patch
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PIL import Image
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QPoint, Qt
 from PySide6.QtGui import QImage, QPixmap
+from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
 import mangacrisp_app.viewer as viewer_module
-from mangacrisp_app.viewer import SpreadWindow
+from mangacrisp_app.viewer import SpreadWindow, reader_click_action
 
 
 class ViewerNavigationTests(unittest.TestCase):
@@ -80,6 +81,82 @@ class ViewerNavigationTests(unittest.TestCase):
 
         self.assertTrue(self.window.handle_navigation_key(Qt.Key_O))
         self.assertFalse(self.window.original_check.isChecked())
+
+    def test_click_zones_follow_right_bound_reading_direction(self) -> None:
+        self.assertEqual(reader_click_action(100, 1000, "rtl"), "next")
+        self.assertEqual(reader_click_action(500, 1000, "rtl"), "info")
+        self.assertEqual(reader_click_action(900, 1000, "rtl"), "previous")
+
+    def test_click_zones_follow_left_bound_reading_direction(self) -> None:
+        self.assertEqual(reader_click_action(100, 1000, "ltr"), "previous")
+        self.assertEqual(reader_click_action(500, 1000, "ltr"), "info")
+        self.assertEqual(reader_click_action(900, 1000, "ltr"), "next")
+
+    def test_right_click_always_moves_to_previous_spread(self) -> None:
+        for x in (100, 500, 900):
+            self.assertEqual(reader_click_action(x, 1000, "rtl", "right"), "previous")
+            self.assertEqual(reader_click_action(x, 1000, "ltr", "right"), "previous")
+
+    def test_reader_click_moves_a_spread_or_one_page(self) -> None:
+        self.assertTrue(self.window.handle_reader_click("next"))
+        self.assertEqual(self.window.index, 2)
+
+        self.assertTrue(self.window.handle_reader_click("previous", one_page=True))
+        self.assertEqual(self.window.index, 1)
+
+    def test_center_click_toggles_reading_info(self) -> None:
+        self.assertFalse(self.window.reading_info_visible)
+
+        self.assertTrue(self.window.handle_reader_click("info"))
+        self.assertTrue(self.window.reading_info_visible)
+
+        self.assertTrue(self.window.handle_reader_click("info"))
+        self.assertFalse(self.window.reading_info_visible)
+
+    def test_qt_mouse_clicks_navigate_and_toggle_info(self) -> None:
+        self.window.show()
+        self.application.processEvents()
+        self.window.index = 4
+
+        QTest.mouseClick(
+            self.window.left,
+            Qt.LeftButton,
+            Qt.NoModifier,
+            QPoint(20, self.window.left.height() // 2),
+        )
+        self.assertEqual(self.window.index, 6)
+
+        QTest.mouseClick(
+            self.window.right,
+            Qt.LeftButton,
+            Qt.NoModifier,
+            QPoint(self.window.right.width() - 20, self.window.right.height() // 2),
+        )
+        self.assertEqual(self.window.index, 4)
+
+        QTest.mouseClick(
+            self.window.left,
+            Qt.LeftButton,
+            Qt.ShiftModifier,
+            QPoint(20, self.window.left.height() // 2),
+        )
+        self.assertEqual(self.window.index, 5)
+
+        QTest.mouseClick(
+            self.window.left,
+            Qt.LeftButton,
+            Qt.NoModifier,
+            QPoint(self.window.left.width() - 10, self.window.left.height() // 2),
+        )
+        self.assertTrue(self.window.reading_info_visible)
+
+        QTest.mouseClick(
+            self.window.left,
+            Qt.RightButton,
+            Qt.NoModifier,
+            QPoint(20, self.window.left.height() // 2),
+        )
+        self.assertEqual(self.window.index, 3)
 
     def test_prefetch_worker_skips_pages_outside_latest_target(self) -> None:
         output_paths = {
