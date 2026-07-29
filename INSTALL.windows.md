@@ -17,7 +17,7 @@ RAR/CBR fallback extraction is provided by a pinned, checksum-verified 7-Zip
 
 ## Download the Development Preview
 
-[Download MangaCrisp 0.5.0b0 Windows x64 portable preview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.5.0b0.2/MangaCrisp-0.5.0b0-windows-x64-portable-preview.zip)
+[Download MangaCrisp 0.6.0b0 Windows x64 portable preview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.6.0b0.1/MangaCrisp-0.6.0b0-windows-x64-portable-preview.zip)
 
 1. Download the ZIP.
 2. Extract the complete `MangaCrisp` folder.
