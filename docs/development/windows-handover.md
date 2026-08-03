@@ -116,6 +116,28 @@ Do not modify or replace the macOS `v0.7.0-beta` release assets from the Windows
 branch. Windows artifacts must be built on Windows and published under their
 own Windows preview tag.
 
+### Windows v0.7 synchronization result (2026-08-03)
+
+- `pypdfium2==5.12.1` installs from its Windows x64 wheel. PyInstaller bundles
+  `_internal/pypdfium2_raw/pdfium.dll`; the Windows build now copies all 19
+  nested pypdfium2/PDFium notices, and the distribution audit requires both
+  the DLL and the notice set.
+- The complete Windows source suite passes with `69 passed, 1 skipped`. The
+  skipped test is the symbolic-link rejection setup on a Windows account that
+  lacks symlink-creation privilege; the test still runs on accounts and
+  platforms where a symlink can be created.
+- A generated three-page color PDF opens directly in the packaged application.
+  The red cover and green/blue spread remain in color in both original and
+  Real-CUGAN-enhanced display paths; the packaged reader reported `processed
+  3/3`.
+- Automated tests verify managed PDF import creates only the cover, preserves
+  the source when the managed copy is removed, and renders only three requested
+  pages from a 300-page PDF.
+- The rebuilt 0.7.0b0 portable ZIP passes the distribution audit with
+  `baseline_ready=true` and the sanitized-environment extracted ZIP smoke test.
+  Intel, AMD, and separate clean-account evidence remain the only preview
+  blockers.
+
 ## Technology decision
 
 Continue with PySide6 and the existing Python code for the first Windows

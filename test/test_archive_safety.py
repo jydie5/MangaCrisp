@@ -1,3 +1,4 @@
+import errno
 import io
 import zipfile
 from pathlib import Path
@@ -51,7 +52,14 @@ def test_extracted_tree_rejects_symbolic_links(tmp_path: Path) -> None:
     source = tmp_path / "source.png"
     Image.new("RGB", (8, 8), "red").save(source)
     link = tmp_path / "linked.png"
-    link.symlink_to(source)
+    try:
+        link.symlink_to(source)
+    except OSError as exc:
+        permission_denied = exc.errno in {errno.EACCES, errno.EPERM}
+        windows_privilege_missing = getattr(exc, "winerror", None) == 1314
+        if permission_denied or windows_privilege_missing:
+            pytest.skip("symlink creation is unavailable for this test account")
+        raise
 
     with pytest.raises(RuntimeError, match="symbolic link"):
         validate_extracted_tree(tmp_path)

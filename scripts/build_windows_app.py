@@ -40,6 +40,7 @@ RUNTIME_DISTRIBUTIONS = (
     "pyppmd",
     "texttable",
     "rarfile",
+    "pypdfium2",
 )
 
 
@@ -62,8 +63,8 @@ def copy_distribution_licenses(destination: Path) -> int:
         distribution = importlib.metadata.distribution(package_name)
         sources = []
         for relative_path in distribution.files or []:
-            name = Path(relative_path).name.lower()
-            if not any(term in name for term in ("license", "copying", "notice")):
+            path_text = str(relative_path).lower()
+            if not any(term in path_text for term in ("license", "copying", "notice")):
                 continue
             source = Path(distribution.locate_file(relative_path))
             if source.is_file():

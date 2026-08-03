@@ -57,6 +57,9 @@ REQUIRED_PUBLIC_FILES = {
     "licenses/7-Zip-readme.txt",
     "licenses/7zip-provenance.json",
 }
+REQUIRED_RUNTIME_FILES = {
+    "_internal/pypdfium2_raw/pdfium.dll",
+}
 REQUIRED_LICENSE_PREFIXES = {
     "Python-PyInstaller-",
     "Python-PySide6-",
@@ -64,6 +67,7 @@ REQUIRED_LICENSE_PREFIXES = {
     "Python-Pillow-",
     "Python-py7zr-",
     "Python-rarfile-",
+    "Python-pypdfium2-",
     "Python-3.",
     "Qt-PySide6-source-and-relinking.txt",
 }
@@ -412,6 +416,7 @@ def main() -> None:
         if path.parts and path.parts[0].lower() == "licenses"
     }
     missing_public_files = sorted(REQUIRED_PUBLIC_FILES - file_names)
+    missing_runtime_files = sorted(REQUIRED_RUNTIME_FILES - file_names)
     missing_license_prefixes = sorted(
         prefix
         for prefix in REQUIRED_LICENSE_PREFIXES
@@ -449,6 +454,8 @@ def main() -> None:
         failures.append(f"MangaCrisp.exe is not a GUI subsystem binary: {subsystem}")
     if missing_public_files:
         failures.append("public files are missing")
+    if missing_runtime_files:
+        failures.append("required runtime files are missing")
     if missing_license_prefixes:
         failures.append("runtime license notices are missing")
     if forbidden_paths:
@@ -501,6 +508,7 @@ def main() -> None:
         "engine": engine,
         "release_validation": release_validation,
         "missing_public_files": missing_public_files,
+        "missing_runtime_files": missing_runtime_files,
         "missing_license_prefixes": missing_license_prefixes,
         "forbidden_paths": forbidden_paths,
         "forbidden_executables": forbidden_executables,
