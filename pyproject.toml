@@ -1,6 +1,6 @@
 [project]
 name = "mangacrisp"
-version = "0.6.0b0"
+version = "0.7.0b0"
 description = "AI-enhanced manga and comic viewer for macOS and Windows"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -8,6 +8,7 @@ license = "MIT"
 dependencies = [
     "pillow>=10",
     "py7zr>=0.22",
+    "pypdfium2>=5,<6",
     "rarfile>=4.2",
 ]
 

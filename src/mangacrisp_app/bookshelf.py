@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import re
+import shutil
 import threading
 from pathlib import Path
 
 from mangacrisp_app.archive_utils import natural_sort_key
 from mangacrisp_app.branding import APP_NAME
+from mangacrisp_app.diagnostics import diagnostics_text
 from mangacrisp_app.i18n import (
     current_language,
     load_language_preference,
@@ -21,8 +23,8 @@ from mangacrisp_app.library import (
     save_library_settings,
     utc_now_iso,
 )
-from mangacrisp_app.platform import open_directory
 from mangacrisp_app.page_provider import open_pages_for_viewer
+from mangacrisp_app.platform import open_directory
 from mangacrisp_app.viewer import (
     DEFAULT_FORWARD_PREFETCH_COUNT,
     DEFAULT_PREVIOUS_PREFETCH_COUNT,
@@ -34,24 +36,27 @@ from mangacrisp_app.viewer import (
 )
 
 if PYSIDE_IMPORT_ERROR is None:
-    from PySide6.QtCore import QEvent, QTimer, QObject, QSize, Qt, Signal
-    from PySide6.QtGui import QIcon
+    from PySide6.QtCore import QEvent, QObject, QSize, Qt, QTimer, Signal
+    from PySide6.QtGui import QAction, QIcon
     from PySide6.QtWidgets import (
-        QFileDialog,
+        QApplication,
         QComboBox,
+        QFileDialog,
         QHBoxLayout,
         QLabel,
         QListWidget,
         QListWidgetItem,
         QMainWindow,
+        QMenu,
         QMessageBox,
         QPushButton,
         QStackedWidget,
+        QToolButton,
         QVBoxLayout,
         QWidget,
     )
 else:
-    QEvent = QTimer = QObject = QSize = Qt = Signal = QIcon = QFileDialog = QComboBox = QHBoxLayout = QLabel = QListWidget = QListWidgetItem = QMessageBox = QPushButton = QStackedWidget = QVBoxLayout = QWidget = None
+    QEvent = QTimer = QObject = QSize = Qt = Signal = QAction = QIcon = QApplication = QFileDialog = QComboBox = QHBoxLayout = QLabel = QListWidget = QListWidgetItem = QMessageBox = QMenu = QPushButton = QStackedWidget = QToolButton = QVBoxLayout = QWidget = None
     QMainWindow = object
 
 
@@ -255,6 +260,20 @@ class BookshelfWindow(QMainWindow):
         help_button.setToolTip(tr("ショートカットを表示"))
         help_button.clicked.connect(self.show_shortcuts_help)
         header_row.addWidget(help_button)
+        more_button = QToolButton(root)
+        more_button.setText("…")
+        more_button.setFixedWidth(36)
+        more_button.setToolTip(tr("その他の操作"))
+        more_button.setPopupMode(QToolButton.InstantPopup)
+        more_menu = QMenu(more_button)
+        copy_diagnostics_action = QAction(tr("診断情報をコピー"), more_menu)
+        copy_diagnostics_action.triggered.connect(self.copy_diagnostics)
+        more_menu.addAction(copy_diagnostics_action)
+        clear_cache_action = QAction(tr("キャッシュを削除"), more_menu)
+        clear_cache_action.triggered.connect(self.clear_cache)
+        more_menu.addAction(clear_cache_action)
+        more_button.setMenu(more_menu)
+        header_row.addWidget(more_button)
         language_label = QLabel(tr("言語"), root)
         language_label.setObjectName("subtitle")
         header_row.addWidget(language_label)
@@ -269,7 +288,7 @@ class BookshelfWindow(QMainWindow):
         header_row.addWidget(self.language_combo)
         layout.addLayout(header_row)
 
-        subtitle = QLabel(tr("ローカルの画像フォルダ、単画像、zip/cbz/rar/cbr/7z/cb7 を本棚へ登録します。"), root)
+        subtitle = QLabel(tr("ローカルのPDF、画像フォルダ、単画像、zip/cbz/rar/cbr/7z/cb7 を本棚へ登録します。"), root)
         subtitle.setObjectName("subtitle")
         layout.addWidget(subtitle)
 
@@ -401,6 +420,28 @@ class BookshelfWindow(QMainWindow):
     def show_shortcuts_help(self) -> None:
         show_help_dialog(self, bookshelf_shortcuts_text())
 
+    def copy_diagnostics(self) -> None:
+        text = diagnostics_text(
+            book_count=len(self.library.books.list_books()),
+            cache_dir=self.library.paths.cache_dir,
+        )
+        QApplication.clipboard().setText(text)
+        self.status_label.setText(tr("診断情報をクリップボードへコピーしました。"))
+
+    def clear_cache(self) -> None:
+        message = QMessageBox(self)
+        message.setWindowTitle(tr("キャッシュを削除"))
+        message.setIcon(QMessageBox.Question)
+        message.setText(tr("PDF描画とAI補正のキャッシュを削除しますか？"))
+        message.setInformativeText(tr("本棚、元ファイル、読書位置、しおりは削除しません。"))
+        message.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        message.setDefaultButton(QMessageBox.No)
+        if message.exec() != QMessageBox.Yes:
+            return
+        shutil.rmtree(self.library.paths.cache_dir, ignore_errors=True)
+        self.library.paths.cache_dir.mkdir(parents=True, exist_ok=True)
+        self.status_label.setText(tr("キャッシュを削除しました。"))
+
     def handle_drop_event(self, event) -> bool:
         if event.type() in {QEvent.DragEnter, QEvent.DragMove}:
             self.accept_drag_event_if_supported(event)
@@ -427,16 +468,18 @@ class BookshelfWindow(QMainWindow):
             return False
         archive_suffixes = {".zip", ".cbz", ".rar", ".cbr", ".7z", ".cb7"}
         archive_count = sum(1 for path in paths if path.suffix.lower() in archive_suffixes)
+        pdf_count = sum(1 for path in paths if path.suffix.lower() == ".pdf")
         folder_count = sum(1 for path in paths if path.is_dir())
-        file_count = len(paths) - folder_count - archive_count
+        file_count = len(paths) - folder_count - archive_count - pdf_count
         examples = "\n".join(f"- {path.name}" for path in paths[:5])
         if len(paths) > 5:
             examples += tr("\n- ほか {count} 件", count=len(paths) - 5)
         detail = tr(
-            "{source}を本棚へ登録します。\n\n対象: {total}件（圧縮ファイル {archives}件 / フォルダ {folders}件 / ファイル {files}件）\n\n{examples}\n\n圧縮ファイルは本棚保存先へ展開し、表紙サムネイルを作成します。\n元のZIP/RAR/7zファイルは削除しません。",
+            "{source}を本棚へ登録します。\n\n対象: {total}件（圧縮ファイル {archives}件 / PDF {pdfs}件 / フォルダ {folders}件 / ファイル {files}件）\n\n{examples}\n\n圧縮ファイルは展開し、PDFは原本をコピーして表紙だけを生成します。\n元のファイルは削除しません。",
             source=source_label,
             total=len(paths),
             archives=archive_count,
+            pdfs=pdf_count,
             folders=folder_count,
             files=file_count,
             examples=examples,
@@ -502,7 +545,7 @@ class BookshelfWindow(QMainWindow):
             self,
             tr("本棚に追加"),
             str(Path.home()),
-            "Images and archives (*.zip *.cbz *.rar *.cbr *.7z *.cb7 *.png *.jpg *.jpeg *.webp *.bmp *.gif *.tif *.tiff *.avif);;All files (*)",
+            "PDF, images and archives (*.pdf *.zip *.cbz *.rar *.cbr *.7z *.cb7 *.png *.jpg *.jpeg *.webp *.bmp *.gif *.tif *.tiff *.avif);;All files (*)",
         )
         self.enqueue_register_paths([Path(path) for path in paths])
 
@@ -541,25 +584,12 @@ class BookshelfWindow(QMainWindow):
     def _register_worker(self, path: Path) -> None:
         worker_library = LibraryService.open(self.library.paths)
         try:
-            books = worker_library.register_local_books(path)
+            books = worker_library.scanner.scan_many(path)
             self.signals.register_progress.emit(
                 books,
-                tr("本棚に追加しました。展開中: {name}", name=path.name),
+                tr("内容を確認しました。取り込み中: {name}", name=path.name),
             )
-            imported_books: list[Book] = []
-            for index, book in enumerate(books, start=1):
-                if book.file_kind in {"zip", "cbz", "rar", "cbr", "7z", "cb7"}:
-                    worker_library.importer.import_book(book)
-                imported_books.append(worker_library.books.get(book.id) or book)
-                self.signals.register_progress.emit(
-                    imported_books.copy(),
-                    tr(
-                        "展開中 {position}/{total}: {title}",
-                        position=index,
-                        total=len(books),
-                        title=book.title,
-                    ),
-                )
+            imported_books = worker_library.import_local_books(path)
             self.signals.register_done.emit(imported_books, None)
         except Exception as exc:
             self.signals.register_done.emit(None, exc)

@@ -13,7 +13,7 @@
 スクリーンショットと`demo`の画像はDavid Revoy氏の*Pepper&Carrot*を
 [CC BY 4.0](demo/ATTRIBUTION.md)に基づいて使用しています。商業漫画の画像は含みません。
 
-MangaCrispは、macOS／Windows向けの無料・オープンソース漫画／コミックビューアです。CBZ、CBR、ZIP、RAR、7z、画像フォルダを読み込み、本棚、右綴じ見開き表示、Real-CUGANによるAI補正を利用できます。
+MangaCrispは、macOS／Windows向けの無料・オープンソース漫画／コミックビューアです。PDF、CBZ、CBR、ZIP、RAR、7z、画像フォルダを読み込み、本棚、右綴じ見開き表示、Real-CUGANによるAI補正を利用できます。
 
 旧称RAIV for macとして[nalltama/RAIV](https://github.com/nalltama/RAIV)に着想を得て独立実装しました。現在はMangaCrispとして独自の製品方針で開発しており、本家RAIVの公式リリースではありません。
 
@@ -21,7 +21,7 @@ MangaCrispは、macOS／Windows向けの無料・オープンソース漫画／�
 
 一般ユーザーにPython、uv、ターミナル操作は不要です。
 
-### [MangaCrisp v0.6.0-beta Apple Silicon版をダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/v0.6.0-beta/MangaCrisp-v0.6.0-beta-macos-apple-silicon-standalone.zip)
+### [MangaCrisp v0.7.0-beta Apple Silicon版をダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/v0.7.0-beta/MangaCrisp-v0.7.0-beta-macos-apple-silicon-standalone.zip)
 
 1. 上のリンクからstandalone ZIPをダウンロードします。
 2. ZIPをダブルクリックして展開します。
@@ -47,7 +47,7 @@ Intel／AMD GPUの補正証跡と、別のクリーンなWindowsアカウント�
 ## 最初の一冊を読む
 
 1. MangaCrispを起動すると本棚が開きます。
-2. ZIP、CBZ、RAR、CBR、7z、CB7、または画像フォルダを本棚へドラッグ＆ドロップします。
+2. PDF、ZIP、CBZ、RAR、CBR、7z、CB7、または画像フォルダを本棚へドラッグ＆ドロップします。
 3. 確認画面で`登録`を選びます。
 4. 表紙をダブルクリックすると読書画面が開きます。
 5. 左カーソルキーまたはSpaceで先へ進みます。
@@ -88,7 +88,10 @@ Windows版はVulkan対応GPUを使用します。補正を待っている間も�
 
 - 表紙を並べる本棚
 - 複数アーカイブのドラッグ＆ドロップ登録
-- ZIP/CBZ、RAR/CBR、7z/CB7、画像フォルダ
+- PDF、ZIP/CBZ、RAR/CBR、7z/CB7、画像フォルダ
+- 全ページ変換を行わず、必要なページだけカラー保持で描画するPDF対応
+- 上限付きPDF描画／AI補正キャッシュとキャッシュ削除操作
+- 不具合報告に使える個人情報を含まない診断情報のコピー
 - 右綴じ漫画の表紙単独・見開き表示
 - 巻順の並び替えと次巻への移動
 - 読書位置の保存

@@ -7,7 +7,7 @@
 </p>
 
 MangaCrisp is a free, open-source manga and comic viewer for macOS and Windows.
-It reads CBZ, CBR, ZIP, RAR, 7z, image folders, and individual
+It reads PDF, CBZ, CBR, ZIP, RAR, 7z, image folders, and individual
 images, combining a visual bookshelf, two-page manga reading, and automatic
 Real-CUGAN AI upscaling in a native desktop application.
 
@@ -26,7 +26,7 @@ The screenshots use *Pepper&Carrot* by David Revoy under
 
 The standalone build does not require Python, uv, or Terminal.
 
-### [Download MangaCrisp v0.6.0-beta for Apple Silicon](https://github.com/jydie5/MangaCrisp/releases/download/v0.6.0-beta/MangaCrisp-v0.6.0-beta-macos-apple-silicon-standalone.zip)
+### [Download MangaCrisp v0.7.0-beta for Apple Silicon](https://github.com/jydie5/MangaCrisp/releases/download/v0.7.0-beta/MangaCrisp-v0.7.0-beta-macos-apple-silicon-standalone.zip)
 
 1. Download the standalone ZIP from the link above.
 2. Unzip it and move `MangaCrisp.app` to Applications.
@@ -51,7 +51,7 @@ reading remains available if enhancement is unavailable. See
 ## Read your first book
 
 1. Launch MangaCrisp to open the bookshelf.
-2. Drag a ZIP, CBZ, RAR, CBR, 7z, CB7, image folder, or image onto the window.
+2. Drag a PDF, ZIP, CBZ, RAR, CBR, 7z, CB7, image folder, or image onto the window.
 3. Confirm the import.
 4. Double-click the cover.
 5. Press Left Arrow or Space to advance in the default right-bound mode.
@@ -64,7 +64,10 @@ first launch. A custom library location selected by the user is left unchanged.
 ## Features
 
 - Cover-based bookshelf with multi-file drag and drop
-- ZIP/CBZ, RAR/CBR, 7z/CB7, image folders, and individual images
+- PDF, ZIP/CBZ, RAR/CBR, 7z/CB7, image folders, and individual images
+- On-demand PDF rendering that preserves color without converting the whole book during import
+- Bounded PDF render and AI enhancement caches with a clear-cache action
+- Copyable privacy-safe diagnostics for issue reports
 - Right-bound manga layout with a single cover and two-page spreads
 - Natural title and volume ordering
 - Continue to the next volume without leaving full screen

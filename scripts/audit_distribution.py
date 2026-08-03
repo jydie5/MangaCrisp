@@ -32,6 +32,7 @@ REQUIRED_RUNTIME_LICENSE_PREFIXES = {
     "Python-Pillow-",
     "Python-py7zr-",
     "Python-rarfile-",
+    "Python-pypdfium2-",
     "Python-psutil-",
     "Python-pycryptodomex-",
     "Python-inflate64-",

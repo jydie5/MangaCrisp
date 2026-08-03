@@ -8,7 +8,7 @@ from unittest.mock import patch
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PIL import Image
-from PySide6.QtWidgets import QApplication, QAbstractButton, QComboBox, QLabel
+from PySide6.QtWidgets import QAbstractButton, QApplication, QComboBox, QLabel
 
 from mangacrisp_app.bookshelf import BookshelfWindow
 from mangacrisp_app.i18n import (
@@ -20,7 +20,6 @@ from mangacrisp_app.i18n import (
 )
 from mangacrisp_app.library import LibraryPaths, LibraryService, save_library_settings
 from mangacrisp_app.viewer import SpreadWindow, help_dialog_html, viewer_shortcuts_text
-
 
 JAPANESE_TEXT = re.compile(r"[ぁ-んァ-ン一-龯]")
 
@@ -46,6 +45,7 @@ def visible_widget_texts(window) -> list[str]:
 def test_windows_japanese_locale_is_detected() -> None:
     with (
         patch.dict(os.environ, {"MANGACRISP_LANGUAGE": ""}),
+        patch("mangacrisp_app.i18n.sys.platform", "win32"),
         patch("mangacrisp_app.i18n.locale.getlocale", return_value=("Japanese_Japan", "932")),
     ):
         assert detect_system_language() == "ja"
