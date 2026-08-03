@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import tempfile
+import threading
 import time
 import unittest
 from pathlib import Path
@@ -297,28 +298,40 @@ class ViewerNavigationTests(unittest.TestCase):
         self.window.resize_quality_timer.stop()
         self.window.fast_resize_render = False
         original_decode = viewer_module.decode_scaled_display_image
+        release_corrected = threading.Event()
 
         def corrected_is_slow(*args, **kwargs):
             normalize_color = bool(args[4])
-            time.sleep(0.25 if normalize_color else 0.01)
+            if normalize_color:
+                release_corrected.wait(timeout=2)
             return original_decode(*args, **kwargs)
 
         with patch("mangacrisp_app.viewer.decode_scaled_display_image", side_effect=corrected_is_slow):
-            self.window.move_by(2)
-            self.window.display_warm_timer.stop()
-            self.window.cache_maintenance_timer.stop()
-            deadline = time.perf_counter() + 0.1
-            while time.perf_counter() < deadline:
-                self.application.processEvents()
-                time.sleep(0.005)
+            try:
+                self.window.move_by(2)
+                self.window.display_warm_timer.stop()
+                self.window.cache_maintenance_timer.stop()
+                deadline = time.perf_counter() + 1
+                while time.perf_counter() < deadline:
+                    self.application.processEvents()
+                    if (
+                        self.window.left.pixmap() is not None
+                        and not self.window.left.pixmap().isNull()
+                        and self.window.right.pixmap() is not None
+                        and not self.window.right.pixmap().isNull()
+                    ):
+                        break
+                    time.sleep(0.005)
 
-            self.assertFalse(self.window.left.pixmap().isNull())
-            self.assertFalse(self.window.right.pixmap().isNull())
-            desired_keys = [
-                self.window.desired_display_keys[id(self.window.left)],
-                self.window.desired_display_keys[id(self.window.right)],
-            ]
-            self.assertTrue(any(key not in self.window.display_pixmap_cache for key in desired_keys))
+                self.assertFalse(self.window.left.pixmap().isNull())
+                self.assertFalse(self.window.right.pixmap().isNull())
+                desired_keys = [
+                    self.window.desired_display_keys[id(self.window.left)],
+                    self.window.desired_display_keys[id(self.window.right)],
+                ]
+                self.assertTrue(any(key not in self.window.display_pixmap_cache for key in desired_keys))
+            finally:
+                release_corrected.set()
 
             self.window.visible_display_pool.waitForDone(2000)
             self.application.processEvents()
