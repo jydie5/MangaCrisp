@@ -15,10 +15,11 @@ from tempfile import TemporaryDirectory
 
 from PIL import Image
 from mangacrisp_app.branding import APP_NAME, CACHE_DIR, PROJECT_URL, SUPPORT_URL
-from mangacrisp_app.archive_utils import discover_samples, load_sample_pages
+from mangacrisp_app.archive_utils import discover_samples
 from mangacrisp_app.engine_utils import realcugan_executable, run_realcugan
 from mangacrisp_app.i18n import initialize_language, tr
 from mangacrisp_app.library import migrate_legacy_application_state
+from mangacrisp_app.page_provider import open_pages_for_viewer
 from mangacrisp_app.quality_settings import (
     DEFAULT_QUALITY_SETTINGS_PATH,
     load_quality_preferences,
@@ -2107,6 +2108,7 @@ def parse_args(argv: list[str]) -> Namespace:
     parser.add_argument("sample", nargs="?", help="folder/archive/image sample path")
     parser.add_argument("--bookshelf", action="store_true", help=f"open the {APP_NAME} bookshelf window")
     parser.add_argument("--smoke-test", action="store_true", help="open and close an isolated bookshelf for build validation")
+    parser.add_argument("--smoke-close-ms", type=int, default=0, help="close a direct reader automatically for package validation")
     parser.add_argument("--processed-dir", help="directory containing processed images")
     parser.add_argument("--original", action="store_true", help="ignore processed images")
     parser.add_argument("--use-processed", action="store_true", help="auto-load processed benchmark images when available")
@@ -2159,7 +2161,7 @@ def choose_source_with_dialog(parent=None) -> Path:
         parent,
         f"Open {APP_NAME} sample",
         str(Path.home()),
-        "Images and archives (*.zip *.cbz *.rar *.cbr *.7z *.cb7 *.png *.jpg *.jpeg *.webp *.bmp *.gif *.tif *.tiff *.avif);;All files (*)",
+        "PDF, images and archives (*.pdf *.zip *.cbz *.rar *.cbr *.7z *.cb7 *.png *.jpg *.jpeg *.webp *.bmp *.gif *.tif *.tiff *.avif);;All files (*)",
     )
     if not path:
         raise SystemExit("No sample selected.")
@@ -2227,7 +2229,7 @@ def main() -> None:
             source = choose_source(None)
         except SystemExit:
             source = choose_source_with_dialog()
-    pages, cleanup_dir = load_sample_pages(source)
+    pages, cleanup_dir = open_pages_for_viewer(source)
     if not pages:
         raise SystemExit(f"No images found in {source}")
     if args.original:
@@ -2257,6 +2259,8 @@ def main() -> None:
     window.activateWindow()
     QTimer.singleShot(0, window.raise_)
     QTimer.singleShot(0, window.activateWindow)
+    if args.smoke_close_ms > 0:
+        QTimer.singleShot(args.smoke_close_ms, window.close)
     app.exec()
 
 

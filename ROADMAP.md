@@ -65,6 +65,61 @@
 - キャッシュに追いついた場合の待ち時間と原画表示へのフォールバックを測定
 - 10分以上の連続読書でメモリとキャッシュ容量が上限内に収まることを確認
 
+## P1: PDF対応
+
+状態: v0.7.0-betaで実装済み
+
+スキャン文書で一般的なPDFを本棚へ登録し、全ページを事前変換せず現在位置から
+オンデマンド描画します。表紙だけは取り込み時に生成し、原画を先に表示してから
+必要な場合だけ既存AI補正へ渡します。
+
+- 暗号化されていないローカルPDF
+- ラスター・ベクター・混在ページとカラー保持
+- 300ページ以上でも全ページ事前描画を行わない
+- 描画ページと補正ページを別の有界キャッシュで管理
+- PDFレンダラーはライセンス、macOS/Windows同梱、スレッド安全性を技術検証して確定
+
+## P1: Comic EPUB対応
+
+状態: 要件定義・設計完了、PDF共通基盤の後に実装
+
+DRMフリーEPUB 2/3のうち、画像ページ列へ欠落なく変換できる固定レイアウト漫画を
+対象とします。OPFのspine順、RTL/LTR、見開き位置、表紙を尊重します。
+
+- リフロー型、DRM、スクリプト必須、外部リソース必須は初期対象外
+- ZIP内ファイル名ではなくOPF spineをページ順に使用
+- path traversal、zip bomb、XML外部エンティティを防止
+- 非対応EPUBと破損EPUBを区別して案内
+
+## P2: OPDS 1.2ネットワーク書庫
+
+状態: 要件定義・設計完了、PDF・Comic EPUBの後に実装
+
+Komga、Kavita、Calibre Content Serverを本棚から閲覧し、選択した本を管理領域へ
+ダウンロードして既存のローカル読書・AI補正へ渡します。初期版はストリーミングせず、
+ダウンロード後のオフライン読書を優先します。
+
+- Navigation/Acquisition Feed、検索、ページ分割
+- CBZ/CBR/PDF/EPUB取得
+- Basic/Digest認証
+- macOS Keychain／Windows Credential Managerへの秘密保存
+- 非同期閲覧・ダウンロード・キャンセル
+- OPDS 2.0、独自API、読書位置同期は後続評価
+
+詳細要件と共通設計:
+
+- [English](docs/product/publication-sources.md)
+- [日本語](docs/product/publication-sources.ja.md)
+
+次回リリースの範囲と品質ゲート:
+
+- [English](docs/releases/v0.7.0-beta-plan.md)
+- [日本語](docs/releases/v0.7.0-beta-plan.ja.md)
+
+リリース順は `v0.7.0-beta: 共通ページ基盤 + PDF`、
+`v0.8.0-beta: Comic EPUB`、`v0.9.0-beta: OPDS 1.2` とします。
+PDF、EPUB、ネットワーク書庫を同じリリースへ同時投入しません。
+
 ## P1: マウス中心の読書操作
 
 状態: 実装済み

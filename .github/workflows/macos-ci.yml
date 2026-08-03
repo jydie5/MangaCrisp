@@ -1,0 +1,78 @@
+name: macOS source and package checks
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/macos-ci.yml"
+      - "src/**"
+      - "scripts/build_macos_app.py"
+      - "scripts/package_standalone.py"
+      - "scripts/audit_distribution.py"
+      - "test/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "THIRD_PARTY_NOTICES.md"
+  workflow_dispatch:
+
+concurrency:
+  group: macos-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test Apple Silicon source
+    runs-on: macos-14
+    timeout-minutes: 30
+    env:
+      UV_FROZEN: "1"
+      MANGACRISP_LANGUAGE: "en"
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        run: python -m pip install --disable-pip-version-check uv==0.11.15
+
+      - name: Install project dependencies
+        run: uv sync --extra dev --extra app
+
+      - name: Run source and unit checks
+        run: |
+          uv run python -m compileall -q src scripts test
+          uv run pytest -q
+          uv run python -m mangacrisp_app.main --smoke-test
+
+      - name: Build standalone application without vendor engine
+        run: uv run python scripts/build_macos_app.py
+
+      - name: Smoke-test packaged application
+        run: |
+          "dist/MangaCrisp.app/Contents/MacOS/MangaCrisp" --smoke-test
+          pdf_path="$RUNNER_TEMP/mangacrisp-color-smoke.pdf"
+          PDF_PATH="$pdf_path" uv run python - <<'PY'
+          import os
+          from PIL import Image
+
+          path = os.environ["PDF_PATH"]
+          Image.new("RGB", (240, 360), (220, 30, 40)).save(
+              path,
+              "PDF",
+              save_all=True,
+              append_images=[Image.new("RGB", (240, 360), (20, 50, 220))],
+          )
+          PY
+          "dist/MangaCrisp.app/Contents/MacOS/MangaCrisp" \
+            "$pdf_path" \
+            --no-auto-prefetch \
+            --smoke-close-ms 1000

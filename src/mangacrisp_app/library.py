@@ -27,7 +27,9 @@ from .archive_utils import (
     ArchiveVolumeGroup,
     archive_display_name,
     collect_folder_images,
+    copy_stream_limited,
     discover_archive_volume_groups,
+    extract_7z_images,
     extract_external_archive_images,
     is_archive,
     is_archive_image_member,
@@ -35,6 +37,9 @@ from .archive_utils import (
     list_archive_image_members,
     natural_sort_key,
 )
+from .page_provider import PdfPageList, is_pdf, pdf_page_count, pdf_source_key
+
+CURRENT_SCHEMA_VERSION = 1
 
 
 def utc_now_iso() -> str:
@@ -258,15 +263,33 @@ class LibraryDatabase:
     def __init__(self, path: Path) -> None:
         self.path = path.expanduser()
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.existed_before_open = self.path.is_file() and self.path.stat().st_size > 0
         self.connection = sqlite3.connect(self.path)
         self.connection.row_factory = sqlite3.Row
         self.connection.execute("PRAGMA foreign_keys = ON")
-        self.migrate()
+        try:
+            self.migrate()
+        except Exception:
+            self.connection.close()
+            raise
 
     def close(self) -> None:
         self.connection.close()
 
     def migrate(self) -> None:
+        current_version = int(self.connection.execute("PRAGMA user_version").fetchone()[0])
+        if current_version > CURRENT_SCHEMA_VERSION:
+            raise RuntimeError(
+                f"library database version {current_version} is newer than this app supports "
+                f"({CURRENT_SCHEMA_VERSION})"
+            )
+        if self.existed_before_open and current_version < CURRENT_SCHEMA_VERSION:
+            backup_path = self.path.with_name(f"{self.path.name}.backup-v{current_version}")
+            backup_connection = sqlite3.connect(backup_path)
+            try:
+                self.connection.backup(backup_connection)
+            finally:
+                backup_connection.close()
         self.connection.executescript(
             """
             CREATE TABLE IF NOT EXISTS books (
@@ -325,6 +348,7 @@ class LibraryDatabase:
             WHERE instr(source_uri, '#raiv-group=') > 0;
             """
         )
+        self.connection.execute(f"PRAGMA user_version = {CURRENT_SCHEMA_VERSION}")
         self.connection.commit()
 
 
@@ -357,6 +381,16 @@ class LibraryService:
     def register_local_books(self, source_path: Path) -> list[Book]:
         books = self.scanner.scan_many(source_path)
         return [self.books.upsert(book) for book in books]
+
+    def import_local_books(self, source_path: Path) -> list[Book]:
+        imported_books: list[Book] = []
+        for book in self.scanner.scan_many(source_path):
+            if book.file_kind in {"pdf", "zip", "cbz", "rar", "cbr", "7z", "cb7"}:
+                self.importer.import_book(book)
+            else:
+                self.books.upsert(book)
+            imported_books.append(self.books.get(book.id) or book)
+        return imported_books
 
     def delete_book(self, book_id: str, remove_managed_storage: bool = True) -> bool:
         if remove_managed_storage:
@@ -668,15 +702,80 @@ class LibraryImportService:
     def delete_managed_storage(self, book_id: str) -> None:
         book = self.books.get(book_id)
         if book is not None:
+            if book.file_kind == "pdf":
+                pdf_path = Path(book.local_path).expanduser()
+                if pdf_path.is_file():
+                    cache_dir = self.paths.cache_dir / "pdf-render" / pdf_source_key(pdf_path)
+                    shutil.rmtree(cache_dir, ignore_errors=True)
             current_dir = managed_book_dir_from_book(book, self.paths.library_dir)
             if current_dir is not None:
                 shutil.rmtree(current_dir, ignore_errors=True)
         shutil.rmtree(self.book_dir_for_id(book_id), ignore_errors=True)
 
     def import_book(self, book: Book) -> ImportResult:
+        book_dir = self.book_dir_for_book(book)
+        staging_dir = self.paths.library_dir / f".{book_dir.name}.import-{uuid.uuid4().hex}"
+        backup_dir = self.paths.library_dir / f".{book_dir.name}.backup-{uuid.uuid4().hex}"
+        shutil.rmtree(staging_dir, ignore_errors=True)
+        try:
+            staged_result, staged_book = self._import_book_to_directory(book, staging_dir)
+            if book_dir.exists():
+                book_dir.replace(backup_dir)
+            try:
+                staging_dir.replace(book_dir)
+                imported_book = staged_book.with_updates(
+                    local_path=str(_rewrite_staged_path(Path(staged_book.local_path), staging_dir, book_dir)),
+                    cover_thumbnail_path=(
+                        str(_rewrite_staged_path(Path(staged_book.cover_thumbnail_path), staging_dir, book_dir))
+                        if staged_book.cover_thumbnail_path
+                        else None
+                    ),
+                )
+                result_pages_dir = _rewrite_staged_path(staged_result.pages_dir, staging_dir, book_dir)
+                result_page_paths = [
+                    _rewrite_staged_path(path, staging_dir, book_dir) for path in staged_result.page_paths
+                ]
+                if imported_book.file_kind == "pdf":
+                    result_pages_dir, result_page_paths = self._promote_pdf_cache(
+                        staged_result.pages_dir,
+                        Path(imported_book.local_path),
+                    )
+                self.books.upsert(imported_book)
+            except Exception:
+                shutil.rmtree(book_dir, ignore_errors=True)
+                if backup_dir.exists():
+                    backup_dir.replace(book_dir)
+                raise
+            shutil.rmtree(backup_dir, ignore_errors=True)
+            return ImportResult(
+                book_id=staged_result.book_id,
+                book_dir=book_dir,
+                original_path=_rewrite_staged_path(staged_result.original_path, staging_dir, book_dir),
+                pages_dir=result_pages_dir,
+                page_paths=result_page_paths,
+                page_count=staged_result.page_count,
+            )
+        except Exception:
+            shutil.rmtree(staging_dir, ignore_errors=True)
+            if backup_dir.exists() and not book_dir.exists():
+                backup_dir.replace(book_dir)
+            raise
+
+    def _promote_pdf_cache(self, staged_cache_dir: Path, final_pdf_path: Path) -> tuple[Path, list[Path]]:
+        final_cache_dir = self.paths.cache_dir / "pdf-render" / pdf_source_key(final_pdf_path)
+        final_cache_dir.mkdir(parents=True, exist_ok=True)
+        page_paths: list[Path] = []
+        for staged_page in sorted(staged_cache_dir.glob("*.png"), key=lambda path: natural_sort_key(path.name)):
+            final_page = final_cache_dir / staged_page.name
+            if not final_page.exists():
+                staged_page.replace(final_page)
+            page_paths.append(final_page.resolve())
+        shutil.rmtree(staged_cache_dir, ignore_errors=True)
+        return final_cache_dir, page_paths
+
+    def _import_book_to_directory(self, book: Book, book_dir: Path) -> tuple[ImportResult, Book]:
         source = Path(book.local_path).expanduser()
         group_key = archive_group_key_from_source_uri(book.source_uri)
-        book_dir = self.book_dir_for_book(book)
         original_dir = book_dir / "original"
         pages_dir = book_dir / "pages"
         cover_dir = book_dir / "cover"
@@ -693,6 +792,28 @@ class LibraryImportService:
         member_names = None
         if group_key:
             member_names = archive_member_names_for_group(source, group_key)
+        if book.file_kind == "pdf":
+            pdf_pages = PdfPageList(original_path, self.paths.cache_dir / "pdf-render")
+            first_page = pdf_pages[0]
+            page_paths = [first_page]
+            cover_path = self._generate_cover(page_paths, cover_dir)
+            updated = book.with_updates(
+                local_path=str(original_path),
+                file_kind="pdf",
+                page_count=len(pdf_pages),
+                cover_thumbnail_path=str(cover_path) if cover_path else book.cover_thumbnail_path,
+            )
+            return (
+                ImportResult(
+                    book_id=book.id,
+                    book_dir=book_dir,
+                    original_path=original_path,
+                    pages_dir=pdf_pages.cache_dir,
+                    page_paths=page_paths,
+                    page_count=len(pdf_pages),
+                ),
+                updated,
+            )
         if book.file_kind in {"zip", "cbz"}:
             page_paths = self._extract_zip_pages(original_path, pages_dir, member_names=member_names)
         elif book.file_kind in {"rar", "cbr"}:
@@ -708,14 +829,16 @@ class LibraryImportService:
             page_count=len(page_paths),
             cover_thumbnail_path=str(cover_path) if cover_path else book.cover_thumbnail_path,
         )
-        self.books.upsert(updated)
-        return ImportResult(
-            book_id=book.id,
-            book_dir=book_dir,
-            original_path=original_path,
-            pages_dir=pages_dir,
-            page_paths=page_paths,
-            page_count=len(page_paths),
+        return (
+            ImportResult(
+                book_id=book.id,
+                book_dir=book_dir,
+                original_path=original_path,
+                pages_dir=pages_dir,
+                page_paths=page_paths,
+                page_count=len(page_paths),
+            ),
+            updated,
         )
 
     def _generate_cover(self, page_paths: list[Path], cover_dir: Path) -> Path | None:
@@ -731,6 +854,7 @@ class LibraryImportService:
             return None
 
     def _extract_zip_pages(self, archive_path: Path, pages_dir: Path, member_names: set[str] | None = None) -> list[Path]:
+        list_archive_image_members(archive_path)
         self._clear_page_dir(pages_dir)
         page_paths: list[Path] = []
         with zipfile.ZipFile(archive_path) as archive:
@@ -748,15 +872,22 @@ class LibraryImportService:
                 suffix = Path(archive_display_name(info.filename)).suffix.lower() or ".img"
                 output = pages_dir / f"{index:06d}{suffix}"
                 with archive.open(info) as source, output.open("wb") as destination:
-                    shutil.copyfileobj(source, destination)
+                    copy_stream_limited(source, destination)
                 page_paths.append(output.resolve())
         return page_paths
 
     def _extract_rar_pages(self, archive_path: Path, pages_dir: Path, member_names: set[str] | None = None) -> list[Path]:
+        list_archive_image_members(archive_path)
         try:
             import rarfile
-            self._clear_page_dir(pages_dir)
-            page_paths: list[Path] = []
+        except ImportError as exc:
+            return self._extract_external_pages(
+                archive_path,
+                pages_dir,
+                member_names=member_names,
+                primary_error=exc,
+            )
+        try:
             with rarfile.RarFile(archive_path) as archive:
                 members = sorted(
                     [
@@ -768,25 +899,28 @@ class LibraryImportService:
                     ],
                     key=lambda info: natural_sort_key(archive_display_name(info.filename)),
                 )
-                for index, info in enumerate(members, start=1):
-                    suffix = Path(archive_display_name(info.filename)).suffix.lower() or ".img"
-                    output = pages_dir / f"{index:06d}{suffix}"
-                    with archive.open(info) as source, output.open("wb") as destination:
-                        shutil.copyfileobj(source, destination)
-                    page_paths.append(output.resolve())
-            return page_paths
         except Exception as exc:
-            return self._extract_external_pages(archive_path, pages_dir, member_names=member_names, primary_error=exc)
+            return self._extract_external_pages(
+                archive_path,
+                pages_dir,
+                member_names=member_names,
+                primary_error=exc,
+            )
+        self._clear_page_dir(pages_dir)
+        page_paths: list[Path] = []
+        with rarfile.RarFile(archive_path) as archive:
+            for index, info in enumerate(members, start=1):
+                suffix = Path(archive_display_name(info.filename)).suffix.lower() or ".img"
+                output = pages_dir / f"{index:06d}{suffix}"
+                with archive.open(info) as source, output.open("wb") as destination:
+                    copy_stream_limited(source, destination)
+                page_paths.append(output.resolve())
+        return page_paths
 
     def _extract_7z_pages(self, archive_path: Path, pages_dir: Path, member_names: set[str] | None = None) -> list[Path]:
-        try:
-            import py7zr
-            self._clear_page_dir(pages_dir)
-            with py7zr.SevenZipFile(archive_path, mode="r") as archive:
-                archive.extractall(path=pages_dir)
-            return self._normalize_extracted_pages(pages_dir, member_names=member_names)
-        except Exception as exc:
-            return self._extract_external_pages(archive_path, pages_dir, member_names=member_names, primary_error=exc)
+        self._clear_page_dir(pages_dir)
+        extract_7z_images(archive_path, pages_dir)
+        return self._normalize_extracted_pages(pages_dir, member_names=member_names)
 
     def _extract_external_pages(
         self,
@@ -840,6 +974,8 @@ class BookScanner:
             return self._scan_folder(path)
         if path.is_file() and is_image(path):
             return self._scan_image(path)
+        if path.is_file() and is_pdf(path):
+            return self._scan_pdf(path)
         if path.is_file() and is_archive(path):
             return self._scan_archive(path)
         raise RuntimeError(f"unsupported book source: {path}")
@@ -859,16 +995,12 @@ class BookScanner:
     def _scan_image(self, path: Path) -> Book:
         return self._book_for_path(path, file_kind="image", page_count=1)
 
+    def _scan_pdf(self, path: Path) -> Book:
+        return self._book_for_path(path, file_kind="pdf", page_count=pdf_page_count(path))
+
     def _scan_archive(self, path: Path) -> Book:
         suffix = path.suffix.lower()
-        if suffix in {".zip", ".cbz"}:
-            page_count = _count_zip_pages(path)
-        elif suffix in {".rar", ".cbr"}:
-            page_count = _count_rar_pages(path)
-        elif suffix in {".7z", ".cb7"}:
-            page_count = _count_7z_pages(path)
-        else:
-            page_count = None
+        page_count = len(list_archive_image_members(path))
         return self._book_for_path(path, file_kind=suffix.lstrip("."), page_count=page_count)
 
     def _book_for_archive_group(self, path: Path, group: ArchiveVolumeGroup) -> Book:
@@ -948,6 +1080,14 @@ def managed_book_dir_for_book(book: Book, library_dir: Path) -> Path:
     return library_dir / managed_book_dir_name(book.title, book.id)
 
 
+def _rewrite_staged_path(path: Path, staging_dir: Path, book_dir: Path) -> Path:
+    try:
+        relative = path.relative_to(staging_dir)
+    except ValueError:
+        return path
+    return book_dir / relative
+
+
 def managed_book_dir_from_book(book: Book, library_dir: Path) -> Path | None:
     local_path = Path(book.local_path).expanduser()
     try:
@@ -980,52 +1120,6 @@ def _update_partial_file_hash(path: Path, digest: Any) -> None:
         if size > chunk_size:
             handle.seek(max(0, size - chunk_size))
             digest.update(handle.read(chunk_size))
-
-
-def _count_zip_pages(path: Path) -> int:
-    import zipfile
-
-    with zipfile.ZipFile(path) as archive:
-        return len(
-            [
-                info
-                for info in archive.infolist()
-                if not info.is_dir() and is_archive_image_member(info.filename)
-            ]
-        )
-
-
-def _count_rar_pages(path: Path) -> int | None:
-    try:
-        import rarfile
-    except ImportError:
-        return None
-
-    with rarfile.RarFile(path) as archive:
-        return len(
-            [
-                info
-                for info in archive.infolist()
-                if not info.isdir() and is_archive_image_member(info.filename)
-            ]
-        )
-
-
-def _count_7z_pages(path: Path) -> int | None:
-    try:
-        import py7zr
-    except ImportError:
-        return None
-
-    with py7zr.SevenZipFile(path, mode="r") as archive:
-        names = archive.getnames()
-    return len(
-        [
-            name
-            for name in sorted(names, key=lambda value: natural_sort_key(archive_display_name(value)))
-            if is_archive_image_member(name)
-        ]
-    )
 
 
 def _book_from_row(row: sqlite3.Row) -> Book:

@@ -18,7 +18,7 @@ DIST_APP = ROOT_DIR / "dist" / "MangaCrisp.app"
 APP_ICON_SOURCE = ROOT_DIR / "assets" / "mangacrisp-app-icon.png"
 APP_ICON = ROOT_DIR / "build" / "MangaCrisp.icns"
 BUNDLE_IDENTIFIER = "com.jydie5.mangacrisp"
-APP_VERSION = "0.6.0"
+APP_VERSION = "0.7.0"
 LICENSES_DIR = ROOT_DIR / "build" / "licenses"
 RUNTIME_DISTRIBUTIONS = (
     "PyInstaller",
@@ -36,6 +36,7 @@ RUNTIME_DISTRIBUTIONS = (
     "pyppmd",
     "texttable",
     "rarfile",
+    "pypdfium2",
 )
 
 ICONSET_FILES = {
@@ -85,7 +86,7 @@ def copy_runtime_license_files(destination: Path) -> int:
         license_paths = [
             path
             for path in distribution.files or []
-            if any(part in Path(path).name.lower() for part in ("license", "copying", "notice"))
+            if any(part in str(path).lower() for part in ("license", "copying", "notice"))
         ]
         if not license_paths:
             raise RuntimeError(f"no license file found for runtime dependency: {package_name}")
@@ -208,6 +209,12 @@ def main() -> None:
         "mangacrisp_app.library",
         "--hidden-import",
         "mangacrisp_app.page_provider",
+        "--hidden-import",
+        "mangacrisp_app.diagnostics",
+        "--hidden-import",
+        "pypdfium2",
+        "--hidden-import",
+        "pypdfium2.raw",
         "--hidden-import",
         "PySide6.QtCore",
         "--hidden-import",

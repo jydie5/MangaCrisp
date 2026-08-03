@@ -10,7 +10,6 @@ from typing import Any
 
 from mangacrisp_app.branding import APP_SUPPORT_DIR
 
-
 DEFAULT_SETTINGS_PATH = APP_SUPPORT_DIR / "settings.json"
 VALID_LANGUAGE_PREFERENCES = {"auto", "en", "ja"}
 
@@ -39,10 +38,18 @@ ENGLISH_TRANSLATIONS = {
     "左側クリック/← 次 / 右側クリック/→ 前 / 中央クリック 情報 / Shift+クリック 1p / O 原画比較 / P 設定 / H ヘルプ": "Left click/Left: next / Right click/Right: previous / Center click: info / Shift+click: 1p / O: compare / P: settings / H: help",
     "右側クリック/→ 次 / 左側クリック/← 前 / 中央クリック 情報 / Shift+クリック 1p / O 原画比較 / P 設定 / H ヘルプ": "Right click/Right: next / Left click/Left: previous / Center click: info / Shift+click: 1p / O: compare / P: settings / H: help",
     "ショートカットを表示": "Show keyboard shortcuts",
+    "その他の操作": "More actions",
+    "診断情報をコピー": "Copy Diagnostics",
+    "診断情報をクリップボードへコピーしました。": "Diagnostics copied to the clipboard.",
+    "キャッシュを削除": "Clear Cache",
+    "PDF描画とAI補正のキャッシュを削除しますか？": "Clear the PDF render and AI enhancement caches?",
+    "本棚、元ファイル、読書位置、しおりは削除しません。": "Bookshelf items, source files, reading positions, and bookmarks will be kept.",
+    "キャッシュを削除しました。": "Cache cleared.",
     "プロジェクト情報": "Project links",
     "ソースコード・不具合報告": "Source code and issue tracker",
     "開発を支援（任意）": "Support development (optional)",
     "ローカルの画像フォルダ、単画像、zip/cbz/rar/cbr/7z/cb7 を本棚へ登録します。": "Add image folders, individual images, ZIP/CBZ, RAR/CBR, and 7z/CB7 archives.",
+    "ローカルのPDF、画像フォルダ、単画像、zip/cbz/rar/cbr/7z/cb7 を本棚へ登録します。": "Add local PDFs, image folders, individual images, ZIP/CBZ, RAR/CBR, and 7z/CB7 archives.",
     "言語": "Language",
     "システム設定": "System",
     "英語": "English",
@@ -63,6 +70,7 @@ ENGLISH_TRANSLATIONS = {
     "ドロップしたファイル/フォルダ": "Dropped files/folders",
     "\n- ほか {count} 件": "\n- {count} more",
     "{source}を本棚へ登録します。\n\n対象: {total}件（圧縮ファイル {archives}件 / フォルダ {folders}件 / ファイル {files}件）\n\n{examples}\n\n圧縮ファイルは本棚保存先へ展開し、表紙サムネイルを作成します。\n元のZIP/RAR/7zファイルは削除しません。": "Add {source} to the bookshelf.\n\nItems: {total} (archives: {archives} / folders: {folders} / files: {files})\n\n{examples}\n\nArchives are extracted into the managed library and a cover thumbnail is created.\nThe source ZIP/RAR/7z files are not deleted.",
+    "{source}を本棚へ登録します。\n\n対象: {total}件（圧縮ファイル {archives}件 / PDF {pdfs}件 / フォルダ {folders}件 / ファイル {files}件）\n\n{examples}\n\n圧縮ファイルは展開し、PDFは原本をコピーして表紙だけを生成します。\n元のファイルは削除しません。": "Add {source} to the bookshelf.\n\nItems: {total} (archives: {archives} / PDFs: {pdfs} / folders: {folders} / files: {files})\n\n{examples}\n\nArchives are extracted. PDFs are copied and only their covers are generated during import.\nSource files are not deleted.",
     "本棚へ登録": "Add to Bookshelf",
     "展開して本棚へ登録しますか？": "Extract and add these items to the bookshelf?",
     "登録をキャンセルしました。": "Import canceled.",
@@ -74,6 +82,7 @@ ENGLISH_TRANSLATIONS = {
     "取り込み待ち {count}件": "{count} items waiting to import",
     "取り込み中 {position}/{total}: {name}": "Importing {position}/{total}: {name}",
     "本棚に追加しました。展開中: {name}": "Added to the bookshelf. Extracting: {name}",
+    "内容を確認しました。取り込み中: {name}": "Contents checked. Importing: {name}",
     "展開中 {position}/{total}: {title}": "Extracting {position}/{total}: {title}",
     "登録失敗: {error}": "Import failed: {error}",
     " ほか{count}冊": " and {count} more",

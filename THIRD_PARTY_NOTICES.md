@@ -69,7 +69,7 @@ importまたは同梱しません。
 
 ## Python runtime and libraries
 
-standalone版はPythonランタイム、PySide6/Qt、Pillow、py7zr、rarfileと、それらが利用するライブラリを同梱します。ビルド時にインストール済みパッケージのライセンスファイルを収集し、すべて`MangaCrisp.app/Contents/Resources/licenses/`へ収録します。
+standalone版はPythonランタイム、PySide6/Qt、Pillow、py7zr、rarfile、pypdfium2/PDFiumと、それらが利用するライブラリを同梱します。ビルド時にインストール済みパッケージのライセンスファイルを収集し、すべて`MangaCrisp.app/Contents/Resources/licenses/`へ収録します。
 
 - Python: Python Software Foundation License
 - PyInstaller bootloader/runtime: GPL 2.0 or later with the PyInstaller Bootloader Exception
@@ -77,6 +77,7 @@ standalone版はPythonランタイム、PySide6/Qt、Pillow、py7zr、rarfileと
 - Pillow: MIT-CMU
 - py7zrおよび一部の圧縮ライブラリ: LGPL 2.1 or later
 - rarfile: ISC
+- pypdfium2: Apache-2.0またはBSD-3-Clause、PDFiumと同梱依存ライセンス
 - setuptoolsおよびpackaging: MIT、Apache 2.0またはBSD系ライセンス
 
 PySide6/Qtの正確なバージョン、対応ソース、動的リンクされたQtライブラリの場所と差し替え後の再署名方法は、アプリ内の`Qt-PySide6-source-and-relinking.txt`に記載します。Pillowが同梱する画像形式ライブラリなどの第三者表示は、Pillowのライセンスファイルに含まれます。

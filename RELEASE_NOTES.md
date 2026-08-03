@@ -1,3 +1,34 @@
+# MangaCrisp v0.7.0-beta
+
+This macOS beta adds local PDF reading, safer archive imports, bounded PDF
+render caching, and privacy-safe diagnostics.
+
+## Changes
+
+- Add PDF files through drag and drop or the file picker.
+- Copy the source PDF into the managed library and generate only its cover at import time.
+- Render PDF pages on demand in color, then reuse them through a bounded disk cache.
+- Keep the existing spread, fullscreen, mouse, resume, and Real-CUGAN comparison behavior for PDF books.
+- Reject unsafe archive paths, excessive member counts, oversized entries, and extreme compression ratios.
+- Stage archive imports so a failed extraction does not replace a working managed copy.
+- Back up an existing library database before applying a schema migration.
+- Add **Copy Diagnostics** and **Clear Cache** to the bookshelf menu.
+- Add Apple Silicon CI coverage for source tests, standalone packaging, and packaged PDF startup.
+
+## 日本語
+
+- PDFをドラッグ＆ドロップまたはファイル選択から本棚へ登録できます。
+- 登録時はPDF原本を管理フォルダへコピーし、表紙だけを生成します。
+- 本文は必要なページだけカラーのまま描画し、上限付きキャッシュで再利用します。
+- PDFでも見開き、全画面、マウス操作、読書位置、原画／Real-CUGAN補正版の比較を利用できます。
+- 危険なパス、過剰なファイル数、巨大ファイル、異常な圧縮率を持つ圧縮ファイルを拒否します。
+- 展開失敗時に正常な管理コピーを置き換えない段階的取り込みへ変更しました。
+- DB更新前のバックアップ、診断情報コピー、キャッシュ削除を追加しました。
+
+Apple Silicon向けstandalone ZIPにはPython、Qt、PDFium、Real-CUGAN本体、
+モデル、ライセンス文書を同梱します。利用者によるPythonやuvの導入は不要です。
+このベータ版はad-hoc署名済みですが、Apple Developer ID署名と公証は未実施です。
+
 # MangaCrisp v0.6.0-beta
 
 This beta preserves color in AI-enhanced pages and adds mouse-first reading for
