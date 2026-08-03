@@ -159,7 +159,11 @@ def test_vulkan_download_uses_cdn_compatible_headers(
     assert destination.read_bytes() == payload
 
 
-def test_windows_build_copies_pdfium_runtime_licenses(tmp_path: Path) -> None:
+def test_windows_build_copies_pdfium_runtime_licenses(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(BUILD_WINDOWS_APP, "RUNTIME_DISTRIBUTIONS", ("pypdfium2",))
     BUILD_WINDOWS_APP.copy_distribution_licenses(tmp_path)
 
     pdfium_notices = list(tmp_path.glob("Python-pypdfium2-*"))
