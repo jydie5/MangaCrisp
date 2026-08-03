@@ -36,10 +36,11 @@ MangaCrispは、macOS／Windows向けの無料・オープンソース漫画／�
 
 ### Windows開発プレビュー
 
-**[Windows 10/11 x64 Development Previewをダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.6.0b0.1/MangaCrisp-0.6.0b0-windows-x64-portable-preview.zip)**
+**[Windows 10/11 x64 Development Previewをダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.0b0.1/MangaCrisp-0.7.0b0-windows-x64-portable-preview.zip)**
 
 未署名のポータブルZIPで、Python、uv、CUDA、インストーラーは不要です。
 監査済みのZig版Real-CUGANを同梱し、NVIDIA GPUで操作と補正を確認しています。
+0.7ではPDFiumを同梱し、カラーを保持したPDF遅延描画をWindows実機で確認しています。
 Intel／AMD GPUの補正証跡と、別のクリーンなWindowsアカウントでの検証は
 正式Windows版までの残項目です。補正できない場合も原画で閲覧できます。
 導入方法と制限は[INSTALL.windows.ja.md](INSTALL.windows.ja.md)を参照してください。
