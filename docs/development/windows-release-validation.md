@@ -34,10 +34,14 @@ Current status:
 | AMD Vulkan GPU | Pending |
 | Separate clean Windows account | Pending |
 
-The interactive check on the development account passed application launch,
+Interactive checks on the development account passed application launch,
 bookshelf import, reader rendering, and original/enhanced comparison on
-2026-07-27. It is useful product evidence but does not replace the separate
-clean-account gate.
+2026-07-27. On 2026-08-03, the packaged 0.7.0b0 application also passed direct
+color-PDF opening, lazy page navigation, and color-preserving original/enhanced
+comparison with the bundled PDFium and Real-CUGAN engine. The distribution
+audit reported `baseline_ready=true`, and the extracted ZIP passed the
+sanitized-environment smoke test. These checks are useful product evidence but
+do not replace the separate clean-account gate.
 
 ## Record a GPU report
 

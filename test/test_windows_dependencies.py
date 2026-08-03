@@ -42,6 +42,15 @@ assert VULKAN_SPEC is not None and VULKAN_SPEC.loader is not None
 FETCH_VULKAN = importlib.util.module_from_spec(VULKAN_SPEC)
 VULKAN_SPEC.loader.exec_module(FETCH_VULKAN)
 
+WINDOWS_APP_SCRIPT_PATH = SCRIPTS_DIR / "build_windows_app.py"
+WINDOWS_APP_SPEC = importlib.util.spec_from_file_location(
+    "build_windows_app",
+    WINDOWS_APP_SCRIPT_PATH,
+)
+assert WINDOWS_APP_SPEC is not None and WINDOWS_APP_SPEC.loader is not None
+BUILD_WINDOWS_APP = importlib.util.module_from_spec(WINDOWS_APP_SPEC)
+WINDOWS_APP_SPEC.loader.exec_module(BUILD_WINDOWS_APP)
+
 
 def test_realcugan_zip_rejects_path_traversal(tmp_path: Path) -> None:
     archive_path = tmp_path / "unsafe.zip"
@@ -148,6 +157,15 @@ def test_vulkan_download_uses_cdn_compatible_headers(
     assert request.get_header("Accept") == "application/octet-stream"
     assert request.get_header("User-agent").startswith("MangaCrisp/")
     assert destination.read_bytes() == payload
+
+
+def test_windows_build_copies_pdfium_runtime_licenses(tmp_path: Path) -> None:
+    BUILD_WINDOWS_APP.copy_distribution_licenses(tmp_path)
+
+    pdfium_notices = list(tmp_path.glob("Python-pypdfium2-*"))
+    assert pdfium_notices
+    assert any(path.name.endswith("-Apache-2.0.txt") for path in pdfium_notices)
+    assert any(path.name.endswith("-pdfium.txt") for path in pdfium_notices)
 
 
 @pytest.mark.parametrize(
