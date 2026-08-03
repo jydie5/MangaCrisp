@@ -10,6 +10,7 @@ The macOS beta is the behavioral reference:
 
 - visual bookshelf and multi-archive drag and drop
 - ZIP/CBZ, RAR/CBR, 7z/CB7, folders, and individual images
+- lazy color-preserving PDF reading without extracting every page up front
 - right-bound manga reading with a single cover and two-page spreads
 - one-page alignment correction
 - natural title and volume ordering
@@ -72,6 +73,48 @@ Remaining release work is Intel/AMD coverage and a clean-account test without
 development tools. Reports are registered with their evidence SHA-256 and must
 match the bundled engine. See
 `docs/development/windows-release-validation.md`.
+
+## Incoming main checkpoint: macOS v0.7.0-beta (2026-08-03)
+
+`main` now contains the macOS `v0.7.0-beta` work merged by PR #16. The Windows
+`0.6.0` Development Preview remains the latest verified Windows package. Do not
+describe the following changes as Windows-supported until they pass on a real
+Windows x64 machine and in the Windows portable package:
+
+- lazy PDF page rendering through pinned `pypdfium2==5.12.1`
+- managed PDF import that copies the original PDF and generates only its cover
+- bounded PDF render-cache cleanup when a managed PDF is removed
+- database schema versioning, pre-migration backup, and newer-schema rejection
+- atomic staged imports
+- archive path, member-count, expanded-size, per-item-size, and compression-ratio
+  limits
+- diagnostics copying without local paths or book names
+- user-triggered cache clearing
+
+### Required Windows sync branch
+
+1. Update from `origin/main` and create `windows/pdf-v0.7`.
+2. Run the complete source test suite before making Windows-specific changes.
+3. Verify that the pinned `pypdfium2` Windows x64 wheel installs and that its
+   PDFium DLL and nested license files are included by PyInstaller and the
+   distribution audit.
+4. Test direct PDF opening and managed bookshelf import with the redistributable
+   color fixture only. Confirm that color survives both original and enhanced
+   display paths.
+5. Confirm that a 300-page PDF opens without eagerly rendering or storing all
+   pages and that removing a managed PDF removes only its managed copy and
+   render cache.
+6. Re-run ZIP/RAR/7z import checks because archive safety rules changed in
+   shared code.
+7. Build the one-folder portable application, audit it, and run the extracted
+   sanitized-environment smoke test.
+8. Record the result in this document and in
+   `docs/development/windows-release-validation.md` before publishing a new
+   Windows preview.
+
+Do not modify or replace the macOS `v0.7.0-beta` release assets from the Windows
+branch. Windows artifacts must be built on Windows and published under their
+own Windows preview tag.
 
 ## Technology decision
 
@@ -143,6 +186,10 @@ screenshots, and automated checks.
 - ZIP extraction followed by double-click starts the application.
 - First bookshelf paint is not blocked by engine discovery.
 - A demo ZIP imports and opens.
+- A color demo PDF opens directly and after bookshelf import without becoming
+  monochrome.
+- A long PDF renders pages lazily and keeps its cache within the documented
+  bound.
 - Right-bound page order and all keyboard shortcuts match macOS.
 - Original pages remain responsive when AI processing is behind.
 - Direction changes reuse nearby caches rather than restarting all work.
