@@ -39,11 +39,12 @@ All versions and the SHA-256 checksum are available on the
 
 ### Windows development preview
 
-**[Download the Windows 10/11 x64 Development Preview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.6.0b0.1/MangaCrisp-0.6.0b0-windows-x64-portable-preview.zip)**
+**[Download the Windows 10/11 x64 Development Preview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.0b0.1/MangaCrisp-0.7.0b0-windows-x64-portable-preview.zip)**
 
 The unsigned portable ZIP needs no Python, uv, CUDA, or installer. It bundles
 the audited Zig-built Real-CUGAN engine and has passed interactive validation
-on NVIDIA graphics. Intel and AMD enhancement evidence and a separate clean
+on NVIDIA graphics. Version 0.7 adds verified lazy, color-preserving PDF
+reading with bundled PDFium. Intel and AMD enhancement evidence and a separate clean
 Windows account test remain before the stable Windows release. Original-image
 reading remains available if enhancement is unavailable. See
 [INSTALL.windows.md](INSTALL.windows.md) for installation and limitations.

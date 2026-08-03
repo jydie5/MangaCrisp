@@ -14,10 +14,12 @@ MinGWのランタイムDLLを同梱せずに動作します。
 AIエンジンがない場合も原画で閲覧できます。
 RAR/CBRのフォールバック展開には、SHA-256を固定・検証した7-Zip 26.02 x64を使用し、
 ライセンスと取得元情報もビルドへ同梱します。
+0.7ではPDF遅延描画用のPDFiumも同梱します。DLLと入れ子のライセンス一式が
+配布監査の必須対象です。
 
 ## Development Previewをダウンロード
 
-[MangaCrisp 0.6.0b0 Windows x64ポータブルpreview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.6.0b0.1/MangaCrisp-0.6.0b0-windows-x64-portable-preview.zip)
+[MangaCrisp 0.7.0b0 Windows x64ポータブルpreview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.0b0.1/MangaCrisp-0.7.0b0-windows-x64-portable-preview.zip)
 
 1. ZIPをダウンロードします。
 2. `MangaCrisp`フォルダ全体を展開します。
@@ -45,11 +47,11 @@ uv run mangacrisp
 ## Windowsの保存先
 
 - 設定とデータベース: `%APPDATA%\MangaCrisp`
-- AI・表示キャッシュ: `%LOCALAPPDATA%\MangaCrisp`
+- AI・PDF・表示キャッシュ: `%LOCALAPPDATA%\MangaCrisp`
 - 管理用の展開済み漫画: 既定では`%USERPROFILE%\MangaCrisp Library`
 
-本棚から削除すると、MangaCrispが管理するコピーと読書状態を削除します。
-元のZIP、RAR、7zアーカイブは削除しません。
+本棚から削除すると、MangaCrispが管理するコピー、PDF描画キャッシュ、読書状態を削除します。
+元のPDF、ZIP、RAR、7zアーカイブは削除しません。
 
 ## one-folder基礎ビルド
 

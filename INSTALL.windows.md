@@ -14,10 +14,12 @@ MinGW runtime DLL.
 Original-image reading remains available when the AI engine is absent.
 RAR/CBR fallback extraction is provided by a pinned, checksum-verified 7-Zip
 26.02 x64 backend whose license and provenance are included with the build.
+Version 0.7 also bundles PDFium for lazy, color-preserving PDF reading. Its DLL
+and complete nested license set are required by the distribution audit.
 
 ## Download the Development Preview
 
-[Download MangaCrisp 0.6.0b0 Windows x64 portable preview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.6.0b0.1/MangaCrisp-0.6.0b0-windows-x64-portable-preview.zip)
+[Download MangaCrisp 0.7.0b0 Windows x64 portable preview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.0b0.1/MangaCrisp-0.7.0b0-windows-x64-portable-preview.zip)
 
 1. Download the ZIP.
 2. Extract the complete `MangaCrisp` folder.
@@ -48,11 +50,11 @@ screenshots.
 ## Windows storage
 
 - Settings and database: `%APPDATA%\MangaCrisp`
-- AI and display cache: `%LOCALAPPDATA%\MangaCrisp`
+- AI, PDF, and display cache: `%LOCALAPPDATA%\MangaCrisp`
 - Managed reading copies: `%USERPROFILE%\MangaCrisp Library` by default
 
-Removing a book deletes MangaCrisp's managed copy and reading state. It does not
-delete the source ZIP, RAR, or 7z archive.
+Removing a book deletes MangaCrisp's managed copy, PDF render cache, and reading
+state. It does not delete the source PDF, ZIP, RAR, or 7z archive.
 
 ## Build the one-folder baseline
 
