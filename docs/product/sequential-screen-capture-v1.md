@@ -2,8 +2,8 @@
 
 Updated: 2026-08-12
 
-Status: implementation candidate. Do not include it in a normal release until
-the macOS technical spike and human acceptance gate pass.
+Status: initial implementation complete. Do not include it in a normal release until
+the macOS human acceptance gate passes.
 
 Related documents:
 
@@ -140,7 +140,7 @@ and output format. It must not store the target application name, window title,
 user name, or absolute local paths. The CBZ contains only numbered images in
 v1, not the private session manifest.
 
-## macOS backend gate
+## macOS backend result
 
 Before selecting a dependency, compare public-API prototypes for
 ScreenCaptureKit and Qt fixed-region screen capture. Prefer ScreenCaptureKit,
@@ -152,6 +152,15 @@ but do not add it to the application until the prototype proves:
 - distributable packaging with complete notices
 - global shortcuts without generic keyboard-monitoring access
 - ten sequential captures without gaps
+
+The initial implementation uses Qt `QScreen.grabWindow` plus public macOS
+framework APIs without adding a runtime dependency. On the M4 Pro development
+Mac it reports and captures the full `3456x2234` display coordinate space in
+color RGBA, and it detects Screen Recording permission. Global shortcuts use
+Carbon `RegisterEventHotKey`, which does not require generic keyboard
+monitoring or Accessibility permission. ScreenCaptureKit remains the fallback
+if human testing finds failures with multiple displays, Spaces, or full-screen
+targets.
 
 ## Quality targets
 
@@ -177,4 +186,3 @@ but do not add it to the application until the prototype proves:
 
 Window capture, spread splitting, JPEG output, and further automation remain
 deferred until the first human check is accepted.
-

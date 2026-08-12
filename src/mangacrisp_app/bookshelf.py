@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import re
 import shutil
+import sys
 import threading
 from pathlib import Path
 
 from mangacrisp_app.archive_utils import natural_sort_key
 from mangacrisp_app.branding import APP_NAME
+from mangacrisp_app.capture_window import CaptureWindow
 from mangacrisp_app.diagnostics import diagnostics_text
 from mangacrisp_app.i18n import (
     current_language,
@@ -223,6 +225,7 @@ class BookshelfWindow(QMainWindow):
         super().__init__()
         self.library = library or LibraryService.open()
         self.active_reader: SpreadWindow | None = None
+        self.active_capture: CaptureWindow | None = None
         self.suppress_reader_return = False
         self.register_queue: list[Path] = []
         self.register_total = 0
@@ -322,6 +325,12 @@ class BookshelfWindow(QMainWindow):
         self.add_folder_button.clicked.connect(self.add_folder)
         buttons.addWidget(self.add_folder_button)
 
+        self.capture_button = QPushButton(tr("画面を連番キャプチャ"), root)
+        self.capture_button.setToolTip(tr("固定範囲をPNGで連番保存し、CBZまたはZIPにまとめます。"))
+        self.capture_button.clicked.connect(self.open_capture_window)
+        self.capture_button.setVisible(sys.platform == "darwin")
+        buttons.addWidget(self.capture_button)
+
         self.open_button = QPushButton(tr("読む"), root)
         self.open_button.clicked.connect(self.open_selected_book)
         buttons.addWidget(self.open_button)
@@ -419,6 +428,29 @@ class BookshelfWindow(QMainWindow):
 
     def show_shortcuts_help(self) -> None:
         show_help_dialog(self, bookshelf_shortcuts_text())
+
+    def open_capture_window(self) -> None:
+        if self.active_capture is not None:
+            self.active_capture.showNormal()
+            self.active_capture.raise_()
+            self.active_capture.activateWindow()
+            return
+        try:
+            window = CaptureWindow(on_import=lambda path: self.enqueue_register_paths([path]), parent=self)
+        except (OSError, RuntimeError) as exc:
+            QMessageBox.warning(
+                self,
+                tr("連番キャプチャ"),
+                tr("この環境では連番キャプチャを開始できません: {error}", error=exc),
+            )
+            return
+        window.setAttribute(Qt.WA_DeleteOnClose)
+        window.destroyed.connect(self._capture_window_closed)
+        self.active_capture = window
+        window.show()
+
+    def _capture_window_closed(self) -> None:
+        self.active_capture = None
 
     def copy_diagnostics(self) -> None:
         text = diagnostics_text(
