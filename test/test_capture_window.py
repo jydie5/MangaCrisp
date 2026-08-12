@@ -21,12 +21,16 @@ class FakeCaptureBackend:
         self.capture_callback: Callable[[], None] | None = None
         self.undo_callback: Callable[[], None] | None = None
         self.unregistered = False
+        self.opened_permission_settings = False
 
     def permission_state(self) -> PermissionState:
         return PermissionState.GRANTED
 
     def request_permission(self) -> PermissionState:
         return PermissionState.GRANTED
+
+    def open_permission_settings(self) -> None:
+        self.opened_permission_settings = True
 
     def list_displays(self) -> list[CaptureDisplay]:
         return [CaptureDisplay("display-1", "Test Display", 0, 0, 1920, 1080)]
@@ -63,6 +67,18 @@ def test_capture_feedback_is_omitted_when_region_fills_display() -> None:
     region = CaptureRect("display-1", 0, 0, 1920, 1080)
 
     assert capture_feedback_position(display, region, QSize(190, 52)) is None
+
+
+def test_capture_window_opens_screen_recording_settings(qapp) -> None:
+    del qapp
+    backend = FakeCaptureBackend()
+    window = CaptureWindow(backend=backend)
+
+    window.open_permission_settings()
+
+    assert backend.opened_permission_settings
+    assert "MangaCrisp" in window.status_label.text()
+    window.close()
 
 
 def test_capture_window_saves_and_packages_with_fake_backend(qapp, tmp_path: Path) -> None:

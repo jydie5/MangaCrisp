@@ -9,7 +9,8 @@ are provided under CC BY 4.0 and are suitable for this check.
 
 1. Open `MangaCrisp.app`, then choose **Screen Capture** on the bookshelf.
 2. Select a region and choose **Start Capture**.
-3. Open System Settings when macOS asks for Screen Recording access.
+3. Open System Settings when macOS asks for Screen Recording access. If you dismiss the prompt,
+   use **Open Screen Recording Settings** in the Capture window.
 4. Enable MangaCrisp under Privacy & Security > Screen & System Audio Recording (or Screen
    Recording on earlier macOS releases).
 5. Quit MangaCrisp completely and open it again.

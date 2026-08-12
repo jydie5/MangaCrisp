@@ -205,6 +205,15 @@ class CaptureWindow(QMainWindow):
         self.display_combo = QComboBox(root)
         form.addRow(tr("ディスプレイ"), self.display_combo)
 
+        permission_row = QHBoxLayout()
+        self.permission_label = QLabel(root)
+        self.permission_label.setObjectName("muted")
+        permission_row.addWidget(self.permission_label, 1)
+        self.permission_button = QPushButton(tr("画面収録設定を開く"), root)
+        self.permission_button.clicked.connect(self.open_permission_settings)
+        permission_row.addWidget(self.permission_button)
+        form.addRow(tr("画面収録権限"), permission_row)
+
         region_row = QHBoxLayout()
         self.region_label = QLabel(tr("未選択"), root)
         self.region_label.setObjectName("muted")
@@ -281,7 +290,26 @@ class CaptureWindow(QMainWindow):
         layout.addLayout(output_row)
 
         self.setCentralWidget(root)
+        self.refresh_permission_status()
         self.update_controls()
+
+    def refresh_permission_status(self) -> None:
+        state = self.backend.permission_state()
+        if state == PermissionState.GRANTED:
+            self.permission_label.setText(tr("許可済み（撮影できます）"))
+        elif state == PermissionState.DENIED:
+            self.permission_label.setText(tr("要設定（初回のみ許可が必要です）"))
+        else:
+            self.permission_label.setText(tr("この環境では利用できません"))
+
+    def open_permission_settings(self) -> None:
+        try:
+            self.backend.open_permission_settings()
+            self.status_label.setText(
+                tr("MangaCrispを有効にした後、アプリを完全に終了して再起動してください。")
+            )
+        except Exception as exc:  # noqa: BLE001 - Platform settings errors are user-facing.
+            self.show_error(tr("画面収録設定を開けません: {error}", error=exc))
 
     def refresh_displays(self) -> None:
         self.displays = self.backend.list_displays()
@@ -391,11 +419,23 @@ class CaptureWindow(QMainWindow):
         if self.backend.permission_state() != PermissionState.GRANTED:
             state = self.backend.request_permission()
             if state != PermissionState.GRANTED:
-                self.show_error(
+                self.refresh_permission_status()
+                message = QMessageBox(self)
+                message.setWindowTitle(tr("画面収録権限"))
+                message.setIcon(QMessageBox.Warning)
+                message.setText(tr("画面収録の許可が必要です。"))
+                message.setInformativeText(
                     tr(
-                        "画面収録を許可してください。システム設定 > プライバシーとセキュリティ > 画面収録でMangaCrispを有効にし、アプリを再起動してください。"
+                        "システム設定でMangaCrispを有効にし、アプリを完全に終了して再起動してください。"
                     )
                 )
+                open_button = message.addButton(
+                    tr("画面収録設定を開く"), QMessageBox.AcceptRole
+                )
+                message.addButton(QMessageBox.Cancel)
+                message.exec()
+                if message.clickedButton() is open_button:
+                    self.open_permission_settings()
                 return
         if self.session is None:
             try:
@@ -416,6 +456,7 @@ class CaptureWindow(QMainWindow):
             self.show_error(tr("ショートカットを登録できません: {error}", error=exc))
             return
         self.running = True
+        self.refresh_permission_status()
         self.start_button.setText(tr("撮影を停止"))
         self.status_label.setText(
             tr(

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from PIL import Image
@@ -28,3 +29,19 @@ def test_macos_backend_lists_and_captures_display_region(qapp, tmp_path: Path) -
     assert isinstance(image, Image.Image)
     assert image.mode == "RGBA"
     assert image.size == (100, 80)
+
+
+def test_macos_backend_opens_screen_recording_settings(qapp) -> None:
+    del qapp
+    from mangacrisp_app.platform.capture_macos import MacScreenCaptureBackend
+
+    backend = MacScreenCaptureBackend()
+    with patch("mangacrisp_app.platform.capture_macos.subprocess.Popen") as popen:
+        backend.open_permission_settings()
+
+    popen.assert_called_once_with(
+        [
+            "open",
+            "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture",
+        ]
+    )

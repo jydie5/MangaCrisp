@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ctypes
+import subprocess
 from collections.abc import Callable
 from contextlib import suppress
 from ctypes.util import find_library
@@ -148,6 +149,14 @@ class MacScreenCaptureBackend:
             PermissionState.GRANTED
             if self._app_services.CGRequestScreenCaptureAccess()
             else PermissionState.DENIED
+        )
+
+    def open_permission_settings(self) -> None:
+        subprocess.Popen(
+            [
+                "open",
+                "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture",
+            ]
         )
 
     def list_displays(self) -> list[CaptureDisplay]:
