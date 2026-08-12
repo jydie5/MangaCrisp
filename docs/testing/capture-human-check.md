@@ -13,10 +13,16 @@ are provided under CC BY 4.0 and are suitable for this check.
    use **Open Screen Recording Settings** in the Capture window.
 4. Enable MangaCrisp under Privacy & Security > Screen & System Audio Recording (or Screen
    Recording on earlier macOS releases).
-5. Quit MangaCrisp completely and open it again.
+5. If macOS offers **Quit & Reopen**, use it. If the app remains open, quit MangaCrisp normally
+   and launch the same `MangaCrisp.app` again.
+6. After relaunch, macOS may show a second prompt asking whether MangaCrisp may access private
+   windows or on-screen content. Choose **Allow**. No further relaunch is needed for this prompt.
+7. Confirm that the Capture window reports **Allowed (ready to capture)**.
 
 The packaged app has its own macOS permission identity, so this is required once even when the
-development build was already allowed. MangaCrisp does not upload captured images or metadata.
+development build was already allowed. Rebuilding an ad-hoc signed development app also changes
+its macOS identity, so do not rebuild between granting access and running this check. MangaCrisp
+does not upload captured images or metadata.
 
 ## Ten-page check
 
