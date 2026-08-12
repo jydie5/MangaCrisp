@@ -6,8 +6,8 @@ import time
 from collections.abc import Callable
 from pathlib import Path
 
-from PySide6.QtCore import QObject, QSize, Qt, QTimer, Signal
-from PySide6.QtGui import QCloseEvent, QIcon
+from PySide6.QtCore import QObject, QPoint, QSize, Qt, QTimer, Signal
+from PySide6.QtGui import QCloseEvent, QGuiApplication, QIcon
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -42,6 +42,84 @@ from mangacrisp_app.platform.capture_base import (
 from mangacrisp_app.region_selector import RegionSelector
 
 CAPTURE_DEBOUNCE_SECONDS = 0.15
+CAPTURE_FEEDBACK_SIZE = QSize(190, 52)
+CAPTURE_FEEDBACK_MARGIN = 12
+
+
+def capture_feedback_position(
+    display: CaptureDisplay,
+    region: CaptureRect,
+    size: QSize = CAPTURE_FEEDBACK_SIZE,
+) -> QPoint | None:
+    """Return a feedback position that does not overlap the capture region."""
+    display_left = display.x
+    display_top = display.y
+    display_right = display.x + display.width
+    display_bottom = display.y + display.height
+    width = size.width()
+    height = size.height()
+    preferred_x = min(max(region.x + region.width - width, display_left), display_right - width)
+    preferred_y = min(max(region.y, display_top), display_bottom - height)
+    candidates = (
+        QPoint(preferred_x, region.y - height - CAPTURE_FEEDBACK_MARGIN),
+        QPoint(preferred_x, region.y + region.height + CAPTURE_FEEDBACK_MARGIN),
+        QPoint(region.x + region.width + CAPTURE_FEEDBACK_MARGIN, preferred_y),
+        QPoint(region.x - width - CAPTURE_FEEDBACK_MARGIN, preferred_y),
+    )
+    for point in candidates:
+        if (
+            point.x() >= display_left
+            and point.y() >= display_top
+            and point.x() + width <= display_right
+            and point.y() + height <= display_bottom
+        ):
+            return point
+    return None
+
+
+class CaptureFeedback(QWidget):
+    def __init__(self) -> None:
+        super().__init__(None)
+        self.setWindowFlags(
+            Qt.Tool
+            | Qt.FramelessWindowHint
+            | Qt.WindowStaysOnTopHint
+            | Qt.WindowDoesNotAcceptFocus
+        )
+        self.setAttribute(Qt.WA_ShowWithoutActivating)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setFixedSize(CAPTURE_FEEDBACK_SIZE)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(14, 8, 14, 8)
+        self.label = QLabel(self)
+        self.label.setAlignment(Qt.AlignCenter)
+        self.label.setStyleSheet(
+            "background: rgba(20, 20, 20, 225); color: white; "
+            "border: 1px solid rgba(255, 255, 255, 70); border-radius: 6px; "
+            "font-size: 15px; font-weight: 600; padding: 7px 10px;"
+        )
+        layout.addWidget(self.label)
+        self._hide_timer = QTimer(self)
+        self._hide_timer.setSingleShot(True)
+        self._hide_timer.timeout.connect(self.hide)
+
+    def show_message(
+        self,
+        message: str,
+        *,
+        display: CaptureDisplay | None,
+        region: CaptureRect | None,
+    ) -> None:
+        if display is None or region is None:
+            return
+        position = capture_feedback_position(display, region, self.size())
+        if position is None:
+            return
+        self.label.setText(message)
+        self.move(position)
+        self.show()
+        self.raise_()
+        self._hide_timer.start(900)
 
 
 class CaptureSignals(QObject):
@@ -78,6 +156,7 @@ class CaptureWindow(QMainWindow):
         self.signals.page_saved.connect(self.on_page_saved)
         self.signals.package_done.connect(self.on_package_done)
         self.signals.close_ready.connect(self.close)
+        self.capture_feedback = CaptureFeedback()
         self.setWindowTitle(tr("MangaCrisp 連番キャプチャ"))
         self.setMinimumSize(760, 620)
         self.resize(860, 720)
@@ -376,6 +455,7 @@ class CaptureWindow(QMainWindow):
         self.activateWindow()
 
     def capture_requested(self) -> None:
+        self.capture_feedback.hide()
         now = time.monotonic()
         if now - self.last_capture_started < CAPTURE_DEBOUNCE_SECONDS:
             return
@@ -426,6 +506,17 @@ class CaptureWindow(QMainWindow):
             )
         else:
             self.status_label.setText(tr("{number}枚目を保存しました。", number=page.position))
+        app = QGuiApplication.instance()
+        if app is not None:
+            app.setBadgeNumber(len(self.session.pages) if self.session is not None else 0)
+        self.capture_feedback.show_message(
+            tr(
+                "保存 {number}枚",
+                number=len(self.session.pages) if self.session is not None else page.position,
+            ),
+            display=self.selected_display(),
+            region=self.region,
+        )
         self.update_controls()
 
     def _ensure_disk_space(self) -> None:
@@ -447,6 +538,14 @@ class CaptureWindow(QMainWindow):
         self.retake_position = None
         self.reload_pages()
         self.status_label.setText(tr("{number}枚目を取り消しました。次の撮影で同じ番号を使います。", number=page.position))
+        app = QGuiApplication.instance()
+        if app is not None:
+            app.setBadgeNumber(len(self.session.pages))
+        self.capture_feedback.show_message(
+            tr("取消 {number}枚目", number=page.position),
+            display=self.selected_display(),
+            region=self.region,
+        )
         self.update_controls()
 
     def selected_position(self) -> int | None:
@@ -584,6 +683,10 @@ class CaptureWindow(QMainWindow):
             event.accept()
             return
         self.backend.unregister_hotkeys()
+        self.capture_feedback.close()
+        app = QGuiApplication.instance()
+        if app is not None:
+            app.setBadgeNumber(0)
         if self.coordinator is None or self.coordinator.pending == 0:
             if self.coordinator is not None:
                 self.coordinator.close(wait=True)

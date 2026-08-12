@@ -9,6 +9,7 @@ Related documents:
 
 - [Initial discussion and legal/product boundaries](sequential-screen-capture.ja.md)
 - [Cross-platform workflow](../development/cross-platform-workflow.md)
+- [macOS human check](../testing/capture-human-check.md)
 
 ## v1 decisions
 

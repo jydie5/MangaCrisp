@@ -4,8 +4,9 @@ from collections.abc import Callable
 from pathlib import Path
 
 from PIL import Image
+from PySide6.QtCore import QSize
 
-from mangacrisp_app.capture_window import CaptureWindow
+from mangacrisp_app.capture_window import CaptureWindow, capture_feedback_position
 from mangacrisp_app.platform.capture_base import (
     CaptureDisplay,
     CaptureRect,
@@ -45,6 +46,23 @@ class FakeCaptureBackend:
 
     def unregister_hotkeys(self) -> None:
         self.unregistered = True
+
+
+def test_capture_feedback_prefers_space_above_region() -> None:
+    display = CaptureDisplay("display-1", "Test Display", 0, 0, 1920, 1080)
+    region = CaptureRect("display-1", 200, 200, 1200, 700)
+
+    position = capture_feedback_position(display, region, QSize(190, 52))
+
+    assert position is not None
+    assert position.y() + 52 < region.y
+
+
+def test_capture_feedback_is_omitted_when_region_fills_display() -> None:
+    display = CaptureDisplay("display-1", "Test Display", 0, 0, 1920, 1080)
+    region = CaptureRect("display-1", 0, 0, 1920, 1080)
+
+    assert capture_feedback_position(display, region, QSize(190, 52)) is None
 
 
 def test_capture_window_saves_and_packages_with_fake_backend(qapp, tmp_path: Path) -> None:

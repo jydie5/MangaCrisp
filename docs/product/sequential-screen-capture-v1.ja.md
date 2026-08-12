@@ -8,6 +8,7 @@
 
 - [初期検討と法務・規約上の境界](sequential-screen-capture.ja.md)
 - [クロスプラットフォーム開発ルール](../development/cross-platform-workflow.md)
+- [macOSヒューマンチェック手順](../testing/capture-human-check.ja.md)
 
 ## 1. 初版で確定する方針
 
