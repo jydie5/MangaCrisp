@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import shutil
+import sys
 import threading
 import time
 from collections.abc import Callable
@@ -113,7 +114,7 @@ class CaptureFeedback(QWidget):
         region: CaptureRect | None,
     ) -> None:
         # A background Qt tool window can activate MangaCrisp on macOS. While
-        # another app is active, the Dock badge is the non-intrusive feedback.
+        # another app is active, the app icon badge is the non-intrusive feedback.
         if QGuiApplication.applicationState() != Qt.ApplicationActive:
             return
         if display is None or region is None:
@@ -231,6 +232,7 @@ class CaptureWindow(QMainWindow):
         permission_row.addWidget(self.permission_label, 1)
         self.permission_button = QPushButton(tr("画面収録設定を開く"), root)
         self.permission_button.clicked.connect(self.open_permission_settings)
+        self.permission_button.setVisible(sys.platform == "darwin")
         permission_row.addWidget(self.permission_button)
         form.addRow(tr("画面収録権限"), permission_row)
 
@@ -254,11 +256,11 @@ class CaptureWindow(QMainWindow):
         self.sound_check.setChecked(True)
         self.sound_check.setToolTip(tr("対象アプリを前面のまま、PNG保存の成功を音で知らせます。"))
         self.visual_feedback_check = QCheckBox(
-            tr("Dockアイコンを動かして保存枚数を表示する"), root
+            tr("アプリアイコンを動かして保存枚数を表示する"), root
         )
         self.visual_feedback_check.setChecked(True)
         self.visual_feedback_check.setToolTip(
-            tr("対象アプリを前面のまま、Dockアイコンの動きと数字で保存成功を知らせます。")
+            tr("対象アプリを前面のまま、アプリアイコンの動きと数字で保存成功を知らせます。")
         )
         feedback_row = QVBoxLayout()
         feedback_row.setContentsMargins(0, 0, 0, 0)
@@ -498,7 +500,7 @@ class CaptureWindow(QMainWindow):
         self.start_button.setText(tr("撮影を停止"))
         self.status_label.setText(
             tr(
-                "待機中: {capture} で撮影 / {undo} で直前取消。Dockから管理画面を開けます。",
+                "待機中: {capture} で撮影 / {undo} で直前取消。MangaCrispを開くと管理画面に戻れます。",
                 capture=bindings.capture.label,
                 undo=bindings.undo.label,
             )

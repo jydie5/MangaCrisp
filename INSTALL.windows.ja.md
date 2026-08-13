@@ -16,10 +16,12 @@ RAR/CBRのフォールバック展開には、SHA-256を固定・検証した7-Z
 ライセンスと取得元情報もビルドへ同梱します。
 0.7ではPDF遅延描画用のPDFiumも同梱します。DLLと入れ子のライセンス一式が
 配布監査の必須対象です。
+0.7.1ではWindowsの手動連番キャプチャ、グローバル撮影／取消キー、単ページ表示を
+追加しました。
 
 ## Development Previewをダウンロード
 
-[MangaCrisp 0.7.0b0 Windows x64ポータブルpreview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.0b0.1/MangaCrisp-0.7.0b0-windows-x64-portable-preview.zip)
+[MangaCrisp 0.7.1b0 Windows x64ポータブルpreview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.1b0.1/MangaCrisp-0.7.1b0-windows-x64-portable-preview.zip)
 
 1. ZIPをダウンロードします。
 2. `MangaCrisp`フォルダ全体を展開します。
@@ -29,6 +31,11 @@ RAR/CBRのフォールバック展開には、SHA-256を固定・検証した7-Z
    取得したZIPだけで「詳細情報」から「実行」を選びます。
 
 ReleaseにはSHA-256チェックサム、配布監査、ポータブルmanifestも添付します。
+
+連番キャプチャは手動方式です。固定範囲を選び、自分でページを送り、画像ごとに
+`Alt+C`を押します（直前の撮影取消は`Alt+Z`）。ページ送りの自動化や
+キャプチャ保護の回避は行いません。権利を持つ画面、または保存を許可された画面だけに
+使用してください。
 
 ## ソースから起動
 Gitと[uv](https://docs.astral.sh/uv/)をインストールし、次を実行します。

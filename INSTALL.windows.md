@@ -16,10 +16,12 @@ RAR/CBR fallback extraction is provided by a pinned, checksum-verified 7-Zip
 26.02 x64 backend whose license and provenance are included with the build.
 Version 0.7 also bundles PDFium for lazy, color-preserving PDF reading. Its DLL
 and complete nested license set are required by the distribution audit.
+Version 0.7.1 adds manual fixed-region sequential capture with global
+capture/undo shortcuts and the Single Page reader layout.
 
 ## Download the Development Preview
 
-[Download MangaCrisp 0.7.0b0 Windows x64 portable preview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.0b0.1/MangaCrisp-0.7.0b0-windows-x64-portable-preview.zip)
+[Download MangaCrisp 0.7.1b0 Windows x64 portable preview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.1b0.1/MangaCrisp-0.7.1b0-windows-x64-portable-preview.zip)
 
 1. Download the ZIP.
 2. Extract the complete `MangaCrisp` folder.
@@ -31,6 +33,11 @@ and complete nested license set are required by the distribution audit.
 
 The release also includes the SHA-256 checksum, distribution audit, and
 portable manifest.
+
+Sequential capture is manual: select a fixed region, turn pages yourself, and
+press `Alt+C` for each image (`Alt+Z` undoes the latest capture). MangaCrisp
+does not automate page turning or bypass capture protection. Use it only for
+screens you own or are authorized to save.
 
 ## Run from source
 Install Git and [uv](https://docs.astral.sh/uv/), then run:

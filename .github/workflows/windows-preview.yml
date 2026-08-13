@@ -82,6 +82,8 @@ jobs:
             "scripts/test_windows_portable_sanitized_environment.py",
             "scripts/validate_realcugan_windows.py",
             "scripts/windows_release_validation.py",
+            "src/mangacrisp_app/platform/capture_windows.py",
+            "test/test_capture_windows.py",
             "test/test_windows_dependencies.py",
             "test/test_windows_distribution_audit.py",
             "test/test_windows_portable_packaging.py",
@@ -160,6 +162,9 @@ jobs:
           Verified:
 
           - lazy, color-preserving PDF reading with bundled PDFium
+          - manual fixed-region sequential capture to numbered PNG and CBZ/ZIP
+          - Windows global capture and undo shortcuts without page-turn automation
+          - Single Page reader layout with original/enhanced comparison
           - original/enhanced PDF comparison on the Windows validation machine
           - Windows x64 PyInstaller one-folder build
           - pinned 7-Zip RAR/CBR backend
@@ -171,6 +176,7 @@ jobs:
 
           - Intel and AMD Vulkan enhancement still need engine-matched evidence
           - a separate clean Windows account test is still pending
+          - the external 10-page sequential-capture human check is still requested
           - the application is unsigned and may show a Windows security warning
           - original-image reading remains available if enhancement is unavailable
 

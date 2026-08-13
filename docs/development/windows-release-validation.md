@@ -43,6 +43,14 @@ audit reported `baseline_ready=true`, and the extracted ZIP passed the
 sanitized-environment smoke test. These checks are useful product evidence but
 do not replace the separate clean-account gate.
 
+On 2026-08-13, the Windows 0.7.1b0 development build passed the full source
+suite, Windows global-hotkey message delivery, fixed-region color capture,
+numbered PNG-to-CBZ packaging, packaged Capture-controller launch, and packaged
+Spread/Single Page switching with the redistributable Pepper&Carrot demo. Its
+distribution audit reported `baseline_ready=true`, and the final local candidate
+passed the sanitized-environment ZIP smoke test. These checks likewise do not
+replace Intel, AMD, or separate clean-account evidence.
+
 ## Record a GPU report
 
 Use the exact staged engine or the engine extracted from the candidate portable
