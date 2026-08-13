@@ -1,3 +1,36 @@
+# MangaCrisp v0.7.1-beta
+
+This macOS beta adds manual sequential screen capture and a Single Page reader
+layout for captured images that already contain a complete spread.
+
+## Changes
+
+- Capture a fixed screen region to numbered, color-preserving PNG files with `Option+C`.
+- Undo the last capture with `Option+Z` and reuse its page number.
+- Keep MangaCrisp hidden while capturing and restore the controller from the Dock.
+- Finish capture after pending saves complete, producing one CBZ/ZIP with optional bookshelf import.
+- Prevent repeated completion from creating duplicate archives or bookshelf entries.
+- Keep source PNG files after packaging.
+- Toggle **Spread (2 images)** and **Single Page (1 image)** with `V`.
+- Apply original/enhanced comparison and AI enhancement in Single Page layout.
+
+## 日本語
+
+- `Option+C`で固定範囲をカラー連番PNGへ保存するmacOSキャプチャを追加しました。
+- `Option+Z`で直前取消を行い、同じページ番号で撮り直せます。
+- 撮影中はMangaCrispを隠し、DockからCapture画面だけを復帰できます。
+- 保存待ちを確定してからCBZ／ZIPを1個作り、本棚へ登録できます。
+- 完成ボタン連打による重複アーカイブと重複本棚登録を防止しました。
+- 完成後も元の連番PNGを保持します。
+- `V`キーで見開き表示と単ページ表示を切り替えられます。
+- 単ページ表示でも原画比較とAI補正を利用できます。
+
+権利または許諾を持つ画面だけにキャプチャを使用してください。初回はmacOSの
+画面収録許可とアプリ再起動が必要です。Apple Silicon Macで86枚の連続撮影を含む
+実機確認を完了しています。
+
+詳細は[リリース文書](docs/releases/v0.7.1-beta.md)を参照してください。
+
 # MangaCrisp v0.7.0-beta
 
 This macOS beta adds local PDF reading, safer archive imports, bounded PDF

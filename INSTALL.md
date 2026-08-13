@@ -75,6 +75,49 @@ unchanged. The source file is not deleted.
 The repository's [`demo`](demo) directory contains freely licensed ZIP files
 that can be used for a first test.
 
+## Allow Screen Recording for capture
+
+Sequential Screen Capture is an optional macOS beta feature. Use it only for
+screens you own or are authorized to save. It does not automate page turns,
+bypass capture protection, or upload captured images.
+
+The first capture needs macOS Screen Recording permission:
+
+1. Open **Sequential Screen Capture** from the bookshelf.
+2. Select a region and choose **Start Capture**.
+3. When prompted, open **System Settings > Privacy & Security > Screen & System
+   Audio Recording** (called **Screen Recording** on some macOS versions).
+4. Enable MangaCrisp. If **Quit & Reopen** leaves the app open, quit MangaCrisp
+   completely yourself and reopen the same installed `MangaCrisp.app`.
+5. If macOS then asks whether MangaCrisp may access on-screen content, choose
+   **Allow**. This second prompt does not normally require another restart.
+6. Confirm that the Capture window says **Allowed (ready to capture)**.
+
+macOS identifies the packaged app separately from a source build. Replacing or
+rebuilding an ad-hoc signed development app can therefore require permission
+again. Grant access to the copy in Applications and continue using that same
+copy for the session.
+
+### Capture and finish a book
+
+1. Set a session name, output folder, display, and fixed capture region.
+2. Start capture. MangaCrisp hides its bookshelf and controller without taking
+   focus back from the source application.
+3. Press `Option+C` once per image. Press `Option+Z` to undo the last image.
+   Each successful capture is immediately saved as a numbered color PNG.
+4. Click MangaCrisp in the Dock to restore the controller. The bookshelf stays
+   hidden until you explicitly choose **Back to Bookshelf**.
+5. Choose **Finish Capture**. MangaCrisp stops capture, waits for pending PNG
+   saves, creates one CBZ/ZIP, and can add it to the bookshelf. Repeated clicks
+   cannot package the same page set again.
+
+The session folder keeps `pages/000001.png`, `000002.png`, and so on beside the
+finished archive. When each PNG contains a complete two-page spread, open the
+book and press `V` to use **Single Page (1 image)** layout.
+
+The detailed acceptance procedure is in
+[docs/testing/capture-human-check.md](docs/testing/capture-human-check.md).
+
 ## Compare AI enhancement
 
 1. Open a book.

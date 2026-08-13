@@ -42,6 +42,10 @@ def open_directory(path: Path) -> None:
     subprocess.Popen(["xdg-open", str(path)])
 
 
+def play_capture_sound() -> None:
+    pass
+
+
 def subprocess_window_kwargs() -> dict[str, int]:
     return {}
 

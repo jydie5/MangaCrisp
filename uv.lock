@@ -344,7 +344,7 @@ wheels = [
 
 [[package]]
 name = "mangacrisp"
-version = "0.7.0b0"
+version = "0.7.1b0"
 source = { editable = "." }
 dependencies = [
     { name = "pillow" },

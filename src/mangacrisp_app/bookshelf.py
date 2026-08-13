@@ -226,6 +226,7 @@ class BookshelfWindow(QMainWindow):
         self.library = library or LibraryService.open()
         self.active_reader: SpreadWindow | None = None
         self.active_capture: CaptureWindow | None = None
+        self.capture_windows_hidden = False
         self.suppress_reader_return = False
         self.register_queue: list[Path] = []
         self.register_total = 0
@@ -234,6 +235,9 @@ class BookshelfWindow(QMainWindow):
         self.signals = BookshelfSignals()
         self.signals.register_progress.connect(self.on_register_progress)
         self.signals.register_done.connect(self.on_register_done)
+        app = QApplication.instance()
+        if app is not None:
+            app.applicationStateChanged.connect(self._on_application_state_changed)
         self.setWindowTitle(f"{APP_NAME} Bookshelf")
         self.setMinimumSize(900, 620)
         self.resize(1180, 760)
@@ -436,7 +440,11 @@ class BookshelfWindow(QMainWindow):
             self.active_capture.activateWindow()
             return
         try:
-            window = CaptureWindow(on_import=lambda path: self.enqueue_register_paths([path]), parent=self)
+            window = CaptureWindow(
+                on_import=lambda path: self.enqueue_register_paths([path]),
+                on_capture_mode_changed=self.on_capture_mode_changed,
+                on_return_to_bookshelf=self.return_from_capture,
+            )
         except (OSError, RuntimeError) as exc:
             QMessageBox.warning(
                 self,
@@ -451,6 +459,42 @@ class BookshelfWindow(QMainWindow):
 
     def _capture_window_closed(self) -> None:
         self.active_capture = None
+        self.capture_windows_hidden = False
+        if not self.isVisible():
+            self.showNormal()
+
+    def on_capture_mode_changed(self, running: bool) -> None:
+        self.capture_windows_hidden = running
+        if running:
+            self.hide()
+            if self.active_capture is not None:
+                self.active_capture.hide()
+            return
+        self.showNormal()
+        if self.active_capture is not None:
+            self.active_capture.showNormal()
+            self.active_capture.raise_()
+            self.active_capture.activateWindow()
+
+    def restore_capture_controller(self) -> None:
+        if not self.capture_windows_hidden or self.active_capture is None:
+            return
+        self.capture_windows_hidden = False
+        self.active_capture.showNormal()
+        self.active_capture.raise_()
+        self.active_capture.activateWindow()
+
+    def _on_application_state_changed(self, state) -> None:
+        if state == Qt.ApplicationActive and self.capture_windows_hidden:
+            QTimer.singleShot(0, self.restore_capture_controller)
+
+    def return_from_capture(self) -> None:
+        self.capture_windows_hidden = False
+        if self.active_capture is not None:
+            self.active_capture.hide()
+        self.showNormal()
+        self.raise_()
+        self.activateWindow()
 
     def copy_diagnostics(self) -> None:
         text = diagnostics_text(

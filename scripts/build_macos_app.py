@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import argparse
 import importlib.metadata
-import plistlib
 import platform
+import plistlib
 import shutil
 import subprocess
 import sys
@@ -11,14 +11,14 @@ from pathlib import Path
 
 from fetch_realcugan import ensure_realcugan, fetch_license_files, write_provenance
 
-
 ROOT_DIR = Path(__file__).resolve().parents[1]
 ENTRYPOINT = ROOT_DIR / "src" / "mangacrisp_app" / "main.py"
 DIST_APP = ROOT_DIR / "dist" / "MangaCrisp.app"
 APP_ICON_SOURCE = ROOT_DIR / "assets" / "mangacrisp-app-icon.png"
 APP_ICON = ROOT_DIR / "build" / "MangaCrisp.icns"
 BUNDLE_IDENTIFIER = "com.jydie5.mangacrisp"
-APP_VERSION = "0.7.0"
+ADHOC_DESIGNATED_REQUIREMENT = f'=designated => identifier "{BUNDLE_IDENTIFIER}"'
+APP_VERSION = "0.7.1"
 LICENSES_DIR = ROOT_DIR / "build" / "licenses"
 RUNTIME_DISTRIBUTIONS = (
     "PyInstaller",
@@ -176,6 +176,19 @@ def set_bundle_version() -> None:
         plistlib.dump(info, file)
     subprocess.run(
         ["codesign", "--force", "--deep", "--sign", "-", str(DIST_APP)],
+        cwd=ROOT_DIR,
+        check=True,
+    )
+    subprocess.run(
+        [
+            "codesign",
+            "--force",
+            "--sign",
+            "-",
+            "--requirements",
+            ADHOC_DESIGNATED_REQUIREMENT,
+            str(DIST_APP),
+        ],
         cwd=ROOT_DIR,
         check=True,
     )

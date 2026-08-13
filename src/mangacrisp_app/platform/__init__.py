@@ -10,6 +10,7 @@ if sys.platform == "darwin":
         bundled_archive_tool_candidates,
         engine_executable_names,
         open_directory,
+        play_capture_sound,
         subprocess_window_kwargs,
     )
 elif sys.platform == "win32":
@@ -18,6 +19,7 @@ elif sys.platform == "win32":
         bundled_archive_tool_candidates,
         engine_executable_names,
         open_directory,
+        play_capture_sound,
         subprocess_window_kwargs,
     )
 else:
@@ -26,6 +28,7 @@ else:
         bundled_archive_tool_candidates,
         engine_executable_names,
         open_directory,
+        play_capture_sound,
         subprocess_window_kwargs,
     )
 
@@ -34,6 +37,7 @@ __all__ = [
     "bundled_archive_tool_candidates",
     "engine_executable_names",
     "open_directory",
+    "play_capture_sound",
     "subprocess_window_kwargs",
 ]
 

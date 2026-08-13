@@ -25,6 +25,8 @@ CARBON_CONTROL = 1 << 12
 MAC_KEY_CODES = {
     "A": 0,
     "C": 8,
+    "RETURN": 36,
+    "DELETE": 51,
     "S": 1,
     "Z": 6,
 }
@@ -57,13 +59,13 @@ def default_hotkey_bindings() -> HotkeyBindings:
     return HotkeyBindings(
         capture=HotkeyBinding(
             key_code=MAC_KEY_CODES["C"],
-            modifiers=CARBON_CMD | CARBON_OPTION,
-            label="Command+Option+C",
+            modifiers=CARBON_OPTION,
+            label="Option+C",
         ),
         undo=HotkeyBinding(
             key_code=MAC_KEY_CODES["Z"],
-            modifiers=CARBON_CMD | CARBON_OPTION,
-            label="Command+Option+Z",
+            modifiers=CARBON_OPTION,
+            label="Option+Z",
         ),
     )
 
@@ -72,15 +74,19 @@ def hotkey_presets() -> list[HotkeyBindings]:
     return [
         default_hotkey_bindings(),
         HotkeyBindings(
-            capture=HotkeyBinding(MAC_KEY_CODES["C"], CARBON_CMD | CARBON_SHIFT, "Command+Shift+C"),
-            undo=HotkeyBinding(MAC_KEY_CODES["Z"], CARBON_CMD | CARBON_SHIFT, "Command+Shift+Z"),
+            capture=HotkeyBinding(
+                MAC_KEY_CODES["C"], CARBON_CMD | CARBON_OPTION, "Command+Option+C"
+            ),
+            undo=HotkeyBinding(
+                MAC_KEY_CODES["Z"], CARBON_CMD | CARBON_OPTION, "Command+Option+Z"
+            ),
         ),
         HotkeyBindings(
             capture=HotkeyBinding(
-                MAC_KEY_CODES["C"], CARBON_CONTROL | CARBON_OPTION, "Control+Option+C"
+                MAC_KEY_CODES["RETURN"], CARBON_CONTROL, "Control+Return"
             ),
             undo=HotkeyBinding(
-                MAC_KEY_CODES["Z"], CARBON_CONTROL | CARBON_OPTION, "Control+Option+Z"
+                MAC_KEY_CODES["DELETE"], CARBON_CONTROL, "Control+Delete"
             ),
         ),
     ]

@@ -34,6 +34,15 @@ def open_directory(path: Path) -> None:
     os.startfile(str(path))
 
 
+def play_capture_sound() -> None:
+    import winsound
+
+    winsound.PlaySound(
+        "SystemAsterisk",
+        winsound.SND_ALIAS | winsound.SND_ASYNC | winsound.SND_NODEFAULT,
+    )
+
+
 def subprocess_window_kwargs() -> dict[str, int]:
     creation_flag = getattr(subprocess, "CREATE_NO_WINDOW", 0)
     return {"creationflags": creation_flag} if creation_flag else {}

@@ -9,6 +9,7 @@ from pathlib import Path
 from PySide6.QtCore import QObject, QPoint, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QCloseEvent, QGuiApplication, QIcon
 from PySide6.QtWidgets import (
+    QApplication,
     QCheckBox,
     QComboBox,
     QFileDialog,
@@ -32,6 +33,7 @@ from mangacrisp_app.i18n import tr
 from mangacrisp_app.platform import (
     create_screen_capture_backend,
     open_directory,
+    play_capture_sound,
     screen_capture_hotkey_presets,
 )
 from mangacrisp_app.platform.capture_base import (
@@ -41,7 +43,7 @@ from mangacrisp_app.platform.capture_base import (
 )
 from mangacrisp_app.region_selector import RegionSelector
 
-CAPTURE_DEBOUNCE_SECONDS = 0.15
+CAPTURE_DEBOUNCE_SECONDS = 0.25
 CAPTURE_FEEDBACK_SIZE = QSize(190, 52)
 CAPTURE_FEEDBACK_MARGIN = 12
 
@@ -110,6 +112,10 @@ class CaptureFeedback(QWidget):
         display: CaptureDisplay | None,
         region: CaptureRect | None,
     ) -> None:
+        # A background Qt tool window can activate MangaCrisp on macOS. While
+        # another app is active, the Dock badge is the non-intrusive feedback.
+        if QGuiApplication.applicationState() != Qt.ApplicationActive:
+            return
         if display is None or region is None:
             return
         position = capture_feedback_position(display, region, self.size())
@@ -118,7 +124,6 @@ class CaptureFeedback(QWidget):
         self.label.setText(message)
         self.move(position)
         self.show()
-        self.raise_()
         self._hide_timer.start(900)
 
 
@@ -135,12 +140,18 @@ class CaptureWindow(QMainWindow):
         self,
         *,
         on_import: Callable[[Path], None] | None = None,
+        on_capture_mode_changed: Callable[[bool], None] | None = None,
+        on_return_to_bookshelf: Callable[[], None] | None = None,
+        sound_player: Callable[[], None] = play_capture_sound,
         backend=None,
         parent=None,
     ) -> None:
         super().__init__(parent)
         self.backend = backend or create_screen_capture_backend()
         self.on_import = on_import
+        self.on_capture_mode_changed = on_capture_mode_changed
+        self.on_return_to_bookshelf = on_return_to_bookshelf
+        self.sound_player = sound_player
         self.displays: list[CaptureDisplay] = []
         self.region: CaptureRect | None = None
         self.session: CaptureSession | None = None
@@ -150,6 +161,7 @@ class CaptureWindow(QMainWindow):
         self.last_capture_started = 0.0
         self._reloading_pages = False
         self._closing = False
+        self._packaging = False
         self.signals = CaptureSignals()
         self.signals.request_capture.connect(self.capture_requested)
         self.signals.request_undo.connect(self.undo_last)
@@ -185,6 +197,14 @@ class CaptureWindow(QMainWindow):
         description.setObjectName("muted")
         description.setWordWrap(True)
         layout.addWidget(description)
+
+        persistence = QLabel(
+            tr("撮影ごとにPNGへ即時保存します。完了時にページ順とCBZ/ZIPを確定します。"),
+            root,
+        )
+        persistence.setObjectName("muted")
+        persistence.setWordWrap(True)
+        layout.addWidget(persistence)
 
         form = QFormLayout()
         self.name_edit = QLineEdit(tr("新しいキャプチャ"), root)
@@ -230,6 +250,21 @@ class CaptureWindow(QMainWindow):
         for bindings in screen_capture_hotkey_presets():
             self.hotkey_combo.addItem(f"{bindings.capture.label} / Undo: {bindings.undo.label}", bindings)
         form.addRow(tr("撮影ショートカット"), self.hotkey_combo)
+        self.sound_check = QCheckBox(tr("保存成功時にシャッター音を鳴らす"), root)
+        self.sound_check.setChecked(True)
+        self.sound_check.setToolTip(tr("対象アプリを前面のまま、PNG保存の成功を音で知らせます。"))
+        self.visual_feedback_check = QCheckBox(
+            tr("Dockアイコンを動かして保存枚数を表示する"), root
+        )
+        self.visual_feedback_check.setChecked(True)
+        self.visual_feedback_check.setToolTip(
+            tr("対象アプリを前面のまま、Dockアイコンの動きと数字で保存成功を知らせます。")
+        )
+        feedback_row = QVBoxLayout()
+        feedback_row.setContentsMargins(0, 0, 0, 0)
+        feedback_row.addWidget(self.visual_feedback_check)
+        feedback_row.addWidget(self.sound_check)
+        form.addRow(tr("撮影通知"), feedback_row)
         layout.addLayout(form)
 
         action_row = QHBoxLayout()
@@ -245,6 +280,9 @@ class CaptureWindow(QMainWindow):
         self.open_button = QPushButton(tr("保存先を開く"), root)
         self.open_button.clicked.connect(self.open_session_directory)
         action_row.addWidget(self.open_button)
+        self.return_button = QPushButton(tr("本棚へ戻る"), root)
+        self.return_button.clicked.connect(self.return_to_bookshelf)
+        action_row.addWidget(self.return_button)
         layout.addLayout(action_row)
 
         self.status_label = QLabel(tr("範囲を選択して撮影を開始してください。"), root)
@@ -280,11 +318,11 @@ class CaptureWindow(QMainWindow):
         self.output_combo.addItem("CBZ", "cbz")
         self.output_combo.addItem("ZIP", "zip")
         output_row.addWidget(self.output_combo)
-        self.import_check = QCheckBox(tr("完成後に本棚へ追加"), root)
+        self.import_check = QCheckBox(tr("完了後に本棚へ追加（表紙を作成）"), root)
         self.import_check.setChecked(True)
         output_row.addWidget(self.import_check)
         output_row.addStretch(1)
-        self.package_button = QPushButton(tr("完成ファイルを作成"), root)
+        self.package_button = QPushButton(tr("撮影を完了"), root)
         self.package_button.clicked.connect(self.package_session)
         output_row.addWidget(self.package_button)
         layout.addLayout(output_row)
@@ -460,14 +498,13 @@ class CaptureWindow(QMainWindow):
         self.start_button.setText(tr("撮影を停止"))
         self.status_label.setText(
             tr(
-                "待機中: {capture} で撮影 / {undo} で直前取消。管理画面を最小化します。",
+                "待機中: {capture} で撮影 / {undo} で直前取消。Dockから管理画面を開けます。",
                 capture=bindings.capture.label,
                 undo=bindings.undo.label,
             )
         )
         self.update_controls()
-        if self.isVisible():
-            QTimer.singleShot(450, self.showMinimized)
+        QTimer.singleShot(250, self._hide_for_active_capture)
 
     def stop_capture(self) -> None:
         self.backend.unregister_hotkeys()
@@ -475,6 +512,23 @@ class CaptureWindow(QMainWindow):
         self.start_button.setText(tr("撮影を開始"))
         self.status_label.setText(tr("撮影を停止しました。保存済みページは維持されています。"))
         self.update_controls()
+        self._set_capture_mode(False)
+
+    def _set_capture_mode(self, running: bool) -> None:
+        if self.on_capture_mode_changed is not None:
+            self.on_capture_mode_changed(running)
+        elif running:
+            self.hide()
+
+    def _hide_for_active_capture(self) -> None:
+        if self.running:
+            self._set_capture_mode(True)
+
+    def return_to_bookshelf(self) -> None:
+        if self.running:
+            self.stop_capture()
+        if self.on_return_to_bookshelf is not None:
+            self.on_return_to_bookshelf()
 
     def capture_with_window_hidden(self) -> None:
         if self.region is None:
@@ -550,14 +604,19 @@ class CaptureWindow(QMainWindow):
         app = QGuiApplication.instance()
         if app is not None:
             app.setBadgeNumber(len(self.session.pages) if self.session is not None else 0)
-        self.capture_feedback.show_message(
-            tr(
-                "保存 {number}枚",
-                number=len(self.session.pages) if self.session is not None else page.position,
-            ),
-            display=self.selected_display(),
-            region=self.region,
-        )
+        if self.visual_feedback_check.isChecked():
+            QApplication.alert(self, 700)
+        if self.sound_check.isChecked():
+            self.sound_player()
+        if self.isVisible() and not self.isMinimized():
+            self.capture_feedback.show_message(
+                tr(
+                    "保存 {number}枚",
+                    number=len(self.session.pages) if self.session is not None else page.position,
+                ),
+                display=self.selected_display(),
+                region=self.region,
+            )
         self.update_controls()
 
     def _ensure_disk_space(self) -> None:
@@ -582,11 +641,12 @@ class CaptureWindow(QMainWindow):
         app = QGuiApplication.instance()
         if app is not None:
             app.setBadgeNumber(len(self.session.pages))
-        self.capture_feedback.show_message(
-            tr("取消 {number}枚目", number=page.position),
-            display=self.selected_display(),
-            region=self.region,
-        )
+        if self.isVisible() and not self.isMinimized():
+            self.capture_feedback.show_message(
+                tr("取消 {number}枚目", number=page.position),
+                display=self.selected_display(),
+                region=self.region,
+            )
         self.update_controls()
 
     def selected_position(self) -> int | None:
@@ -664,18 +724,27 @@ class CaptureWindow(QMainWindow):
             self._reloading_pages = False
 
     def package_session(self) -> None:
-        if self.session is None or not self.session.pages:
-            self.status_label.setText(tr("完成ファイルにするページがありません。"))
+        if self._packaging:
             return
-        if self.coordinator is not None and self.coordinator.pending:
-            self.status_label.setText(tr("PNG保存が完了してから作成してください。"))
+        if self._completed_output_path() is not None:
+            self.status_label.setText(tr("このセッションは完了済みです。"))
+            self.update_controls()
             return
+        has_pending = self.coordinator is not None and self.coordinator.pending > 0
+        if self.session is None or (not self.session.pages and not has_pending):
+            self.status_label.setText(tr("完了するページがありません。"))
+            return
+        if self.running:
+            self.stop_capture()
         format_name = str(self.output_combo.currentData())
+        self._packaging = True
         self.package_button.setEnabled(False)
-        self.status_label.setText(tr("完成ファイルを作成中..."))
+        self.status_label.setText(tr("残りのPNG保存を待って、CBZ/ZIPを作成中..."))
 
         def worker() -> None:
             try:
+                if self.coordinator is not None:
+                    self.coordinator.wait()
                 output = self.session.package(format_name=format_name) if self.session else None
                 self.signals.package_done.emit(output, None)
             except Exception as exc:  # noqa: BLE001 - Worker boundary reports errors to the UI.
@@ -684,9 +753,10 @@ class CaptureWindow(QMainWindow):
         threading.Thread(target=worker, name="capture-package", daemon=True).start()
 
     def on_package_done(self, output: Path | None, error: BaseException | None) -> None:
-        self.package_button.setEnabled(True)
+        self._packaging = False
+        self.update_controls()
         if error is not None or output is None:
-            self.show_error(tr("完成ファイルを作成できません: {error}", error=error))
+            self.show_error(tr("撮影を完了できません: {error}", error=error))
             return
         self.status_label.setText(tr("完成しました: {path}", path=output))
         if self.import_check.isChecked() and self.on_import is not None:
@@ -703,9 +773,14 @@ class CaptureWindow(QMainWindow):
 
     def update_controls(self) -> None:
         has_pages = self.session is not None and bool(self.session.pages)
+        has_pending = self.coordinator is not None and self.coordinator.pending > 0
+        is_completed = self._completed_output_path() is not None
         self.capture_button.setEnabled(self.region is not None and not self.running)
         self.undo_button.setEnabled(has_pages)
-        self.package_button.setEnabled(has_pages)
+        self.package_button.setText(tr("完了済み") if is_completed else tr("撮影を完了"))
+        self.package_button.setEnabled(
+            (has_pages or has_pending) and not self._packaging and not is_completed
+        )
         self.retake_button.setEnabled(has_pages)
         self.rotate_button.setEnabled(has_pages)
         self.delete_button.setEnabled(has_pages)
@@ -713,6 +788,15 @@ class CaptureWindow(QMainWindow):
         self.destination_edit.setEnabled(self.session is None)
         self.display_combo.setEnabled(not self.running)
         self.hotkey_combo.setEnabled(not self.running)
+
+    def _completed_output_path(self) -> Path | None:
+        if self.session is None or self.session.manifest.output is None:
+            return None
+        filename = self.session.manifest.output.get("file")
+        if not filename:
+            return None
+        output = self.session.directory / filename
+        return output if output.is_file() else None
 
     def show_error(self, message: str) -> None:
         self.status_label.setText(message)

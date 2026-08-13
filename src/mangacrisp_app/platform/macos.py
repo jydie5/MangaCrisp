@@ -6,6 +6,11 @@ from pathlib import Path
 
 from mangacrisp_app.platform.common import ApplicationDirectories
 
+CAPTURE_SOUND = Path(
+    "/System/Library/Components/CoreAudio.component/Contents/SharedSupport/"
+    "SystemSounds/system/Shutter.aif"
+)
+
 
 def application_directories(
     app_name: str,
@@ -28,6 +33,17 @@ def application_directories(
 
 def open_directory(path: Path) -> None:
     subprocess.Popen(["open", str(path)])
+
+
+def play_capture_sound() -> None:
+    if not CAPTURE_SOUND.is_file():
+        return
+    subprocess.Popen(
+        ["/usr/bin/afplay", str(CAPTURE_SOUND)],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
 
 
 def subprocess_window_kwargs() -> dict[str, int]:
