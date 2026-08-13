@@ -26,7 +26,7 @@ The screenshots use *Pepper&Carrot* by David Revoy under
 
 The standalone build does not require Python, uv, or Terminal.
 
-### [Download MangaCrisp v0.7.0-beta for Apple Silicon](https://github.com/jydie5/MangaCrisp/releases/download/v0.7.0-beta/MangaCrisp-v0.7.0-beta-macos-apple-silicon-standalone.zip)
+### [Download MangaCrisp v0.7.1-beta for Apple Silicon](https://github.com/jydie5/MangaCrisp/releases/download/v0.7.1-beta/MangaCrisp-v0.7.1-beta-macos-apple-silicon-standalone.zip)
 
 1. Download the standalone ZIP from the link above.
 2. Unzip it and move `MangaCrisp.app` to Applications.
@@ -62,14 +62,30 @@ extracted reading copy in `~/MangaCrisp Library`. For existing RAIV for mac
 users, the previous default `~/RAIV Library` is renamed to this location on
 first launch. A custom library location selected by the user is left unchanged.
 
+## New in v0.7.1-beta
+
+- **Sequential screen capture for macOS:** manually save an authorized screen
+  region as numbered color PNG files, review the pages, and finish as CBZ or ZIP.
+- **Single Page layout:** center one image at full reader width and advance one
+  image at a time. This is intended for captures where one image already
+  contains a complete two-page spread.
+- **Reliable capture completion:** each PNG is saved immediately, pending saves
+  finish before packaging, and the same page set cannot be packaged twice.
+
+See [Sequential screen capture](#sequential-screen-capture-macos-beta) and the
+[installation guide](INSTALL.md#allow-screen-recording-for-capture) before the
+first capture.
+
 ## Features
 
 - Cover-based bookshelf with multi-file drag and drop
+- Sequential fixed-region screen capture to color PNG and CBZ/ZIP on macOS
 - PDF, ZIP/CBZ, RAR/CBR, 7z/CB7, image folders, and individual images
 - On-demand PDF rendering that preserves color without converting the whole book during import
 - Bounded PDF render and AI enhancement caches with a clear-cache action
 - Copyable privacy-safe diagnostics for issue reports
 - Right-bound manga layout with a single cover and two-page spreads
+- Single Page layout for one-image spreads and captured pages
 - Natural title and volume ordering
 - Continue to the next volume without leaving full screen
 - Reading-position persistence
@@ -130,6 +146,7 @@ These are the defaults for right-bound manga.
 | `Right` | Previous spread |
 | `Shift + Left` | Shift one page forward |
 | `Shift + Right` | Shift one page backward |
+| `V` | Toggle Spread (2 images) / Single Page (1 image) |
 | `F` | Toggle full screen |
 | `P` | Show or hide Reading Settings |
 | `O` | Toggle Original / Enhanced |
@@ -151,6 +168,29 @@ windowed and full-screen reading.
 
 For right-bound manga, the left side advances and the right side goes back.
 Left-bound comics use the opposite mapping. Dragging does not turn a page.
+
+When one captured image already contains a complete two-page spread, choose
+**Single Page (1 image)** in Reading Settings. MangaCrisp centers that image,
+uses the full reader width, and advances one image at a time. Press `V` to
+toggle between single-page and normal spread layouts.
+
+## Sequential screen capture (macOS beta)
+
+Use this feature only for screens you own or are authorized to save. MangaCrisp
+does not automate page turning or bypass capture protection.
+
+1. In the bookshelf, choose **Sequential Screen Capture**.
+2. Name the session, choose an output folder, and select the capture region.
+3. Start capture. On first use, allow MangaCrisp under macOS **Screen & System
+   Audio Recording**, quit the app completely, then reopen the same installed app.
+4. Turn pages in the source application and press `Option+C` once per image.
+   Use `Option+Z` to undo the last capture.
+5. Click MangaCrisp in the Dock to restore the capture controller, then choose
+   **Finish Capture**. The numbered source PNGs remain beside the finished CBZ/ZIP.
+
+Capture images are stored locally and are not uploaded. If each capture already
+contains a full spread, open the finished book and press `V` for Single Page
+layout. Full permission and recovery steps are in [INSTALL.md](INSTALL.md).
 
 ## Free demo books
 

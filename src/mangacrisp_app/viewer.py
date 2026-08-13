@@ -138,8 +138,8 @@ NOISE_LABELS = {
 
 def navigation_help_text(reading_direction: str) -> str:
     if reading_direction == "rtl":
-        return "Left/Space: next | Right: previous | Shift+Left/Right: +/-1p | O: original/enhanced | F: fullscreen | P: panel | H: help"
-    return "Right/Space: next | Left: previous | Shift+Right/Left: +/-1p | O: original/enhanced | F: fullscreen | P: panel | H: help"
+        return "Left/Space: next | Right: previous | Shift+Left/Right: +/-1p | V: spread/single | O: original/enhanced | F: fullscreen | P: panel | H: help"
+    return "Right/Space: next | Left: previous | Shift+Right/Left: +/-1p | V: spread/single | O: original/enhanced | F: fullscreen | P: panel | H: help"
 
 
 def viewer_shortcuts_text(reading_direction: str) -> str:
@@ -161,6 +161,7 @@ def viewer_shortcuts_text(reading_direction: str) -> str:
             tr("{keys}: 1ページ戻す", keys=one_page_previous),
             tr("F: 全画面表示/解除"),
             tr("P: 右設定パネル表示/非表示"),
+            tr("V: 見開き/単ページを切り替え"),
             tr("O: 原画/補正版を切り替え"),
             tr("B: しおり追加"),
             tr("画面左右クリック: 次へ/前へ（読書方向に連動）"),
@@ -198,8 +199,8 @@ def show_help_dialog(parent, shortcuts_text: str) -> None:
 
 def compact_shortcuts_text(reading_direction: str) -> str:
     if reading_direction == "rtl":
-        return tr("左側クリック/← 次 / 右側クリック/→ 前 / 中央クリック 情報 / Shift+クリック 1p / O 原画比較 / P 設定 / H ヘルプ")
-    return tr("右側クリック/→ 次 / 左側クリック/← 前 / 中央クリック 情報 / Shift+クリック 1p / O 原画比較 / P 設定 / H ヘルプ")
+        return tr("左側クリック/← 次 / 右側クリック/→ 前 / 中央クリック 情報 / V 表示切替 / O 原画比較 / P 設定 / H ヘルプ")
+    return tr("右側クリック/→ 次 / 左側クリック/← 前 / 中央クリック 情報 / V 表示切替 / O 原画比較 / P 設定 / H ヘルプ")
 
 
 def display_preset_name(name: str) -> str:
@@ -243,9 +244,11 @@ def reader_click_action(
 
 
 def standard_spread_index(index: int, cover_single: bool) -> int:
-    if cover_single and index > 0 and index % 2 == 0:
-        return max(1, index - 1)
-    return index
+    if cover_single:
+        if index <= 0:
+            return 0
+        return 1 + ((index - 1) // 2) * 2
+    return max(0, (index // 2) * 2)
 
 
 def default_spread_order(reading_direction: str) -> str:
@@ -454,6 +457,7 @@ class SpreadWindow(QMainWindow):
         self.correction_seconds_per_page = 1.25
         self.adaptive_prefetch_count = prefetch_count
         self.controls_visible = True
+        self.page_layout_mode = "spread"
         self.reading_info_visible = False
         self.mouse_press_button = None
         self.mouse_press_global_position = None
@@ -532,6 +536,7 @@ class SpreadWindow(QMainWindow):
         layout = QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
+        self.page_layout = layout
         self.left = QLabel(alignment=Qt.AlignCenter)
         self.right = QLabel(alignment=Qt.AlignCenter)
         self.left.setObjectName("pagePane")
@@ -688,23 +693,33 @@ class SpreadWindow(QMainWindow):
         simple_layout.addWidget(self.preset_status)
         layout.addWidget(self.simple_panel)
 
-        spread_title = QLabel(tr("見開き"), controls)
+        layout_title = QLabel(tr("表示レイアウト"), controls)
+        layout_title.setStyleSheet("font-weight: bold; font-size: 15px; margin-top: 8px;")
+        layout.addWidget(layout_title)
+        self.page_layout_combo = QComboBox(controls)
+        self.page_layout_combo.addItem(tr("見開き（2画像）"), "spread")
+        self.page_layout_combo.addItem(tr("単ページ（1画像）"), "single")
+        self.page_layout_combo.currentIndexChanged.connect(self.on_page_layout_changed)
+        layout.addWidget(self.page_layout_combo)
+        layout.addWidget(self.help_label(tr("見開きを含む1枚の画像は、単ページで中央に大きく表示します。")))
+
+        spread_title = QLabel(tr("見開き調整"), controls)
         spread_title.setStyleSheet("font-weight: bold; font-size: 15px; margin-top: 8px;")
         layout.addWidget(spread_title)
         spread_buttons = QHBoxLayout()
-        shift_back_button = QPushButton("-1", controls)
-        shift_back_button.clicked.connect(lambda: self.move_by(-1))
-        spread_buttons.addWidget(shift_back_button)
-        shift_forward_button = QPushButton("+1", controls)
-        shift_forward_button.clicked.connect(lambda: self.move_by(1))
-        spread_buttons.addWidget(shift_forward_button)
-        swap_button = QPushButton(tr("左右入替"), controls)
-        swap_button.clicked.connect(self.swap_spread_order)
-        spread_buttons.addWidget(swap_button)
+        self.shift_back_button = QPushButton("-1", controls)
+        self.shift_back_button.clicked.connect(lambda: self.move_by(-1))
+        spread_buttons.addWidget(self.shift_back_button)
+        self.shift_forward_button = QPushButton("+1", controls)
+        self.shift_forward_button.clicked.connect(lambda: self.move_by(1))
+        spread_buttons.addWidget(self.shift_forward_button)
+        self.swap_button = QPushButton(tr("左右入替"), controls)
+        self.swap_button.clicked.connect(self.swap_spread_order)
+        spread_buttons.addWidget(self.swap_button)
         layout.addLayout(spread_buttons)
-        reset_button = QPushButton(tr("標準見開きに戻す"), controls)
-        reset_button.clicked.connect(self.reset_spread_alignment)
-        layout.addWidget(reset_button)
+        self.reset_spread_button = QPushButton(tr("標準見開きに戻す"), controls)
+        self.reset_spread_button.clicked.connect(self.reset_spread_alignment)
+        layout.addWidget(self.reset_spread_button)
         self.spread_status = QLabel("", controls)
         self.spread_status.setWordWrap(True)
         self.spread_status.setStyleSheet("color: #aaaaaa; font-size: 12px;")
@@ -1228,10 +1243,10 @@ class SpreadWindow(QMainWindow):
             self.toggle_reading_info()
             return True
         if action == "next":
-            self.move_by(1 if one_page else 2)
+            self.move_by(1 if one_page else self.page_turn_step())
             return True
         if action == "previous":
-            self.move_by(-1 if one_page else -2)
+            self.move_by(-1 if one_page else -self.page_turn_step())
             return True
         return False
 
@@ -1267,10 +1282,10 @@ class SpreadWindow(QMainWindow):
                 self.move_by(-1)
                 return True
         if key in {next_key, Qt.Key_Down, Qt.Key_Space}:
-            self.move_by(2)
+            self.move_by(self.page_turn_step())
             return True
         elif key in {previous_key, Qt.Key_Up, Qt.Key_Backspace}:
-            self.move_by(-2)
+            self.move_by(-self.page_turn_step())
             return True
         elif key == Qt.Key_E:
             self.move_by(1)
@@ -1283,6 +1298,9 @@ class SpreadWindow(QMainWindow):
             return True
         elif key == Qt.Key_P:
             self.toggle_controls()
+            return True
+        elif key == Qt.Key_V:
+            self.toggle_page_layout()
             return True
         elif key == Qt.Key_O:
             self.original_check.toggle()
@@ -1300,6 +1318,45 @@ class SpreadWindow(QMainWindow):
                 self.close()
             return True
         return False
+
+    def page_turn_step(self) -> int:
+        return 1 if self.page_layout_mode == "single" else 2
+
+    def on_page_layout_changed(self) -> None:
+        self.set_page_layout(str(self.page_layout_combo.currentData()))
+
+    def toggle_page_layout(self) -> None:
+        mode = "single" if self.page_layout_mode == "spread" else "spread"
+        self.set_page_layout(mode)
+
+    def set_page_layout(self, mode: str) -> None:
+        mode = "single" if mode == "single" else "spread"
+        if mode == self.page_layout_mode:
+            return
+        self.page_layout_mode = mode
+        if mode == "spread":
+            self.index = standard_spread_index(self.index, self.cover_single)
+        self.right.setVisible(mode == "spread")
+        self.page_layout.invalidate()
+        self.page_layout.activate()
+        for button in (
+            self.shift_back_button,
+            self.shift_forward_button,
+            self.swap_button,
+            self.reset_spread_button,
+        ):
+            button.setEnabled(mode == "spread")
+        combo_index = self.page_layout_combo.findData(mode)
+        if combo_index >= 0 and combo_index != self.page_layout_combo.currentIndex():
+            self.page_layout_combo.blockSignals(True)
+            self.page_layout_combo.setCurrentIndex(combo_index)
+            self.page_layout_combo.blockSignals(False)
+        self.clear_queued_visible_requests()
+        self.invalidate_prefetch_for_navigation()
+        self.render_spread(high_quality=True)
+        self.update_spread_status()
+        self.update_next_book_action()
+        self.notify_page_changed()
 
     def move_by(self, step: int) -> None:
         if not self.pages:
@@ -1392,6 +1449,9 @@ class SpreadWindow(QMainWindow):
     def update_spread_status(self) -> None:
         if not hasattr(self, "spread_status"):
             return
+        if self.page_layout_mode == "single":
+            self.spread_status.setText(tr("単ページ / 1画像ずつ / 中央表示"))
+            return
         direction = tr("右綴じ") if self.is_right_bound() else tr("左綴じ")
         order = tr("左→右") if self.spread_order == "ltr" else tr("右→左")
         phase = tr("表紙単独") if self.cover_single else tr("通常")
@@ -1406,7 +1466,9 @@ class SpreadWindow(QMainWindow):
             high_quality = not self.fast_resize_render
         visible_indexes = self.visible_page_indexes()
         self.load_cached_outputs(visible_indexes)
-        if self.cover_single and self.index == 0:
+        if self.page_layout_mode == "single":
+            left_index, right_index = self.index, -1
+        elif self.cover_single and self.index == 0:
             if self.is_right_bound():
                 left_index, right_index = -1, 0
             else:
@@ -1439,6 +1501,10 @@ class SpreadWindow(QMainWindow):
         self.update_next_book_action()
 
     def update_page_pane_alignment(self, left_index: int, right_index: int) -> None:
+        if self.page_layout_mode == "single":
+            self.left.setAlignment(Qt.AlignCenter)
+            self.right.setAlignment(Qt.AlignCenter)
+            return
         is_pair = 0 <= left_index < len(self.pages) and 0 <= right_index < len(self.pages)
         if is_pair:
             self.left.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
@@ -1610,7 +1676,8 @@ class SpreadWindow(QMainWindow):
             return
         targets = []
         seen_sizes: set[tuple[int, int]] = set()
-        for target in (self.left.size(), self.right.size()):
+        labels = (self.left,) if self.page_layout_mode == "single" else (self.left, self.right)
+        for target in (label.size() for label in labels):
             dimensions = (target.width(), target.height())
             if dimensions in seen_sizes:
                 continue
@@ -1644,6 +1711,8 @@ class SpreadWindow(QMainWindow):
     def visible_page_indexes(self) -> list[int]:
         if self.index < 0 or self.index >= len(self.pages):
             return []
+        if self.page_layout_mode == "single":
+            return [self.index]
         if self.cover_single and self.index == 0:
             return [0]
         if self.index + 1 >= len(self.pages):

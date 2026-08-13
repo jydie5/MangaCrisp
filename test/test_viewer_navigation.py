@@ -18,7 +18,11 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
 import mangacrisp_app.viewer as viewer_module
-from mangacrisp_app.viewer import SpreadWindow, reader_click_action
+from mangacrisp_app.viewer import (
+    SpreadWindow,
+    reader_click_action,
+    standard_spread_index,
+)
 
 
 class ViewerNavigationTests(unittest.TestCase):
@@ -104,6 +108,38 @@ class ViewerNavigationTests(unittest.TestCase):
 
         self.assertTrue(self.window.handle_reader_click("previous", one_page=True))
         self.assertEqual(self.window.index, 1)
+
+    def test_single_page_mode_shows_and_moves_one_image_at_a_time(self) -> None:
+        self.window.set_page_layout("single")
+
+        self.assertEqual(self.window.visible_page_indexes(), [0])
+        self.assertTrue(self.window.right.isHidden())
+        self.assertEqual(self.window.page_turn_step(), 1)
+
+        self.assertTrue(self.window.handle_reader_click("next"))
+        self.assertEqual(self.window.index, 1)
+        self.assertEqual(self.window.visible_page_indexes(), [1])
+
+        self.assertTrue(self.window.handle_navigation_key(Qt.Key_Left))
+        self.assertEqual(self.window.index, 2)
+
+    def test_v_toggles_single_page_and_spread_modes(self) -> None:
+        self.window.index = 5
+
+        self.assertTrue(self.window.handle_navigation_key(Qt.Key_V))
+        self.assertEqual(self.window.page_layout_mode, "single")
+        self.assertEqual(self.window.index, 5)
+
+        self.assertTrue(self.window.handle_navigation_key(Qt.Key_V))
+        self.assertEqual(self.window.page_layout_mode, "spread")
+        self.assertEqual(self.window.index, 4)
+        self.assertFalse(self.window.right.isHidden())
+
+    def test_standard_spread_index_contains_current_page(self) -> None:
+        self.assertEqual(standard_spread_index(5, cover_single=False), 4)
+        self.assertEqual(standard_spread_index(6, cover_single=False), 6)
+        self.assertEqual(standard_spread_index(2, cover_single=True), 1)
+        self.assertEqual(standard_spread_index(3, cover_single=True), 3)
 
     def test_center_click_toggles_reading_info(self) -> None:
         self.assertFalse(self.window.reading_info_visible)

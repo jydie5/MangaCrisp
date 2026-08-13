@@ -1,14 +1,15 @@
 # Sequential Screen Capture v1 Requirements and Design
 
-Updated: 2026-08-12
+Updated: 2026-08-13
 
-Status: implementation candidate. Do not include it in a normal release until
-the macOS technical spike and human acceptance gate pass.
+Status: initial implementation and macOS human acceptance completed on
+2026-08-13. Included as a macOS beta feature in v0.7.1-beta.
 
 Related documents:
 
 - [Initial discussion and legal/product boundaries](sequential-screen-capture.ja.md)
 - [Cross-platform workflow](../development/cross-platform-workflow.md)
+- [macOS human check](../testing/capture-human-check.md)
 
 ## v1 decisions
 
@@ -22,14 +23,17 @@ Related documents:
 | Trigger | One image per configurable global shortcut press |
 | Image | Color-preserving PNG with no AI enhancement or color reduction |
 | Package | CBZ by default, ZIP as an option |
-| Feedback | Small visual confirmation outside the region; sound optional and off by default |
+| Feedback | Dock animation and a saved-page badge are primary; the shutter sound is supplemental |
+| Completion | Finish is available during capture, stops capture, drains pending PNG saves, then creates one archive |
+| Duplicate prevention | A completed page set cannot be packaged or imported again until its pages change |
 | Source PNGs | Keep after packaging unless the user explicitly deletes them |
 | Spread splitting | Deferred; one visible capture becomes one image |
 | Automation | No automatic page turning, unattended capture, or capture-protection bypass |
 
-The controller is a modeless movable window because the user must operate a
-different foreground application. MangaCrisp still owns the entry point,
-settings, and session history; Capture is not a separate product.
+Starting capture hides both the controller and bookshelf so they cannot cover or
+activate over the target app. Clicking MangaCrisp in the Dock restores only the
+controller; **Back to Bookshelf** explicitly restores the bookshelf. MangaCrisp
+still owns the entry point, settings, and session history.
 
 ## User flow
 
@@ -43,9 +47,9 @@ settings, and session history; Capture is not a separate product.
 8. Review thumbnails, duplicates, and failure warnings.
 9. Export an atomic CBZ/ZIP and optionally add it to the bookshelf.
 
-Candidate defaults are `Command+Option+C` for capture and `Command+Option+Z`
-for undo. The session must not start if registration fails or a shortcut
-conflict is detected.
+Defaults are `Option+C` for capture and `Option+Z` for undo. Legacy
+`Command+Option+C/Z` and conflict-avoidance `Control+Return/Delete` remain
+selectable. The session must not start if registration fails.
 
 ## Functional requirements
 
@@ -54,6 +58,7 @@ conflict is detected.
 - Convert logical coordinates correctly on Retina and mixed-scale displays.
 - Register a global shortcut without a generic keylogger permission.
 - Save exactly one six-digit PNG for one accepted trigger.
+- Persist each PNG immediately; completion only finalizes order, CBZ/ZIP, and optional bookshelf cover import.
 - Use temporary files and atomic replacement; never silently overwrite pages.
 - Support last-page undo and same-number retake.
 - Support review ordering, deletion, rotation, and selected-page retake.
@@ -64,6 +69,12 @@ conflict is detected.
 - Recover incomplete sessions after restart.
 - Stop safely on permission loss, display removal, disk exhaustion, or capture
   failure.
+- Hide the bookshelf and controller during capture without activating over the
+  target application.
+- Restore only the controller from the Dock and restore the bookshelf only on
+  an explicit action.
+- Read captured full-spread images in a viewer Single Page mode that centers
+  one image at full reader width and advances one image per normal page turn.
 
 ## Non-goals
 
@@ -140,7 +151,7 @@ and output format. It must not store the target application name, window title,
 user name, or absolute local paths. The CBZ contains only numbered images in
 v1, not the private session manifest.
 
-## macOS backend gate
+## macOS backend result
 
 Before selecting a dependency, compare public-API prototypes for
 ScreenCaptureKit and Qt fixed-region screen capture. Prefer ScreenCaptureKit,
@@ -152,6 +163,15 @@ but do not add it to the application until the prototype proves:
 - distributable packaging with complete notices
 - global shortcuts without generic keyboard-monitoring access
 - ten sequential captures without gaps
+
+The initial implementation uses Qt `QScreen.grabWindow` plus public macOS
+framework APIs without adding a runtime dependency. On the M4 Pro development
+Mac it reports and captures the full `3456x2234` display coordinate space in
+color RGBA, and it detects Screen Recording permission. Global shortcuts use
+Carbon `RegisterEventHotKey`, which does not require generic keyboard
+monitoring or Accessibility permission. ScreenCaptureKit remains the fallback
+if human testing finds failures with multiple displays, Spaces, or full-screen
+targets.
 
 ## Quality targets
 
@@ -175,6 +195,7 @@ but do not add it to the application until the prototype proves:
 5. Connect the bookshelf entry and optional bookshelf import.
 6. Run distribution audit, automated tests, and the ten-page Mac human check.
 
-Window capture, spread splitting, JPEG output, and further automation remain
-deferred until the first human check is accepted.
-
+The first human check passed on an Apple Silicon Mac with 86 sequential
+captures, audible and visual feedback, immediate PNG persistence, one-time
+archive completion, bookshelf import, and Single Page reading. Window capture,
+spread splitting, JPEG output, and further automation remain deferred.
