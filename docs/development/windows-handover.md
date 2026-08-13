@@ -176,6 +176,23 @@ clean Windows account remain stable-release gates, so 0.7.1b0 may only be
 published as a clearly marked Windows Development Preview until those gates
 pass.
 
+## Windows v0.7.1 hotkey conflict fix (2026-08-14)
+
+The first external check of `windows-preview-0.7.1b0.1` found that the default
+undo shortcut, `Alt+Z`, could not be registered (`ERROR_HOTKEY_ALREADY_REGISTERED`,
+Windows error 1409). On the validation PC, NVIDIA Overlay owned that shortcut;
+the other MangaCrisp presets were available.
+
+- The Windows default is now `Control+Alt+C` for capture and `Control+Alt+Z`
+  for undo.
+- `Alt+C` / `Alt+Z` remains an optional preset instead of being removed.
+- `Control+Return` / `Control+Delete` remains the third preset.
+- This change does not affect macOS shortcuts or shared capture/session behavior.
+- Publish the fix under a new preview tag; never replace the 0.7.1b0.1 assets.
+
+Repeat the external 10-page check with 0.7.1b0.2 before marking Windows capture
+accepted.
+
 ## Technology decision
 
 Continue with PySide6 and the existing Python code for the first Windows

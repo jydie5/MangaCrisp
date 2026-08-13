@@ -39,7 +39,7 @@ All versions and the SHA-256 checksum are available on the
 
 ### Windows development preview
 
-**[Download the Windows 10/11 x64 Development Preview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.1b0.1/MangaCrisp-0.7.1b0-windows-x64-portable-preview.zip)**
+**[Download the Windows 10/11 x64 Development Preview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.1b0.2/MangaCrisp-0.7.1b0-windows-x64-portable-preview.zip)**
 
 The unsigned portable ZIP needs no Python, uv, CUDA, or installer. It bundles
 the audited Zig-built Real-CUGAN engine and has passed interactive validation
@@ -185,7 +185,9 @@ does not automate page turning or bypass capture protection.
 3. Start capture. On first use on macOS, allow MangaCrisp under **Screen & System
    Audio Recording**, quit the app completely, then reopen the same installed app.
 4. Turn pages in the source application and press `Option+C` on macOS or
-   `Alt+C` on Windows once per image. Use `Option+Z` or `Alt+Z` to undo the last capture.
+   `Control+Alt+C` on Windows once per image. Use `Option+Z` or
+   `Control+Alt+Z` to undo the last capture. Windows also provides alternative
+   presets when another application owns either shortcut.
 5. Open MangaCrisp to restore the capture controller, then choose
    **Finish Capture**. The numbered source PNGs remain beside the finished CBZ/ZIP.
 

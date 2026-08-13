@@ -66,8 +66,8 @@ class _HotkeyEventFilter(QAbstractNativeEventFilter):
 
 def default_hotkey_bindings() -> HotkeyBindings:
     return HotkeyBindings(
-        capture=HotkeyBinding(VK_C, MOD_ALT, "Alt+C"),
-        undo=HotkeyBinding(VK_Z, MOD_ALT, "Alt+Z"),
+        capture=HotkeyBinding(VK_C, MOD_CONTROL | MOD_ALT, "Control+Alt+C"),
+        undo=HotkeyBinding(VK_Z, MOD_CONTROL | MOD_ALT, "Control+Alt+Z"),
     )
 
 
@@ -75,8 +75,8 @@ def hotkey_presets() -> list[HotkeyBindings]:
     return [
         default_hotkey_bindings(),
         HotkeyBindings(
-            capture=HotkeyBinding(VK_C, MOD_CONTROL | MOD_ALT, "Control+Alt+C"),
-            undo=HotkeyBinding(VK_Z, MOD_CONTROL | MOD_ALT, "Control+Alt+Z"),
+            capture=HotkeyBinding(VK_C, MOD_ALT, "Alt+C"),
+            undo=HotkeyBinding(VK_Z, MOD_ALT, "Alt+Z"),
         ),
         HotkeyBindings(
             capture=HotkeyBinding(VK_RETURN, MOD_CONTROL, "Control+Return"),

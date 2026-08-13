@@ -33,13 +33,21 @@ def test_windows_backend_lists_and_captures_display_region(qapp) -> None:
 
 
 def test_windows_hotkey_presets_are_distinct() -> None:
-    from mangacrisp_app.platform.capture_windows import hotkey_presets
+    from mangacrisp_app.platform.capture_windows import (
+        MOD_ALT,
+        MOD_CONTROL,
+        hotkey_presets,
+    )
 
     presets = hotkey_presets()
 
     assert len(presets) == 3
-    assert presets[0].capture.label == "Alt+C"
-    assert presets[0].undo.label == "Alt+Z"
+    assert presets[0].capture.label == "Control+Alt+C"
+    assert presets[0].undo.label == "Control+Alt+Z"
+    assert presets[0].capture.modifiers == MOD_CONTROL | MOD_ALT
+    assert presets[0].undo.modifiers == MOD_CONTROL | MOD_ALT
+    assert presets[1].capture.label == "Alt+C"
+    assert presets[1].undo.label == "Alt+Z"
     for bindings in presets:
         assert (bindings.capture.key_code, bindings.capture.modifiers) != (
             bindings.undo.key_code,
