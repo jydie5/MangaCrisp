@@ -51,6 +51,13 @@ distribution audit reported `baseline_ready=true`, and the final local candidate
 passed the sanitized-environment ZIP smoke test. These checks likewise do not
 replace Intel, AMD, or separate clean-account evidence.
 
+On 2026-08-14, the first external 0.7.1b0.1 capture check stopped before capture
+because NVIDIA Overlay already owned `Alt+Z`; Windows returned error 1409. The
+0.7.1b0.2 candidate changes the default to `Control+Alt+C` / `Control+Alt+Z`.
+Both keys registered together through the real Windows API on the same machine,
+and the rebuilt portable controller displayed the new default. The 10-page
+external capture check must be repeated with the refreshed preview.
+
 ## Record a GPU report
 
 Use the exact staged engine or the engine extracted from the candidate portable

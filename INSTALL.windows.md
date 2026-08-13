@@ -21,7 +21,7 @@ capture/undo shortcuts and the Single Page reader layout.
 
 ## Download the Development Preview
 
-[Download MangaCrisp 0.7.1b0 Windows x64 portable preview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.1b0.1/MangaCrisp-0.7.1b0-windows-x64-portable-preview.zip)
+[Download MangaCrisp 0.7.1b0 Windows x64 portable preview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.1b0.2/MangaCrisp-0.7.1b0-windows-x64-portable-preview.zip)
 
 1. Download the ZIP.
 2. Extract the complete `MangaCrisp` folder.
@@ -35,9 +35,10 @@ The release also includes the SHA-256 checksum, distribution audit, and
 portable manifest.
 
 Sequential capture is manual: select a fixed region, turn pages yourself, and
-press `Alt+C` for each image (`Alt+Z` undoes the latest capture). MangaCrisp
-does not automate page turning or bypass capture protection. Use it only for
-screens you own or are authorized to save.
+press `Control+Alt+C` for each image (`Control+Alt+Z` undoes the latest capture).
+Alternative presets remain available if another application owns either key.
+MangaCrisp does not automate page turning or bypass capture protection. Use it
+only for screens you own or are authorized to save.
 
 ## Run from source
 Install Git and [uv](https://docs.astral.sh/uv/), then run:

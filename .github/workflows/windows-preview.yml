@@ -164,6 +164,7 @@ jobs:
           - lazy, color-preserving PDF reading with bundled PDFium
           - manual fixed-region sequential capture to numbered PNG and CBZ/ZIP
           - Windows global capture and undo shortcuts without page-turn automation
+          - conflict-resistant default shortcuts: Control+Alt+C / Control+Alt+Z
           - Single Page reader layout with original/enhanced comparison
           - original/enhanced PDF comparison on the Windows validation machine
           - Windows x64 PyInstaller one-folder build
