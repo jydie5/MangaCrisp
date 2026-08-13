@@ -85,7 +85,9 @@ def test_capture_window_opens_screen_recording_settings(qapp) -> None:
     window.close()
 
 
-def test_capture_window_saves_and_packages_with_fake_backend(qapp, tmp_path: Path) -> None:
+def test_capture_window_saves_and_packages_with_fake_backend(
+    qapp, tmp_path: Path
+) -> None:
     del qapp
     backend = FakeCaptureBackend()
     played: list[bool] = []
@@ -114,7 +116,9 @@ def test_capture_window_saves_and_packages_with_fake_backend(qapp, tmp_path: Pat
     assert backend.unregistered
 
 
-def test_capture_mode_callbacks_hide_and_restore_after_start(qapp, tmp_path: Path) -> None:
+def test_capture_mode_callbacks_hide_and_restore_after_start(
+    qapp, tmp_path: Path
+) -> None:
     del qapp
     backend = FakeCaptureBackend()
     states: list[bool] = []
@@ -128,7 +132,10 @@ def test_capture_mode_callbacks_hide_and_restore_after_start(qapp, tmp_path: Pat
     window.set_region(CaptureRect("display-1", 0, 0, 320, 480))
 
     window.start_capture()
-    QTest.qWait(300)
+    for _ in range(100):
+        QTest.qWait(20)
+        if states:
+            break
     assert states == [True]
     assert not window.package_button.isEnabled()
 
@@ -138,7 +145,9 @@ def test_capture_mode_callbacks_hide_and_restore_after_start(qapp, tmp_path: Pat
     window.close()
 
 
-def test_completed_capture_cannot_be_packaged_or_imported_twice(qapp, tmp_path: Path) -> None:
+def test_completed_capture_cannot_be_packaged_or_imported_twice(
+    qapp, tmp_path: Path
+) -> None:
     del qapp
     imported: list[Path] = []
     window = CaptureWindow(backend=FakeCaptureBackend(), on_import=imported.append)
