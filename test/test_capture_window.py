@@ -129,6 +129,12 @@ def test_capture_mode_callbacks_hide_and_restore_after_start(
         on_return_to_bookshelf=lambda: returned.append(True),
     )
     window.destination_edit.setText(str(tmp_path))
+    bindings = HotkeyBindings(
+        HotkeyBinding(1, 1, "Test Capture"),
+        HotkeyBinding(2, 1, "Test Undo"),
+    )
+    window.hotkey_combo.addItem("Test", bindings)
+    window.hotkey_combo.setCurrentIndex(window.hotkey_combo.count() - 1)
     window.set_region(CaptureRect("display-1", 0, 0, 320, 480))
 
     window.start_capture()
