@@ -332,7 +332,7 @@ class BookshelfWindow(QMainWindow):
         self.capture_button = QPushButton(tr("画面を連番キャプチャ"), root)
         self.capture_button.setToolTip(tr("固定範囲をPNGで連番保存し、CBZまたはZIPにまとめます。"))
         self.capture_button.clicked.connect(self.open_capture_window)
-        self.capture_button.setVisible(sys.platform == "darwin")
+        self.capture_button.setVisible(sys.platform in {"darwin", "win32"})
         buttons.addWidget(self.capture_button)
 
         self.open_button = QPushButton(tr("読む"), root)

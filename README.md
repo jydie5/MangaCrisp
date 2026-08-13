@@ -39,14 +39,15 @@ All versions and the SHA-256 checksum are available on the
 
 ### Windows development preview
 
-**[Download the Windows 10/11 x64 Development Preview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.0b0.1/MangaCrisp-0.7.0b0-windows-x64-portable-preview.zip)**
+**[Download the Windows 10/11 x64 Development Preview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.1b0.1/MangaCrisp-0.7.1b0-windows-x64-portable-preview.zip)**
 
 The unsigned portable ZIP needs no Python, uv, CUDA, or installer. It bundles
 the audited Zig-built Real-CUGAN engine and has passed interactive validation
-on NVIDIA graphics. Version 0.7 adds verified lazy, color-preserving PDF
-reading with bundled PDFium. Intel and AMD enhancement evidence and a separate clean
-Windows account test remain before the stable Windows release. Original-image
-reading remains available if enhancement is unavailable. See
+on NVIDIA graphics. Version 0.7.1 adds manual fixed-region sequential capture
+with Windows global capture/undo shortcuts and the Single Page reader layout.
+Intel and AMD enhancement evidence and a separate clean Windows account test
+remain before the stable Windows release. Original-image reading remains
+available if enhancement is unavailable. See
 [INSTALL.windows.md](INSTALL.windows.md) for installation and limitations.
 
 ## Read your first book
@@ -64,7 +65,7 @@ first launch. A custom library location selected by the user is left unchanged.
 
 ## New in v0.7.1-beta
 
-- **Sequential screen capture for macOS:** manually save an authorized screen
+- **Sequential screen capture for macOS and Windows:** manually save an authorized screen
   region as numbered color PNG files, review the pages, and finish as CBZ or ZIP.
 - **Single Page layout:** center one image at full reader width and advance one
   image at a time. This is intended for captures where one image already
@@ -72,14 +73,14 @@ first launch. A custom library location selected by the user is left unchanged.
 - **Reliable capture completion:** each PNG is saved immediately, pending saves
   finish before packaging, and the same page set cannot be packaged twice.
 
-See [Sequential screen capture](#sequential-screen-capture-macos-beta) and the
-[installation guide](INSTALL.md#allow-screen-recording-for-capture) before the
-first capture.
+See [Sequential screen capture](#sequential-screen-capture-beta) before the
+first capture. macOS users must also follow the
+[screen-recording permission guide](INSTALL.md#allow-screen-recording-for-capture).
 
 ## Features
 
 - Cover-based bookshelf with multi-file drag and drop
-- Sequential fixed-region screen capture to color PNG and CBZ/ZIP on macOS
+- Sequential fixed-region screen capture to color PNG and CBZ/ZIP on macOS and Windows
 - PDF, ZIP/CBZ, RAR/CBR, 7z/CB7, image folders, and individual images
 - On-demand PDF rendering that preserves color without converting the whole book during import
 - Bounded PDF render and AI enhancement caches with a clear-cache action
@@ -174,18 +175,18 @@ When one captured image already contains a complete two-page spread, choose
 uses the full reader width, and advances one image at a time. Press `V` to
 toggle between single-page and normal spread layouts.
 
-## Sequential screen capture (macOS beta)
+## Sequential screen capture (beta)
 
 Use this feature only for screens you own or are authorized to save. MangaCrisp
 does not automate page turning or bypass capture protection.
 
 1. In the bookshelf, choose **Sequential Screen Capture**.
 2. Name the session, choose an output folder, and select the capture region.
-3. Start capture. On first use, allow MangaCrisp under macOS **Screen & System
+3. Start capture. On first use on macOS, allow MangaCrisp under **Screen & System
    Audio Recording**, quit the app completely, then reopen the same installed app.
-4. Turn pages in the source application and press `Option+C` once per image.
-   Use `Option+Z` to undo the last capture.
-5. Click MangaCrisp in the Dock to restore the capture controller, then choose
+4. Turn pages in the source application and press `Option+C` on macOS or
+   `Alt+C` on Windows once per image. Use `Option+Z` or `Alt+Z` to undo the last capture.
+5. Open MangaCrisp to restore the capture controller, then choose
    **Finish Capture**. The numbered source PNGs remain beside the finished CBZ/ZIP.
 
 Capture images are stored locally and are not uploaded. If each capture already

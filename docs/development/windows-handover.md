@@ -138,6 +138,44 @@ own Windows preview tag.
   Intel, AMD, and separate clean-account evidence remain the only preview
   blockers.
 
+## Windows v0.7.1 capture synchronization (2026-08-13)
+
+`main` now includes the macOS `v0.7.1-beta` sequential-capture and Single Page
+reader work. The Windows synchronization branch is `windows/capture-v0.7.1`.
+
+- Added a Windows fixed-region screen-capture backend using Qt's public screen
+  capture API. It does not bypass black screens or capture protection.
+- Added global capture and undo shortcuts through the public Windows
+  `RegisterHotKey` API with no keyboard hook, process injection, or new runtime
+  dependency.
+- Enabled the Capture entry point on the Windows bookshelf and changed shared
+  Dock-specific UI wording to app-icon wording.
+- The Windows backend saves color RGBA images, preserves the common six-digit
+  numbering and atomic session behavior, and produces the same CBZ/ZIP format
+  as macOS.
+- The complete Windows suite passes with `93 passed, 3 skipped`. Two skips are
+  macOS-only capture integration tests; one is the existing optional Windows
+  symlink-privilege setup.
+- A real Windows message-loop check delivered capture and undo notifications
+  through the registered global hotkeys.
+- An end-to-end backend check captured two `160x120` RGBA frames, saved
+  `000001.png` and `000002.png`, and packaged them in the expected CBZ order.
+- The packaged application exposes the Capture controller with Windows
+  displays, `Alt+C`/`Alt+Z` and alternative presets, and no permission prompt.
+- The packaged reader was opened with the redistributable Pepper&Carrot demo;
+  `V` switched between Spread and Single Page and kept original/enhanced
+  comparison available.
+- The 0.7.1b0 one-folder build and development-preview ZIP pass the distribution
+  audit with `baseline_ready=true`. The final local candidate also passed the
+  sanitized-environment ZIP smoke test; CI must repeat both checks on the merged
+  commit before publishing.
+
+The first external human check follows
+`docs/testing/capture-human-check.windows.ja.md`. Intel, AMD, and a separate
+clean Windows account remain stable-release gates, so 0.7.1b0 may only be
+published as a clearly marked Windows Development Preview until those gates
+pass.
+
 ## Technology decision
 
 Continue with PySide6 and the existing Python code for the first Windows
