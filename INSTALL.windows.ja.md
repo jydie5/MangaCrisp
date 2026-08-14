@@ -21,7 +21,7 @@ RAR/CBRのフォールバック展開には、SHA-256を固定・検証した7-Z
 
 ## Development Previewをダウンロード
 
-[MangaCrisp 0.7.1b0 Windows x64ポータブルpreview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.1b0.2/MangaCrisp-0.7.1b0-windows-x64-portable-preview.zip)
+[MangaCrisp 0.7.1b0 Windows x64ポータブルpreview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.1b0.3/MangaCrisp-0.7.1b0-windows-x64-portable-preview.zip)
 
 1. ZIPをダウンロードします。
 2. `MangaCrisp`フォルダ全体を展開します。
@@ -37,6 +37,10 @@ ReleaseにはSHA-256チェックサム、配布監査、ポータブルmanifest�
 いずれかのキーを使用している場合は別プリセットを選べます。ページ送りの自動化や
 キャプチャ保護の回避は行いません。権利を持つ画面、または保存を許可された画面だけに
 使用してください。
+
+撮影開始後、キャプチャ画面は撮影範囲へ入らないようWindowsのタスクバーへ最小化されます。
+タスクバーのMangaCrispアイコンをクリックすると管理画面へ戻り、撮影停止、ページ確認、
+アーカイブ完成を行えます。
 
 ## ソースから起動
 Gitと[uv](https://docs.astral.sh/uv/)をインストールし、次を実行します。
