@@ -165,7 +165,7 @@ jobs:
           - lazy, color-preserving PDF reading with bundled PDFium
           - manual fixed-region sequential capture to numbered PNG and CBZ/ZIP
           - Windows global capture and undo shortcuts without page-turn automation
-          - conflict-resistant default shortcuts: Control+Alt+C / Control+Alt+Z
+          - two-key default shortcuts: Alt+C / Alt+U
           - minimized taskbar controller for restoring or stopping active capture
           - Single Page reader layout with original/enhanced comparison
           - original/enhanced PDF comparison on the Windows validation machine

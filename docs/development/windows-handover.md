@@ -209,6 +209,22 @@ that MangaCrisp had exited.
 Repeat the external 10-page check with 0.7.1b0.3. Confirm taskbar restore before
 recording the first page.
 
+## Windows v0.7.1 two-key shortcut follow-up (2026-08-14)
+
+The b0.3 taskbar recovery check passed, but the external tester found the
+three-key `Control+Alt` defaults unnecessarily difficult compared with the
+macOS two-key workflow.
+
+- The Windows default is now `Alt+C` for capture and `Alt+U` for undo.
+- `Alt+U` replaces the conflicting `Alt+Z`; `U` is mnemonic for Undo and was
+  available through a real `RegisterHotKey` probe on the validation PC.
+- `Control+Alt+C` / `Control+Alt+Z` and `Control+Return` / `Control+Delete`
+  remain selectable fallbacks.
+- The obsolete `Alt+C` / `Alt+Z` pair is no longer offered because NVIDIA
+  Overlay owns `Alt+Z` on the validation PC.
+
+Repeat the external 10-page capture and undo check with 0.7.1b0.4.
+
 ## Technology decision
 
 Continue with PySide6 and the existing Python code for the first Windows

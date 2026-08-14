@@ -21,7 +21,7 @@ RAR/CBRのフォールバック展開には、SHA-256を固定・検証した7-Z
 
 ## Development Previewをダウンロード
 
-[MangaCrisp 0.7.1b0 Windows x64ポータブルpreview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.1b0.3/MangaCrisp-0.7.1b0-windows-x64-portable-preview.zip)
+[MangaCrisp 0.7.1b0 Windows x64ポータブルpreview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.1b0.4/MangaCrisp-0.7.1b0-windows-x64-portable-preview.zip)
 
 1. ZIPをダウンロードします。
 2. `MangaCrisp`フォルダ全体を展開します。
@@ -33,7 +33,7 @@ RAR/CBRのフォールバック展開には、SHA-256を固定・検証した7-Z
 ReleaseにはSHA-256チェックサム、配布監査、ポータブルmanifestも添付します。
 
 連番キャプチャは手動方式です。固定範囲を選び、自分でページを送り、画像ごとに
-`Control+Alt+C`を押します（直前の撮影取消は`Control+Alt+Z`）。他のアプリが
+`Alt+C`を押します（直前の撮影取消は`Alt+U`）。他のアプリが
 いずれかのキーを使用している場合は別プリセットを選べます。ページ送りの自動化や
 キャプチャ保護の回避は行いません。権利を持つ画面、または保存を許可された画面だけに
 使用してください。

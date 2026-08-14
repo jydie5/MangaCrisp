@@ -36,7 +36,7 @@ MangaCrispは、macOS／Windows向けの無料・オープンソース漫画／�
 
 ### Windows開発プレビュー
 
-**[Windows 10/11 x64 Development Previewをダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.1b0.3/MangaCrisp-0.7.1b0-windows-x64-portable-preview.zip)**
+**[Windows 10/11 x64 Development Previewをダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.1b0.4/MangaCrisp-0.7.1b0-windows-x64-portable-preview.zip)**
 
 未署名のポータブルZIPで、Python、uv、CUDA、インストーラーは不要です。
 監査済みのZig版Real-CUGANを同梱し、NVIDIA GPUで操作と補正を確認しています。
@@ -173,8 +173,8 @@ MangaCrispは自動ページ送りや画面保護の回避を行いません。
 3. `撮影を開始`を押します。macOSの初回だけ`画面収録とシステムオーディオ録音`で
    MangaCrispを許可し、アプリを完全終了して同じアプリを開き直します。
 4. 対象アプリでページを手動で送り、画像ごとにmacOSは`Option+C`、Windowsは
-   `Control+Alt+C`を1回押します。直前の撮影取消は`Option+Z`または
-   `Control+Alt+Z`です。Windowsでは他アプリと競合する場合に別プリセットも選べます。
+   `Alt+C`を1回押します。直前の撮影取消は`Option+Z`または
+   `Alt+U`です。Windowsでは他アプリと競合する場合に別プリセットも選べます。
 5. Windowsではタスクバーに最小化されたMangaCrispをクリックし、macOSではDockから
    MangaCrispを開いて管理画面を戻し、`撮影を完了`を押します。
    元の連番PNGは完成したCBZ／ZIPと同じセッションフォルダへ残ります。

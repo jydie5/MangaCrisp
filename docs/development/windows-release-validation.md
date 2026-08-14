@@ -64,6 +64,11 @@ The 0.7.1b0.3 candidate keeps the controller minimized in the Windows taskbar
 while the bookshelf remains hidden. Automated Qt tests cover Windows minimize
 and restore behavior and confirm that macOS retains its Dock recovery behavior.
 
+The b0.3 taskbar recovery check passed. The 0.7.1b0.4 candidate changes the
+Windows defaults to the two-key `Alt+C` / `Alt+U` pair. Both keys registered
+through the native Windows `RegisterHotKey` API on the validation PC; the
+three-key pair remains available as a fallback.
+
 ## Record a GPU report
 
 Use the exact staged engine or the engine extracted from the candidate portable
