@@ -193,6 +193,22 @@ the other MangaCrisp presets were available.
 Repeat the external 10-page check with 0.7.1b0.2 before marking Windows capture
 accepted.
 
+## Windows v0.7.1 taskbar restore fix (2026-08-14)
+
+The next 0.7.1b0.2 human-check attempt found that starting capture hid both the
+bookshelf and capture controller. That behavior is recoverable from the macOS
+Dock, but on Windows it removed the only taskbar entry and gave the appearance
+that MangaCrisp had exited.
+
+- Windows now hides the bookshelf and minimizes the active capture controller.
+- The minimized controller remains in the taskbar and stays outside the capture region.
+- Clicking the MangaCrisp taskbar icon restores the active controller so capture
+  can be stopped, reviewed, or completed.
+- macOS keeps the existing hidden-window and Dock restore behavior.
+
+Repeat the external 10-page check with 0.7.1b0.3. Confirm taskbar restore before
+recording the first page.
+
 ## Technology decision
 
 Continue with PySide6 and the existing Python code for the first Windows

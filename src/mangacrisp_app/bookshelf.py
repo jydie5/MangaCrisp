@@ -468,7 +468,12 @@ class BookshelfWindow(QMainWindow):
         if running:
             self.hide()
             if self.active_capture is not None:
-                self.active_capture.hide()
+                if sys.platform == "win32":
+                    # Keep a Windows taskbar entry so the controller can be
+                    # restored while global capture remains active.
+                    self.active_capture.showMinimized()
+                else:
+                    self.active_capture.hide()
             return
         self.showNormal()
         if self.active_capture is not None:

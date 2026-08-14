@@ -83,6 +83,7 @@ jobs:
             "scripts/validate_realcugan_windows.py",
             "scripts/windows_release_validation.py",
             "src/mangacrisp_app/platform/capture_windows.py",
+            "test/test_bookshelf_capture.py",
             "test/test_capture_windows.py",
             "test/test_windows_dependencies.py",
             "test/test_windows_distribution_audit.py",
@@ -165,6 +166,7 @@ jobs:
           - manual fixed-region sequential capture to numbered PNG and CBZ/ZIP
           - Windows global capture and undo shortcuts without page-turn automation
           - conflict-resistant default shortcuts: Control+Alt+C / Control+Alt+Z
+          - minimized taskbar controller for restoring or stopping active capture
           - Single Page reader layout with original/enhanced comparison
           - original/enhanced PDF comparison on the Windows validation machine
           - Windows x64 PyInstaller one-folder build

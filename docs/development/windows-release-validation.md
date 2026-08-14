@@ -58,6 +58,12 @@ Both keys registered together through the real Windows API on the same machine,
 and the rebuilt portable controller displayed the new default. The 10-page
 external capture check must be repeated with the refreshed preview.
 
+The 0.7.1b0.2 check then exposed a Windows recovery problem: starting capture
+hid both MangaCrisp windows, leaving no taskbar entry to restore the controller.
+The 0.7.1b0.3 candidate keeps the controller minimized in the Windows taskbar
+while the bookshelf remains hidden. Automated Qt tests cover Windows minimize
+and restore behavior and confirm that macOS retains its Dock recovery behavior.
+
 ## Record a GPU report
 
 Use the exact staged engine or the engine extracted from the candidate portable
