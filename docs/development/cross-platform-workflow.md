@@ -18,6 +18,14 @@ Use short-lived branches and pull requests:
 `main` must remain usable by both platforms. Release tags are created only from
 `main`.
 
+Platform handover checkpoints are maintained in:
+
+- `docs/development/macos-handover.md`
+- `docs/development/windows-handover.md`
+
+Read the receiving platform's handover before continuing work after the other
+platform has moved shared code forward.
+
 ## Conflict prevention
 
 1. Start from the current `origin/main`.

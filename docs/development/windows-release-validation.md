@@ -69,6 +69,10 @@ Windows defaults to the two-key `Alt+C` / `Alt+U` pair. Both keys registered
 through the native Windows `RegisterHotKey` API on the validation PC; the
 three-key pair remains available as a fallback.
 
+The external b0.4 human check accepted the two-key controls. `Alt+C` / `Alt+U`
+is the current Windows capture baseline; the remaining stable-release gates are
+still Intel Vulkan, AMD Vulkan, and a separate clean Windows account.
+
 ## Record a GPU report
 
 Use the exact staged engine or the engine extracted from the candidate portable
