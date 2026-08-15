@@ -225,6 +225,19 @@ macOS two-key workflow.
 
 Repeat the external 10-page capture and undo check with 0.7.1b0.4.
 
+The external b0.4 check subsequently accepted the two-key controls. Treat
+`Alt+C` / `Alt+U` as the current Windows capture baseline.
+
+## Shared storage and sustainability checkpoint (2026-08-15)
+
+PR #27 added shared cache hygiene, interrupted-import recovery, and the public
+support strategy. PDF render and AI enhancement caches are each limited to
+2 GiB and remove entries unused for more than 30 days while protecting active
+reader files. Capture-session PNGs remain user-owned documents and are not
+automatically deleted. The PR passed macOS CI and the complete Windows portable
+build and audit. macOS continuation is documented in
+`docs/development/macos-handover.md`.
+
 ## Technology decision
 
 Continue with PySide6 and the existing Python code for the first Windows

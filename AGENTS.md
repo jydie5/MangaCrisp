@@ -7,6 +7,7 @@ before changing code, packaging, documentation, or release assets.
 
 - `docs/development/cross-platform-workflow.md`
 - `docs/development/windows-handover.md` when working on Windows
+- `docs/development/macos-handover.md` when working on macOS
 - `README.md`, `ROADMAP.md`, and `THIRD_PARTY_NOTICES.md`
 
 ## Ownership boundaries
