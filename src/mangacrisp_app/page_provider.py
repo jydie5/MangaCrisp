@@ -22,10 +22,12 @@ from mangacrisp_app.archive_utils import (
     validate_archive_members,
 )
 from mangacrisp_app.branding import CACHE_DIR
+from mangacrisp_app.cache_utils import prune_png_cache
 
 PDF_EXTENSIONS = {".pdf"}
 PDF_RENDER_DPI = 180
 PDF_RENDER_CACHE_LIMIT_BYTES = 2 * 1024 * 1024 * 1024
+PDF_RENDER_CACHE_MAX_AGE_SECONDS = 30 * 24 * 60 * 60
 PDF_RENDER_RECENT_PAGE_LIMIT = 48
 _PDFIUM_LOCK = threading.RLock()
 
@@ -61,32 +63,17 @@ def prune_render_cache(
     cache_root: Path,
     *,
     max_bytes: int = PDF_RENDER_CACHE_LIMIT_BYTES,
+    max_age_seconds: int | None = PDF_RENDER_CACHE_MAX_AGE_SECONDS,
     protected: set[Path] | None = None,
+    now: float | None = None,
 ) -> int:
-    protected_paths = {path.resolve() for path in protected or set()}
-    files = [path for path in cache_root.rglob("*.png") if path.is_file()]
-    entries: list[tuple[float, int, Path]] = []
-    total = 0
-    for path in files:
-        try:
-            stat = path.stat()
-        except OSError:
-            continue
-        total += stat.st_size
-        entries.append((stat.st_mtime, stat.st_size, path))
-    removed = 0
-    for _mtime, size, path in sorted(entries):
-        if total <= max(0, max_bytes):
-            break
-        if path.resolve() in protected_paths:
-            continue
-        try:
-            path.unlink()
-        except OSError:
-            continue
-        total -= size
-        removed += 1
-    return removed
+    return prune_png_cache(
+        cache_root,
+        max_bytes=max_bytes,
+        max_age_seconds=max_age_seconds,
+        protected=protected,
+        now=now,
+    )
 
 
 class PdfPageList(Sequence[Path]):
@@ -102,13 +89,13 @@ class PdfPageList(Sequence[Path]):
         self.page_count = pdf_page_count(self.pdf_path)
         self.cache_root = (cache_dir or CACHE_DIR / "pdf-render").expanduser()
         self.cache_dir = self.cache_root / pdf_source_key(self.pdf_path)
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.dpi = max(72, dpi)
         self.cache_limit_bytes = max(0, cache_limit_bytes)
         self.extracted: dict[int, Path] = {}
         self._materialize_lock = threading.RLock()
         self._render_count = 0
         prune_render_cache(self.cache_root, max_bytes=self.cache_limit_bytes)
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
 
     def __len__(self) -> int:
         return self.page_count

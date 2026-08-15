@@ -40,6 +40,9 @@ from .archive_utils import (
 from .page_provider import PdfPageList, is_pdf, pdf_page_count, pdf_source_key
 
 CURRENT_SCHEMA_VERSION = 1
+_INTERRUPTED_IMPORT_DIRECTORY = re.compile(
+    r"^\.(?P<book_name>.+)\.(?P<kind>import|backup)-[0-9a-f]{32}$"
+)
 
 
 def utc_now_iso() -> str:
@@ -259,6 +262,58 @@ def is_library_dir_confirmed(paths: LibraryPaths) -> bool:
     return bool(load_library_settings(settings_path).get("library_dir_confirmed"))
 
 
+def cleanup_interrupted_import_storage(library_dir: Path) -> tuple[int, int]:
+    """Remove abandoned staging folders and restore interrupted replacements."""
+    root = library_dir.expanduser()
+    if not root.is_dir():
+        return 0, 0
+
+    removed = 0
+    restored = 0
+    backups: dict[str, list[Path]] = {}
+    for artifact in root.iterdir():
+        if artifact.is_symlink() or not artifact.is_dir():
+            continue
+        match = _INTERRUPTED_IMPORT_DIRECTORY.fullmatch(artifact.name)
+        if match is None:
+            continue
+        if match.group("kind") == "import":
+            try:
+                shutil.rmtree(artifact)
+            except OSError:
+                continue
+            removed += 1
+            continue
+        backups.setdefault(match.group("book_name"), []).append(artifact)
+
+    for book_name, candidates in backups.items():
+        target = root / book_name
+        ordered = sorted(candidates, key=_directory_mtime, reverse=True)
+        if not target.exists() and ordered:
+            try:
+                ordered[0].replace(target)
+            except OSError:
+                pass
+            else:
+                restored += 1
+                ordered = ordered[1:]
+        if target.exists():
+            for artifact in ordered:
+                try:
+                    shutil.rmtree(artifact)
+                except OSError:
+                    continue
+                removed += 1
+    return removed, restored
+
+
+def _directory_mtime(path: Path) -> float:
+    try:
+        return path.stat().st_mtime
+    except OSError:
+        return 0.0
+
+
 class LibraryDatabase:
     def __init__(self, path: Path) -> None:
         self.path = path.expanduser()
@@ -366,6 +421,7 @@ class LibraryService:
     def open(cls, paths: LibraryPaths | None = None) -> LibraryService:
         resolved_paths = paths or LibraryPaths.default()
         resolved_paths.ensure()
+        cleanup_interrupted_import_storage(resolved_paths.library_dir)
         service = cls(resolved_paths, LibraryDatabase(resolved_paths.database_path))
         service.migrate_legacy_library_storage()
         service.finalize_default_library_migration()

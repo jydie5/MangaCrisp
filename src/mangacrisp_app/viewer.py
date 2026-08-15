@@ -14,8 +14,10 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from PIL import Image
-from mangacrisp_app.branding import APP_NAME, CACHE_DIR, PROJECT_URL, SUPPORT_URL
+
 from mangacrisp_app.archive_utils import discover_samples
+from mangacrisp_app.branding import APP_NAME, CACHE_DIR, PROJECT_URL, SUPPORT_URL
+from mangacrisp_app.cache_utils import prune_png_cache
 from mangacrisp_app.engine_utils import realcugan_executable, run_realcugan
 from mangacrisp_app.i18n import initialize_language, tr
 from mangacrisp_app.library import migrate_legacy_application_state
@@ -76,6 +78,8 @@ DISK_RETENTION_PREVIOUS_COUNT = 12
 PREFETCH_DEBOUNCE_MS = 90
 DISPLAY_WARM_DEBOUNCE_MS = 180
 CACHE_MAINTENANCE_DEBOUNCE_MS = 900
+AI_ENHANCEMENT_CACHE_LIMIT_BYTES = 2 * 1024 * 1024 * 1024
+AI_ENHANCEMENT_CACHE_MAX_AGE_SECONDS = 30 * 24 * 60 * 60
 PAGE_STATE_SAVE_DEBOUNCE_MS = 350
 CLICK_ZONE_EDGE_FRACTION = 0.4
 CLICK_DRAG_TOLERANCE_PX = 12
@@ -277,6 +281,23 @@ def remove_legacy_display_cache() -> None:
     shutil.rmtree(DISPLAY_CACHE_DIR, ignore_errors=True)
 
 
+def prune_enhancement_cache(
+    cache_root: Path | None = None,
+    *,
+    max_bytes: int = AI_ENHANCEMENT_CACHE_LIMIT_BYTES,
+    max_age_seconds: int | None = AI_ENHANCEMENT_CACHE_MAX_AGE_SECONDS,
+    protected: set[Path] | None = None,
+    now: float | None = None,
+) -> int:
+    return prune_png_cache(
+        cache_root or DEFAULT_UPSCALE_DIR,
+        max_bytes=max_bytes,
+        max_age_seconds=max_age_seconds,
+        protected=protected,
+        now=now,
+    )
+
+
 def prefetch_window_indexes(
     current_index: int,
     total_pages: int,
@@ -419,6 +440,7 @@ class SpreadWindow(QMainWindow):
         super().__init__(parent)
         if embedded:
             self.setWindowFlags(Qt.Widget)
+        prune_enhancement_cache()
         self.pages = pages
         self.processed_pages = processed_pages or [None] * len(pages)
         self.reading_direction = reading_direction
@@ -1823,13 +1845,16 @@ class SpreadWindow(QMainWindow):
         return bool(width and height and height >= self.threshold_spin.value())
 
     def load_cached_outputs(self, indexes: list[int]) -> None:
-        if not hasattr(self, "scale_spin") or bool(getattr(self, "original_check", None) and self.original_check.isChecked()):
+        if not hasattr(self, "scale_spin") or bool(
+            getattr(self, "original_check", None) and self.original_check.isChecked()
+        ):
             return
         for index in indexes:
             if index < 0 or index >= len(self.pages):
                 continue
             output_path = self.current_output_path(index)
             if output_path not in self.active_output_paths and output_path.exists():
+                output_path.touch(exist_ok=True)
                 self.processed_pages[index] = output_path
 
     def current_parameter_key(self) -> str:
@@ -1889,6 +1914,8 @@ class SpreadWindow(QMainWindow):
                         display_cache_path.unlink()
                     except OSError:
                         pass
+        protected = {self.current_output_path(index) for index in keep}
+        prune_enhancement_cache(protected=protected)
         self.last_disk_cache_prune_signature = signature
 
     def current_engine_settings(self) -> dict | None:

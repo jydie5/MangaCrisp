@@ -22,6 +22,19 @@ of the original RAIV project and now follows its own product direction.
 The screenshots use *Pepper&Carrot* by David Revoy under
 [CC BY 4.0](demo/ATTRIBUTION.md). No commercial manga pages are included.
 
+## Help keep MangaCrisp moving
+
+MangaCrisp is independent, free MIT-licensed software. If it is useful to you,
+**[support continued development on Buy Me a Coffee](https://buymeacoffee.com/jydie5)**.
+Support helps pay for code signing, Windows/macOS hardware validation, build
+services, and development AI/API usage. It never unlocks features or changes
+the license.
+
+You can also help at no cost: star the repository, share a release, report a
+reproducible bug, test on different hardware, or improve code and documentation.
+See [how project reach and support are measured](docs/development/project-sustainability.md).
+Trust only funding links published in this repository.
+
 ## Download
 
 The standalone build does not require Python, uv, or Terminal.
@@ -207,14 +220,28 @@ beside and inside every archive.
 ## Storage and removal
 
 - Managed reading copies: `~/MangaCrisp Library` for new installations
-- AI enhancement cache: `~/Library/Caches/MangaCrisp`
+- PDF render and AI enhancement caches: `~/Library/Caches/MangaCrisp`
 - Database and settings: `~/Library/Application Support/MangaCrisp`
 
 Windows locations are listed in [INSTALL.windows.md](INSTALL.windows.md).
 
-Removing a book from the bookshelf deletes MangaCrisp's managed reading copy and
-reading state. It never deletes the original ZIP or RAR. To uninstall the app,
-remove `MangaCrisp.app`; remove the locations above only if you also want to erase the
+The managed library is an intentional reading copy: an imported archive keeps
+its original file plus extracted pages, while a PDF keeps its original and
+cover. It can therefore be close to, or temporarily larger than, the source
+books. Removing a book from the bookshelf deletes that managed copy and its
+reading state, but never deletes the source ZIP, RAR, or PDF.
+
+PDF render and AI enhancement caches are disposable. Each cache is limited to
+2 GiB, entries unused for more than 30 days are removed when the reader opens,
+and **Clear Cache** removes both immediately. The database contains bookshelf
+metadata and is normally small; a one-time backup can be retained when its
+schema is upgraded. Interrupted imports are cleaned up or restored on the next
+launch.
+
+Sequential-capture session folders and numbered PNG files are user-created
+documents in the destination you selected. They are not caches and MangaCrisp
+does not delete them automatically. To uninstall the app, remove
+`MangaCrisp.app`; remove the locations above only if you also want to erase the
 bookshelf and cache.
 
 On first launch, MangaCrisp migrates the previous settings, database, AI cache,
@@ -258,16 +285,6 @@ Run the development test suite:
 uv sync --extra dev
 uv run pytest
 ```
-
-## Support development
-
-MangaCrisp remains free software under the MIT License whether or not you
-support its development. Stars, bug reports, testing, and code contributions are
-valuable. If MangaCrisp is useful to you, you can optionally
-[support continued development on Buy Me a Coffee](https://buymeacoffee.com/jydie5).
-Support helps cover AI/API usage, testing, and ongoing development; it does not
-unlock features or change the software license. Trust only funding links
-published in this repository.
 
 ## License
 
