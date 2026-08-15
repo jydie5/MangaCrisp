@@ -17,6 +17,18 @@ MangaCrispは、macOS／Windows向けの無料・オープンソース漫画／�
 
 旧称RAIV for macとして[nalltama/RAIV](https://github.com/nalltama/RAIV)に着想を得て独立実装しました。現在はMangaCrispとして独自の製品方針で開発しており、本家RAIVの公式リリースではありません。
 
+## MangaCrispの開発継続を支援する
+
+MangaCrispは個人で開発している、MIT Licenseの無料ソフトウェアです。役立った場合は、
+**[Buy Me a Coffeeで今後の開発を任意で支援](https://buymeacoffee.com/jydie5)**
+できます。支援はコード署名、Windows／macOS実機検証、ビルドサービス、開発用AI・APIの
+費用に充てます。支援による機能解放やライセンス変更はありません。
+
+費用をかけずに、Star、リリースの共有、再現手順付きの不具合報告、異なる実機でのテスト、
+コード／文書の改善でも支援できます。
+[閲覧状況と支援をどう測るか](docs/development/project-sustainability.ja.md)も公開しています。
+送金には、このリポジトリ内に掲載した公式リンクだけを利用してください。
+
 ## すぐに使う
 
 一般ユーザーにPython、uv、ターミナル操作は不要です。
@@ -186,12 +198,24 @@ MangaCrispは自動ページ送りや画面保護の回避を行いません。
 ## 保存場所
 
 - 本棚データ: 新規利用者は`~/MangaCrisp Library`
-- AI補正キャッシュ: `~/Library/Caches/MangaCrisp`
+- PDF描画／AI補正キャッシュ: `~/Library/Caches/MangaCrisp`
 - 本棚データベース: `~/Library/Application Support/MangaCrisp`
 
 Windowsの保存場所は[INSTALL.windows.ja.md](INSTALL.windows.ja.md)に記載しています。
 
-元のZIP/RARは取り込み後も元の場所に残ります。本棚から削除するとMangaCrispが作った展開済みコピーと読書状態を削除します。
+本棚データは意図して作る読書用コピーです。アーカイブは元ファイルと展開済みページ、
+PDFは元ファイルと表紙を管理するため、元の本と同程度、処理中はそれ以上の容量になる場合が
+あります。本棚から本を削除すると管理コピーと読書状態を削除しますが、元のZIP、RAR、PDFは
+削除しません。
+
+PDF描画キャッシュとAI補正キャッシュは破棄可能です。それぞれ最大2 GiBに制限し、30日以上
+使っていない項目は読書画面を開いたときに自動整理します。本棚の`キャッシュを削除`を使えば
+両方を即時に削除できます。本棚データベースはメタデータ中心で通常は小さく、スキーマ更新時
+だけ1回限りのバックアップが残る場合があります。中断された取り込みデータは次回起動時に
+削除または復元します。
+
+連番キャプチャのセッションフォルダとPNGは、指定した保存先に作る利用者の成果物です。
+キャッシュではないため、MangaCrispは自動削除しません。
 
 旧RAIV for macを利用していた場合、初回起動時に設定、データベース、AIキャッシュと
 旧既定の`~/RAIV Library`を新名称の保存先へ移行します。本棚フォルダはコピーせず、
@@ -242,15 +266,6 @@ uv run --extra app python scripts/build_macos_app.py --bundle-engine
 uv sync --extra dev
 uv run pytest
 ```
-
-## 開発を支援する
-
-MangaCrispは支援の有無にかかわらずMIT Licenseの無料ソフトウェアです。
-Star、不具合報告、動作テスト、コードへの貢献を歓迎します。MangaCrispが役立った場合は、
-[Buy Me a Coffeeで今後の開発を任意で支援](https://buymeacoffee.com/jydie5)
-できます。支援はAI・API利用料、テスト、継続開発に活用し、機能の解放や
-ソフトウェアのライセンスには影響しません。送金には、このリポジトリ内に掲載した
-公式リンクだけを利用してください。
 
 ## ライセンス
 
