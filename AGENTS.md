@@ -1,6 +1,6 @@
 # MangaCrisp Development Rules
 
-This repository is developed concurrently on macOS and Windows. Read this file
+This repository is developed concurrently on macOS, Windows, and Linux. Read this file
 before changing code, packaging, documentation, or release assets.
 
 ## Required reading
@@ -8,6 +8,7 @@ before changing code, packaging, documentation, or release assets.
 - `docs/development/cross-platform-workflow.md`
 - `docs/development/windows-handover.md` when working on Windows
 - `docs/development/macos-handover.md` when working on macOS
+- `docs/development/linux-port-plan.ja.md` when working on Linux
 - `README.md`, `ROADMAP.md`, and `THIRD_PARTY_NOTICES.md`
 
 ## Ownership boundaries
@@ -18,6 +19,8 @@ before changing code, packaging, documentation, or release assets.
   script whose name ends in `_windows.py`.
 - Put macOS-only build and release code under `packaging/macos/` or in a script
   whose name ends in `_macos.py`.
+- Put Linux-only build and release code under `packaging/linux/` or in a script
+  whose name ends in `_linux.py`.
 - Do not make the shared reader behave differently on each OS unless a
   documented OS convention requires it.
 - Do not edit the other platform's packaging files as part of an unrelated
@@ -28,6 +31,7 @@ before changing code, packaging, documentation, or release assets.
 - Never develop directly on `main`.
 - Use `windows/<topic>` for Windows-only changes.
 - Use `macos/<topic>` for macOS-only changes.
+- Use `linux/<topic>` for Linux-only changes.
 - Use `core/<topic>` for shared behavior.
 - Keep each pull request limited to one of those scopes.
 - Rebase or merge the latest `origin/main` before final verification.
@@ -40,8 +44,8 @@ before changing code, packaging, documentation, or release assets.
 - Run the shared test suite after changing `src/mangacrisp_app/`.
 - Add platform-independent tests for shared behavior.
 - Add platform-specific tests without requiring the other operating system.
-- Build release artifacts on their target OS. Do not cross-build Windows
-  releases on macOS or macOS releases on Windows.
+- Build release artifacts on their target OS. Do not cross-build releases
+  for one operating system on another.
 - Generated files, local libraries, caches, signing credentials, and release
   artifacts must remain untracked.
 
