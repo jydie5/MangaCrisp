@@ -127,3 +127,18 @@ def test_configured_archive_tool_takes_precedence(
         f"-o{tmp_path / 'pages'}",
         str(tmp_path / "book.cbr"),
     ]
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Linux executable name has no .exe")
+def test_realcugan_detection_finds_ubuntu_package(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    executable = tmp_path / "engines" / "realcugan-ncnn-vulkan-20220728-ubuntu" / "realcugan-ncnn-vulkan"
+    executable.parent.mkdir(parents=True)
+    executable.write_bytes(b"engine")
+    monkeypatch.setattr(engine_utils, "ROOT_DIR", tmp_path)
+    monkeypatch.setattr(engine_utils, "ENGINES_DIR", tmp_path / "test" / "engines")
+    monkeypatch.setattr(engine_utils, "bundled_root", lambda: None)
+    monkeypatch.delenv("MANGACRISP_REALCUGAN_PATH", raising=False)
+
+    assert engine_utils.realcugan_executable() == executable
