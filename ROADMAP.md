@@ -255,6 +255,17 @@ Mac版で完成した本棚、見開き、次巻移動、原画比較、画質�
 `docs/development/windows-handover.md`および
 `docs/development/cross-platform-workflow.md`で管理します。
 
+## P1: Linux (Ubuntu) 移植
+
+macOS / Windows と同じ機能を Ubuntu 24.04 以降で提供する。フェーズ、ブランチ単位、
+リスクは `docs/development/linux-port-plan.ja.md` を参照。
+
+### 完了条件
+
+- Linux CI で全テストが通る。
+- AI 補正、Wayland/X11 での連番キャプチャを含む全機能が Ubuntu 実機で動く。
+- クリーンな Ubuntu で AppImage を実行するだけで使える。
+
 ## 完了済み
 
 - 本棚への複数アーカイブ登録、表紙表示、削除
