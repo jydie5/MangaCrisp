@@ -66,11 +66,11 @@ AGENTS.md に `linux/<topic>` を追加する (本計画の最初の `core/` PR 
 
 ### L2: AI 補正エンジン (`linux/realcugan`)
 
-- [ ] `scripts/fetch_realcugan_linux.py`: 公式
+- [x] `scripts/fetch_realcugan_linux.py`: 公式
       `realcugan-ncnn-vulkan-20220728-ubuntu.zip` を固定 SHA-256 で取得し、
       ライセンス一式を配置。
-- [ ] `engine_utils.py` の探索名に `-ubuntu` パッケージを追加 (`core/` で)。
-- [ ] 取得バイナリの glibc / libvulkan 依存を確認。古い場合は
+- [x] `engine_utils.py` の探索名に `-ubuntu` パッケージを追加 (`core/` で)。
+- [x] 取得バイナリの glibc / libvulkan 依存を確認 (glibc 2.15 以上。再ビルドは不要)。古い場合は
       `scripts/build_realcugan_linux.py` でソースから再ビルド
       (Windows の `build_realcugan_windows.py` と同じ方針)。
 - [ ] `libvulkan1` と Mesa ドライバが必要なことを INSTALL に記載。Vulkan が
