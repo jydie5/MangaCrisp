@@ -332,7 +332,7 @@ class BookshelfWindow(QMainWindow):
         self.capture_button = QPushButton(tr("画面を連番キャプチャ"), root)
         self.capture_button.setToolTip(tr("固定範囲をPNGで連番保存し、CBZまたはZIPにまとめます。"))
         self.capture_button.clicked.connect(self.open_capture_window)
-        self.capture_button.setVisible(sys.platform in {"darwin", "win32"})
+        self.capture_button.setVisible(sys.platform in {"darwin", "win32"} or sys.platform.startswith("linux"))
         buttons.addWidget(self.capture_button)
 
         self.open_button = QPushButton(tr("読む"), root)
@@ -468,9 +468,10 @@ class BookshelfWindow(QMainWindow):
         if running:
             self.hide()
             if self.active_capture is not None:
-                if sys.platform == "win32":
-                    # Keep a Windows taskbar entry so the controller can be
-                    # restored while global capture remains active.
+                if sys.platform == "win32" or sys.platform.startswith("linux"):
+                    # Keep a taskbar entry so the controller can be restored
+                    # while global capture remains active. Only macOS can
+                    # reopen a hidden window from the Dock.
                     self.active_capture.showMinimized()
                 else:
                     self.active_capture.hide()

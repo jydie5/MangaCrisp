@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
 from PySide6.QtWidgets import QMainWindow
 
 from mangacrisp_app.bookshelf import BookshelfWindow
@@ -15,7 +16,8 @@ def _bookshelf(tmp_path: Path) -> BookshelfWindow:
     return BookshelfWindow(LibraryService.open(paths))
 
 
-def test_windows_capture_controller_stays_in_taskbar(qapp, tmp_path: Path) -> None:
+@pytest.mark.parametrize("platform", ["win32", "linux"])
+def test_capture_controller_stays_in_taskbar(qapp, tmp_path: Path, platform: str) -> None:
     bookshelf = _bookshelf(tmp_path)
     controller = QMainWindow()
     bookshelf.active_capture = controller  # type: ignore[assignment]
@@ -23,7 +25,7 @@ def test_windows_capture_controller_stays_in_taskbar(qapp, tmp_path: Path) -> No
     controller.show()
     qapp.processEvents()
 
-    with patch("mangacrisp_app.bookshelf.sys.platform", "win32"):
+    with patch("mangacrisp_app.bookshelf.sys.platform", platform):
         bookshelf.on_capture_mode_changed(True)
         qapp.processEvents()
 

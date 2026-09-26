@@ -60,6 +60,10 @@ def create_screen_capture_backend() -> ScreenCaptureBackend:
         from mangacrisp_app.platform.capture_windows import WindowsScreenCaptureBackend
 
         return WindowsScreenCaptureBackend()
+    if sys.platform.startswith("linux"):
+        from mangacrisp_app.platform.capture_linux import LinuxScreenCaptureBackend
+
+        return LinuxScreenCaptureBackend()
     raise RuntimeError("Screen Capture v1 is not available on this platform yet")
 
 
@@ -70,6 +74,10 @@ def screen_capture_hotkey_presets() -> list:
         return hotkey_presets()
     if sys.platform == "win32":
         from mangacrisp_app.platform.capture_windows import hotkey_presets
+
+        return hotkey_presets()
+    if sys.platform.startswith("linux"):
+        from mangacrisp_app.platform.capture_linux import hotkey_presets
 
         return hotkey_presets()
     return []

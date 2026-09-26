@@ -16,7 +16,7 @@ from tempfile import TemporaryDirectory
 from PIL import Image
 
 from mangacrisp_app.archive_utils import discover_samples
-from mangacrisp_app.branding import APP_NAME, CACHE_DIR, PROJECT_URL, SUPPORT_URL
+from mangacrisp_app.branding import APP_BUNDLE_IDENTIFIER, APP_NAME, CACHE_DIR, PROJECT_URL, SUPPORT_URL
 from mangacrisp_app.cache_utils import prune_png_cache
 from mangacrisp_app.engine_utils import realcugan_executable, run_realcugan
 from mangacrisp_app.i18n import initialize_language, tr
@@ -2288,6 +2288,8 @@ def main() -> None:
     initialize_language(DEFAULT_QUALITY_SETTINGS_PATH)
     app = QApplication(sys.argv)
     app.setApplicationName(APP_NAME)
+    # Wayland compositors and XDG portals identify the app by its .desktop ID.
+    app.setDesktopFileName(APP_BUNDLE_IDENTIFIER)
     if should_open_bookshelf(args):
         from mangacrisp_app.bookshelf import BookshelfWindow
 
