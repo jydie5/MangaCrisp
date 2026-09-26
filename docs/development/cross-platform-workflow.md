@@ -1,6 +1,6 @@
 # Cross-platform development workflow
 
-MangaCrisp uses one repository and one product version for macOS and Windows.
+MangaCrisp uses one repository and one product version for macOS, Windows, and Linux.
 The goal is to share reader behavior while isolating packaging and operating
 system integration.
 
@@ -13,6 +13,7 @@ Use short-lived branches and pull requests:
 | Shared reader, library, cache, or tests | `core/` | `core/archive-contract` |
 | Windows integration and packaging | `windows/` | `windows/portable-build` |
 | macOS integration and packaging | `macos/` | `macos/notarization-fix` |
+| Linux integration and packaging | `linux/` | `linux/appimage` |
 | Documentation only | `docs/` | `docs/windows-install` |
 
 `main` must remain usable by both platforms. Release tags are created only from
@@ -22,6 +23,7 @@ Platform handover checkpoints are maintained in:
 
 - `docs/development/macos-handover.md`
 - `docs/development/windows-handover.md`
+- `docs/development/linux-port-plan.ja.md` (Linux plan until a handover exists)
 
 Read the receiving platform's handover before continuing work after the other
 platform has moved shared code forward.
@@ -39,6 +41,7 @@ Typical parallel work:
 
 - Windows PC changes `packaging/windows/` and Windows adapters.
 - Mac changes `packaging/macos/`, signing, notarization, and Mac adapters.
+- Linux changes `packaging/linux/` and Linux adapters.
 - Either PC may change common code, but only in a dedicated `core/` branch.
 
 ## Target source layout
@@ -56,9 +59,11 @@ src/mangacrisp_app/
   platform/
     __init__.py
     common.py
+    linux.py
     macos.py
     windows.py
 packaging/
+  linux/
   macos/
   windows/
 ```

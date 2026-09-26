@@ -42,12 +42,12 @@ AGENTS.md に `linux/<topic>` を追加する (本計画の最初の `core/` PR 
 
 ### L0: 基盤の合意 (`core/linux-platform`)
 
-- [ ] AGENTS.md と `cross-platform-workflow.md` に Linux スコープと
+- [x] AGENTS.md と `cross-platform-workflow.md` に Linux スコープと
       `linux/` ブランチを追加。
-- [ ] `platform/__init__.py` に `sys.platform.startswith("linux")` 分岐を追加し、
+- [x] `platform/__init__.py` に `sys.platform.startswith("linux")` 分岐を追加し、
       `platform/linux.py` を新設 (`common.py` は OS 不明時の最小実装として残す)。
-- [ ] `pyproject.toml` の description に Linux を追加。
-- [ ] CI: GitHub Actions の `ubuntu-latest` で ruff と pytest
+- [x] `pyproject.toml` の description に Linux を追加。
+- [x] CI: GitHub Actions の `ubuntu-latest` で ruff と pytest
       (`QT_QPA_PLATFORM=offscreen`) を実行。
 - 完了条件: Linux で全テストが通り、CI が main で常に緑。
 
