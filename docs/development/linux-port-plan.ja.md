@@ -108,18 +108,17 @@ AGENTS.md に `linux/<topic>` を追加する (本計画の最初の `core/` PR 
 
 ### L4: パッケージングと配布 (`linux/packaging`)
 
-- [ ] 一次配布は **AppImage** (PyInstaller の onedir → AppImage)。
-      `scripts/build_linux_app.py`、`packaging/linux/`。
-- [ ] `.desktop` ファイル、アイコン (hicolor 各サイズ)、MIME 関連付け
-      (`application/vnd.comicbook+zip` など)。
-- [ ] 同梱バイナリ (realcugan、7-Zip) の provenance・checksum・ライセンスを
+- [x] 一次配布は **tar.gz (PyInstaller onedir) + `install.sh`**。
+      AppImage のランタイムは libfuse (LGPL-2.1) を静的リンクしているため見送った
+      (`packaging/linux/README.md`)。`scripts/build_linux_app.py`、`packaging/linux/`。
+- [x] `.desktop` ファイル (`com.jydie5.mangacrisp`)、アイコン (hicolor 256/512)、
+      MIME 関連付け (CBZ/CBR/CB7/PDF)。`install.sh` / `uninstall.sh` はユーザー単位。
+- [x] 同梱バイナリ (realcugan、7-Zip 26.02 `7zz`) の出所・checksum・ライセンスを
       `THIRD_PARTY_NOTICES.md` と `docs/development/linux-dependency-provenance.md` に記載。
-- [ ] `scripts/audit_distribution.py` 相当の Linux 用監査 (個人パスや不要ファイルが
-      含まれていないことの確認)。
-- [ ] まっさらな Ubuntu (VM / コンテナ) で起動を検証する手順と記録
-      (`packaging/linux/release-validation.json`)。
-- [ ] 検討 (後回し): `.deb`、Flatpak (ポータル前提で L3 と相性が良い)。
-- 完了条件: クリーンな Ubuntu 24.04 で AppImage をダウンロードして実行するだけで、
+- [x] Linux CI (ubuntu-24.04) でパッケージをビルドし、スモークテストして artifact に保存。
+- [ ] まっさらな Ubuntu 24.04 (VM / コンテナ) での起動検証と記録。
+- [ ] 検討 (後回し): `.deb`、Flatpak、AppImage。
+- 完了条件: クリーンな Ubuntu 24.04 で tar.gz を展開して `install.sh` を実行するだけで、
   全機能が動く。
 
 ### L5: ドキュメントとリリース (`docs/linux-install` → リリース)

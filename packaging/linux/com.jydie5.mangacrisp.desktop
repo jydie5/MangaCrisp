@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Application
+Name=MangaCrisp
+GenericName=Manga Viewer
+GenericName[ja]=マンガビューア
+Comment=AI-enhanced manga and comic viewer
+Comment[ja]=AI高画質化対応のマンガ・コミックビューア
+Exec="@EXEC@" %f
+Icon=com.jydie5.mangacrisp
+Terminal=false
+Categories=Graphics;Viewer;
+Keywords=manga;comic;cbz;cbr;viewer;
+MimeType=application/vnd.comicbook+zip;application/vnd.comicbook-rar;application/x-cbz;application/x-cbr;application/x-cb7;application/pdf;
+StartupWMClass=com.jydie5.mangacrisp
+StartupNotify=true
