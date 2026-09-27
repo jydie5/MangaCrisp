@@ -59,7 +59,7 @@ Intel／AMD GPUの補正証跡と、別のクリーンなWindowsアカウント�
 
 ### Linux（Ubuntu）プレビュー
 
-**[Linux x86_64版（プレビュー）をダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/linux-preview-0.7.1b0.1/MangaCrisp-0.7.1b0-linux-x86_64.tar.gz)**
+**[Linux x86_64版（プレビュー）をダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/linux-preview-0.7.1b0.2/MangaCrisp-0.7.1b0-linux-x86_64.tar.gz)**
 
 Ubuntu 24.04以降のx86_64で、ソースからの起動と、ユーザー単位のインストーラ付きの
 tar.gz版を利用できます。公式のReal-CUGAN Ubuntu版エンジン（Vulkan）を同梱し、
