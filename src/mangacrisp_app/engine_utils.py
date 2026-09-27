@@ -40,6 +40,7 @@ def realcugan_executable() -> Path | None:
         "realcugan-ncnn-vulkan",
         "realcugan-ncnn-vulkan-20220728-macos",
         "realcugan-ncnn-vulkan-20220728-windows",
+        "realcugan-ncnn-vulkan-20220728-ubuntu",
     ]
     package_dirs = [ENGINES_DIR / name for name in package_names]
     package_dirs.extend(ROOT_DIR / parent / name for parent in ("engines", "tools") for name in package_names)
