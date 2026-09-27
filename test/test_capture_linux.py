@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pytest
@@ -120,6 +121,7 @@ def test_wayland_permission_request_reports_denial(monkeypatch: pytest.MonkeyPat
     assert backend.request_permission() == PermissionState.DENIED
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="portal URIs are POSIX file paths")
 def test_wayland_screenshot_file_is_removed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     shot = tmp_path / "Screenshot.png"
     Image.new("RGB", (4, 2), "white").save(shot)

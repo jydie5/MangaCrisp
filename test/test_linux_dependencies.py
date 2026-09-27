@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import io
+import sys
 import zipfile
 from pathlib import Path
 
@@ -61,6 +62,7 @@ def test_linux_realcugan_rejects_unsafe_zip_members(tmp_path: Path) -> None:
         fetch_realcugan_linux.safe_extract(archive, tmp_path / "out")
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX executable bits")
 def test_linux_realcugan_extraction_restores_executable_bit(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
