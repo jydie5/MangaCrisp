@@ -60,7 +60,7 @@ jobs:
 
       - name: Run source and unit checks
         run: |
-          uv run ruff check src/mangacrisp_app/platform/*linux.py scripts/*_linux.py test/*linux*.py
+          uv run ruff check src/mangacrisp_app/platform/*linux.py scripts/*_linux.py scripts/build_linux_app.py test/*linux*.py
           uv run python -m compileall -q src scripts test
           uv run pytest -q
           uv run python -m mangacrisp_app.main --smoke-test
