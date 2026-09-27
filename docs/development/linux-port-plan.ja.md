@@ -126,12 +126,12 @@ AGENTS.md に `linux/<topic>` を追加する (本計画の最初の `core/` PR 
 
 ### L5: ドキュメントとリリース (`docs/linux-install` → リリース)
 
-- [ ] `INSTALL.linux.md` / `INSTALL.linux.ja.md`
+- [x] `INSTALL.linux.md` / `INSTALL.linux.ja.md`
       (apt で入れる依存: `libvulkan1`, `mesa-vulkan-drivers`, `7zip`, `libfuse2t64`)。
-- [ ] README (英・日) の対応 OS と画像、`docs/development/linux-handover.md`。
+- [x] README (英・日) の対応 OS、ダウンロード、支援の案内。`docs/development/linux-handover.md`。
 - [ ] `ROADMAP.md` に Linux の項目を追加。`check_release_ready.py` が Linux 成果物
       を扱えるようにする。
-- [ ] 最初は `linux-preview-<version>` として公開し、その後正式リリースに含める。
+- [x] `linux-preview-0.7.1b0.1` として公開 (2026-09-27)。正式リリースへの統合は AMD/Intel と実機 X11 の検証後。
 
 ## リスク
 
