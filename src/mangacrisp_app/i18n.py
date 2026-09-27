@@ -80,6 +80,7 @@ ENGLISH_TRANSLATIONS = {
     "画面収録設定を開けません: {error}": "Could not open Screen Recording settings: {error}",
     "画面収録の許可が必要です。": "Screen Recording access is required.",
     "システム設定でMangaCrispを有効にし、アプリを完全に終了して再起動してください。": "Enable MangaCrisp in System Settings, then quit the app completely and open it again.",
+    "もう一度「撮影を開始」を押し、表示される許可ダイアログで許可してください。拒否した場合は、設定のアプリ一覧でMangaCrispのスクリーンショット権限を有効にしてください。": "Press Start capture again and allow the permission dialog. If you denied it, enable screenshots for MangaCrisp in the Apps section of Settings.",
     "未選択": "Not selected",
     "範囲を選択": "Select Region",
     "画面全体": "Full Display",

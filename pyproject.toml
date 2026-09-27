@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 dependencies = [
+    "jeepney>=0.9 ; sys_platform == 'linux'",
     "pillow>=10",
     "py7zr>=0.22",
     "pypdfium2>=5,<6",

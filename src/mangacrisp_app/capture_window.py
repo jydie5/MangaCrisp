@@ -464,6 +464,15 @@ class CaptureWindow(QMainWindow):
                 message.setWindowTitle(tr("画面収録権限"))
                 message.setIcon(QMessageBox.Warning)
                 message.setText(tr("画面収録の許可が必要です。"))
+                if sys.platform != "darwin":
+                    # XDG portals ask for permission in their own dialog.
+                    message.setInformativeText(
+                        tr(
+                            "もう一度「撮影を開始」を押し、表示される許可ダイアログで許可してください。拒否した場合は、設定のアプリ一覧でMangaCrispのスクリーンショット権限を有効にしてください。"
+                        )
+                    )
+                    message.exec()
+                    return
                 message.setInformativeText(
                     tr(
                         "システム設定でMangaCrispを有効にし、アプリを完全に終了して再起動してください。"
