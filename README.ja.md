@@ -13,7 +13,7 @@
 スクリーンショットと`demo`の画像はDavid Revoy氏の*Pepper&Carrot*を
 [CC BY 4.0](demo/ATTRIBUTION.md)に基づいて使用しています。商業漫画の画像は含みません。
 
-MangaCrispは、macOS／Windows向けの無料・オープンソース漫画／コミックビューアです。PDF、CBZ、CBR、ZIP、RAR、7z、画像フォルダを読み込み、本棚、右綴じ見開き表示、Real-CUGANによるAI補正を利用できます。
+MangaCrispは、macOS／Windows／Linux向けの無料・オープンソース漫画／コミックビューアです。PDF、CBZ、CBR、ZIP、RAR、7z、画像フォルダを読み込み、本棚、右綴じ見開き表示、Real-CUGANによるAI補正を利用できます。
 
 旧称RAIV for macとして[nalltama/RAIV](https://github.com/nalltama/RAIV)に着想を得て独立実装しました。現在はMangaCrispとして独自の製品方針で開発しており、本家RAIVの公式リリースではありません。
 
@@ -57,6 +57,13 @@ Intel／AMD GPUの補正証跡と、別のクリーンなWindowsアカウント�
 正式Windows版までの残項目です。補正できない場合も原画で閲覧できます。
 導入方法と制限は[INSTALL.windows.ja.md](INSTALL.windows.ja.md)を参照してください。
 
+### Linux（Ubuntu）プレビュー
+
+Ubuntu 24.04以降のx86_64で、ソースからの起動と、ユーザー単位のインストーラ付きの
+tar.gz版を利用できます。公式のReal-CUGAN Ubuntu版エンジン（Vulkan）を同梱し、
+GNOMEのWayland／X11で連番キャプチャにも対応します。必要なパッケージ、導入方法、
+キャプチャの許可は[INSTALL.linux.ja.md](INSTALL.linux.ja.md)を参照してください。
+
 ## 最初の一冊を読む
 
 1. MangaCrispを起動すると本棚が開きます。
@@ -69,7 +76,7 @@ Intel／AMD GPUの補正証跡と、別のクリーンなWindowsアカウント�
 
 ## v0.7.1-betaの新機能
 
-- **macOS／Windows連番スクリーンキャプチャ:** 許可された画面範囲を手動操作でカラーPNGへ
+- **macOS／Windows／Linux連番スクリーンキャプチャ:** 許可された画面範囲を手動操作でカラーPNGへ
   連番保存し、確認後にCBZ／ZIPへ完成できます。
 - **単ページ表示:** 1画像を画面中央へ最大表示し、1画像ずつ送ります。見開きを
   1枚として撮影した本を、そのまま重複なく読むための表示です。
@@ -113,7 +120,7 @@ Windows版はVulkan対応GPUを使用します。補正を待っている間も�
 
 - 表紙を並べる本棚
 - 複数アーカイブのドラッグ＆ドロップ登録
-- macOS／Windowsの固定範囲をカラーPNGとCBZ／ZIPへ保存する連番キャプチャ
+- macOS／Windows／Linuxの固定範囲をカラーPNGとCBZ／ZIPへ保存する連番キャプチャ
 - PDF、ZIP/CBZ、RAR/CBR、7z/CB7、画像フォルダ
 - 全ページ変換を行わず、必要なページだけカラー保持で描画するPDF対応
 - 上限付きPDF描画／AI補正キャッシュとキャッシュ削除操作
@@ -184,10 +191,11 @@ MangaCrispは自動ページ送りや画面保護の回避を行いません。
 2. セッション名と保存先を決め、撮影範囲を選びます。
 3. `撮影を開始`を押します。macOSの初回だけ`画面収録とシステムオーディオ録音`で
    MangaCrispを許可し、アプリを完全終了して同じアプリを開き直します。
-4. 対象アプリでページを手動で送り、画像ごとにmacOSは`Option+C`、Windowsは
+   LinuxのWaylandでは、スクリーンショットとショートカットの確認ダイアログを許可します。
+4. 対象アプリでページを手動で送り、画像ごとにmacOSは`Option+C`、Windows／Linuxは
    `Alt+C`を1回押します。直前の撮影取消は`Option+Z`または
-   `Alt+U`です。Windowsでは他アプリと競合する場合に別プリセットも選べます。
-5. Windowsではタスクバーに最小化されたMangaCrispをクリックし、macOSではDockから
+   `Alt+U`です。Windows／Linuxでは他アプリと競合する場合に別プリセットも選べます。
+5. Windows／Linuxではタスクバー（Dash）に最小化されたMangaCrispをクリックし、macOSではDockから
    MangaCrispを開いて管理画面を戻し、`撮影を完了`を押します。
    元の連番PNGは完成したCBZ／ZIPと同じセッションフォルダへ残ります。
 
@@ -201,7 +209,8 @@ MangaCrispは自動ページ送りや画面保護の回避を行いません。
 - PDF描画／AI補正キャッシュ: `~/Library/Caches/MangaCrisp`
 - 本棚データベース: `~/Library/Application Support/MangaCrisp`
 
-Windowsの保存場所は[INSTALL.windows.ja.md](INSTALL.windows.ja.md)に記載しています。
+Windowsの保存場所は[INSTALL.windows.ja.md](INSTALL.windows.ja.md)、Linuxの保存場所は
+[INSTALL.linux.ja.md](INSTALL.linux.ja.md)に記載しています。
 
 本棚データは意図して作る読書用コピーです。アーカイブは元ファイルと展開済みページ、
 PDFは元ファイルと表紙を管理するため、元の本と同程度、処理中はそれ以上の容量になる場合が
@@ -235,7 +244,9 @@ PDF描画キャッシュとAI補正キャッシュは破棄可能です。それ
 - 正式macOS版はApple Silicon専用で、Intel Macには対応していません。
 - Windows x64版はDevelopment Previewで、Intel／AMD／別アカウントの
   リリース証跡が未完了です。
-- 両OS版とも未署名で、macOS版はApple notarizationも未実施です。
+- Linux版はUbuntu 24.04以降のx86_64向けプレビューです。他のディストリビューションと
+  aarch64は検証していません。
+- 各OS版とも未署名で、macOS版はApple notarizationも未実施です。
 - β版のためUIと設定の互換性が変わる可能性があります。
 - RAR形式によってはmacOS側の展開機能との相性で開けない場合があります。
 - 自動アップデートは未実装です。新しいZIPをReleasesから取得してください。

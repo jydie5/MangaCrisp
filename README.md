@@ -6,7 +6,7 @@
   <img src="assets/mangacrisp-app-icon.png" width="160" alt="MangaCrisp app icon">
 </p>
 
-MangaCrisp is a free, open-source manga and comic viewer for macOS and Windows.
+MangaCrisp is a free, open-source manga and comic viewer for macOS, Windows, and Linux.
 It reads PDF, CBZ, CBR, ZIP, RAR, 7z, image folders, and individual
 images, combining a visual bookshelf, two-page manga reading, and automatic
 Real-CUGAN AI upscaling in a native desktop application.
@@ -63,6 +63,14 @@ remain before the stable Windows release. Original-image reading remains
 available if enhancement is unavailable. See
 [INSTALL.windows.md](INSTALL.windows.md) for installation and limitations.
 
+### Linux (Ubuntu) preview
+
+Ubuntu 24.04 or newer on x86_64 is supported from source and as a one-folder
+`tar.gz` build with a per-user installer. It bundles the official Real-CUGAN
+Ubuntu engine (Vulkan) and supports sequential capture on GNOME Wayland and
+X11. See [INSTALL.linux.md](INSTALL.linux.md) for required packages,
+installation, and capture permissions.
+
 ## Read your first book
 
 1. Launch MangaCrisp to open the bookshelf.
@@ -78,7 +86,7 @@ first launch. A custom library location selected by the user is left unchanged.
 
 ## New in v0.7.1-beta
 
-- **Sequential screen capture for macOS and Windows:** manually save an authorized screen
+- **Sequential screen capture for macOS, Windows, and Linux:** manually save an authorized screen
   region as numbered color PNG files, review the pages, and finish as CBZ or ZIP.
 - **Single Page layout:** center one image at full reader width and advance one
   image at a time. This is intended for captures where one image already
@@ -93,7 +101,7 @@ first capture. macOS users must also follow the
 ## Features
 
 - Cover-based bookshelf with multi-file drag and drop
-- Sequential fixed-region screen capture to color PNG and CBZ/ZIP on macOS and Windows
+- Sequential fixed-region screen capture to color PNG and CBZ/ZIP on macOS, Windows, and Linux
 - PDF, ZIP/CBZ, RAR/CBR, 7z/CB7, image folders, and individual images
 - On-demand PDF rendering that preserves color without converting the whole book during import
 - Bounded PDF render and AI enhancement caches with a clear-cache action
@@ -197,12 +205,14 @@ does not automate page turning or bypass capture protection.
 2. Name the session, choose an output folder, and select the capture region.
 3. Start capture. On first use on macOS, allow MangaCrisp under **Screen & System
    Audio Recording**, quit the app completely, then reopen the same installed app.
+   On Linux Wayland, allow the screenshot and shortcut dialogs.
 4. Turn pages in the source application and press `Option+C` on macOS or
-   `Alt+C` on Windows once per image. Use `Option+Z` or
-   `Alt+U` to undo the last capture. Windows also provides alternative
+   `Alt+C` on Windows and Linux once per image. Use `Option+Z` or
+   `Alt+U` to undo the last capture. Windows and Linux also provide alternative
    presets when another application owns either shortcut.
-5. On Windows, the controller remains minimized in the taskbar; click its app
-   icon to restore it. On macOS, open MangaCrisp from the Dock. Then choose
+5. On Windows and Linux, the controller remains minimized in the taskbar or
+   Dash; click its app icon to restore it. On macOS, open MangaCrisp from the
+   Dock. Then choose
    **Finish Capture**. The numbered source PNGs remain beside the finished CBZ/ZIP.
 
 Capture images are stored locally and are not uploaded. If each capture already
@@ -223,7 +233,8 @@ beside and inside every archive.
 - PDF render and AI enhancement caches: `~/Library/Caches/MangaCrisp`
 - Database and settings: `~/Library/Application Support/MangaCrisp`
 
-Windows locations are listed in [INSTALL.windows.md](INSTALL.windows.md).
+Windows locations are listed in [INSTALL.windows.md](INSTALL.windows.md) and
+Linux locations in [INSTALL.linux.md](INSTALL.linux.md).
 
 The managed library is an intentional reading copy: an imported archive keeps
 its original file plus extracted pages, while a PDF keeps its original and
@@ -255,7 +266,9 @@ reading positions are preserved.
   currently supported.
 - The Windows x64 build is a Development Preview with Intel, AMD, and clean
   account release evidence still pending.
-- Both builds are unsigned; the macOS beta is also not notarized.
+- The Linux build targets Ubuntu 24.04+ on x86_64 and is a preview; other
+  distributions and aarch64 are not validated.
+- The builds are unsigned; the macOS beta is also not notarized.
 - Some RAR variants may not be compatible with the available macOS extraction
   backend.
 - Updates are manual; download a newer build from Releases.
