@@ -89,13 +89,19 @@ AGENTS.md に `linux/<topic>` を追加する (本計画の最初の `core/` PR 
 | グローバルホットキー | `XGrabKey` | xdg-desktop-portal GlobalShortcuts (GNOME 48+ / KDE)。未対応環境ではコントローラ上のボタン操作にフォールバック |
 | 領域選択 | 既存 `region_selector.py` | 同左 (レイヤーシェルが使えないため、全画面の透明ウィンドウで代替) |
 
-- [ ] `platform/capture_linux.py` がセッション種別 (`XDG_SESSION_TYPE`) を見て
+- [x] `platform/capture_linux.py` がセッション種別 (`XDG_SESSION_TYPE`) を見て
       X11 / Wayland の実装を選ぶ。
-- [ ] 連続キャプチャ時に毎回ポータルのダイアログが出ないように、ScreenCast
-      (PipeWire) ストリームを 1 回だけ開いて再利用する。
+- [x] 連続キャプチャで毎回ダイアログが出ないようにする。Screenshot ポータルは
+      初回に一度許可すれば、以降は非対話で撮影できる (GNOME 50 で 1 枚約 1.1 秒)。
+      速度が問題になったら ScreenCast (PipeWire) を再利用する方式に切り替える。
+- [x] Host アプリとして `org.freedesktop.host.portal.Registry` にアプリ ID
+      `com.jydie5.mangacrisp` を登録し、権限をアプリ単位で保存する
+      (`com.jydie5.mangacrisp.desktop` のインストールが必要。L4 で対応)。
+- [x] GNOME はフォーカス中のアプリにしか許可ダイアログを出さないため、
+      「撮影を開始」を押した時点で許可を求める。
 - [ ] 必要なら `bookshelf.py` のボタン表示条件と `capture_window.py` の権限ボタン
       条件を、OS 名ではなくバックエンドの能力で判定するよう変更 (`core/` で)。
-- [ ] `test/test_capture_linux.py`: D-Bus と X をモックしたユニットテスト。
+- [x] `test/test_capture_linux.py`: D-Bus と X をモックしたユニットテスト。
 - [ ] `docs/testing/capture-human-check.linux.ja.md`。
 - 完了条件: Ubuntu の GNOME (Wayland) と X11 セッションの両方で、
   capture-human-check の全項目が通る。
