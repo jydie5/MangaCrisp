@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ctypes.util
 import hashlib
 import importlib
 import importlib.metadata
@@ -64,6 +65,11 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def vulkan_loader_status() -> str:
+    """Report whether the system Vulkan loader used by the Linux engine exists."""
+    return "found" if ctypes.util.find_library("vulkan") else "missing (install libvulkan1)"
+
+
 def diagnostics_text(*, book_count: int, cache_dir: Path) -> str:
     engine = realcugan_executable()
     engine_hash = "unavailable"
@@ -86,4 +92,7 @@ def diagnostics_text(*, book_count: int, cache_dir: Path) -> str:
         f"bookshelf_items: {book_count}",
         f"cache_bytes: {directory_size(cache_dir)}",
     ]
+    if sys.platform.startswith("linux"):
+        # macOS and Windows bundle their Vulkan runtime with the engine.
+        lines.insert(lines.index(f"realcugan_sha256: {engine_hash}") + 1, f"vulkan_loader: {vulkan_loader_status()}")
     return "\n".join(lines) + "\n"

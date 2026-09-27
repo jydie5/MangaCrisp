@@ -1,10 +1,15 @@
+import sys
 from pathlib import Path
+from unittest.mock import patch
+
+import pytest
 
 from mangacrisp_app.diagnostics import (
     app_version,
     diagnostics_text,
     directory_size,
     module_version,
+    vulkan_loader_status,
 )
 
 
@@ -24,3 +29,12 @@ def test_diagnostics_omit_cache_path_and_user_content(tmp_path: Path) -> None:
     assert app_version() != "not installed"
     assert module_version("PIL") != "not installed"
     assert module_version("pypdfium2", "PYPDFIUM_INFO") != "not installed"
+
+
+@pytest.mark.skipif(not sys.platform.startswith("linux"), reason="Linux reports the system Vulkan loader")
+def test_linux_diagnostics_report_vulkan_loader(tmp_path: Path) -> None:
+    with patch("mangacrisp_app.diagnostics.ctypes.util.find_library", return_value=None):
+        assert vulkan_loader_status() == "missing (install libvulkan1)"
+        assert "vulkan_loader: missing" in diagnostics_text(book_count=0, cache_dir=tmp_path)
+    with patch("mangacrisp_app.diagnostics.ctypes.util.find_library", return_value="libvulkan.so.1"):
+        assert "vulkan_loader: found" in diagnostics_text(book_count=0, cache_dir=tmp_path)
