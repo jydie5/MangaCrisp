@@ -28,3 +28,24 @@ Usage for development (installs into the ignored `test/engines/` folder):
 ```bash
 uv run python scripts/fetch_realcugan_linux.py
 ```
+
+## 7-Zip
+
+| Field | Value |
+|---|---|
+| Script | `scripts/fetch_7zip_linux.py` |
+| Upstream | https://github.com/ip7z/7zip (release `26.02`) |
+| Archive | `7z2602-linux-x64.tar.xz` |
+| Archive SHA-256 | `41aaba7b1235304ab5aa0624530c67ae829496cd29e875925271efdccc28c03e` |
+| `7zz` SHA-256 | `1676a968815b92e865bc0ffeecee3fa284ba4402bf23dc2bec2412c4b502e922` |
+| License | GNU LGPL with the unRAR restriction and BSD-3-Clause parts (`License.txt`) |
+| Modified | No |
+
+Only the dynamically linked `7zz`, `License.txt`, and `readme.txt` are bundled.
+`7zz` links only glibc, libstdc++, and libgcc_s.
+
+## Qt license text
+
+Linux PySide6 and shiboken6 wheels contain no license files. The build fetches
+`LICENSES/LGPL-3.0-only.txt` from `qtproject/pyside-pyside-setup` tag `v6.11.1`
+(SHA-256 `da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768`).

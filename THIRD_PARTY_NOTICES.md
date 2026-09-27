@@ -18,6 +18,18 @@ Windows one-folder版は、RAR/CBRの展開用に公式7-Zip x64版の
 7-Zipに含まれるunRARコードはRARアーカイブの展開だけに使用し、
 RAR互換アーカイバの作成には使用しません。
 
+## 7-Zip（Linux版）
+
+Linux x86_64版は、RAR/CBRの展開用に公式7-Zip Linux x64版のコンソール実行ファイル
+`7zz`を改変せず`MangaCrisp/tools/7zip/`へ同梱します。
+
+- Archive: `7z2602-linux-x64.tar.xz`
+- Archive SHA256: `41aaba7b1235304ab5aa0624530c67ae829496cd29e875925271efdccc28c03e`
+- `7zz` SHA256: `1676a968815b92e865bc0ffeecee3fa284ba4402bf23dc2bec2412c4b502e922`
+- License: Windows版と同じ（GNU LGPL、BSD 3-Clauseの構成要素、unRAR restriction）
+
+`License.txt`、`readme.txt`、`7zip-provenance.json`を`licenses/`へ収録します。
+
 ## Real-CUGAN ncnn Vulkan
 
 - Project: [nihui/realcugan-ncnn-vulkan](https://github.com/nihui/realcugan-ncnn-vulkan)
@@ -40,6 +52,15 @@ Windows版は`20220728`タグの固定ソースとsubmoduleをZig 0.16.0で
 Windows配布物の`realcugan-provenance.json`には、ソースcommit、submodule、
 ツール、取得物、実行ファイル、PE import、モデル、ライセンスのSHA-256を
 記録します。Vulkan SDKはビルド時だけ使用し、配布しません。
+
+### Linux x86_64ビルド
+
+Linux版は公式リリース`realcugan-ncnn-vulkan-20220728-ubuntu.zip`
+（SHA256 `d745174bd04c0232c89d935b74799311008fda06bea4195f61be5f0f3cc087cb`）の
+実行ファイルとモデルを改変せず同梱します。実行ファイルのSHA256は
+`89cb341d9ffbdcdc7f63bdc75d9cb0bae82eabe6597054e2a812331b2831fcc2`です。
+Vulkanローダー、libgomp、libstdc++はOSのものを使い、同梱しません。
+詳細は`docs/development/linux-dependency-provenance.md`に記録します。
 
 ## Real-CUGAN models
 
@@ -79,6 +100,10 @@ standalone版はPythonランタイム、PySide6/Qt、Pillow、py7zr、rarfile、
 - rarfile: ISC
 - pypdfium2: Apache-2.0またはBSD-3-Clause、PDFiumと同梱依存ライセンス
 - setuptoolsおよびpackaging: MIT、Apache 2.0またはBSD系ライセンス
+- jeepney（Linux版のみ、XDGポータルとのD-Bus通信）: MIT
+
+Linux版のライセンス一式は`MangaCrisp/licenses/`へ収録します。Linux用のPySide6
+wheelにはライセンスファイルが含まれないため、固定したLGPL v3全文を別途収録します。
 
 PySide6/Qtの正確なバージョン、対応ソース、動的リンクされたQtライブラリの場所と差し替え後の再署名方法は、アプリ内の`Qt-PySide6-source-and-relinking.txt`に記載します。Pillowが同梱する画像形式ライブラリなどの第三者表示は、Pillowのライセンスファイルに含まれます。
 
