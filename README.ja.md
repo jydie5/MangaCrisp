@@ -21,7 +21,7 @@ MangaCrispは、macOS／Windows／Linux向けの無料・オープンソース�
 
 MangaCrispは個人で開発している、MIT Licenseの無料ソフトウェアです。役立った場合は、
 **[Buy Me a Coffeeで今後の開発を任意で支援](https://buymeacoffee.com/jydie5)**
-できます。支援はコード署名、Windows／macOS実機検証、ビルドサービス、開発用AI・APIの
+できます。支援はコード署名、Windows／macOS／LinuxのGPU実機検証、ビルドサービス、開発用AI・APIの
 費用に充てます。支援による機能解放やライセンス変更はありません。
 
 費用をかけずに、Star、リリースの共有、再現手順付きの不具合報告、異なる実機でのテスト、
@@ -59,10 +59,14 @@ Intel／AMD GPUの補正証跡と、別のクリーンなWindowsアカウント�
 
 ### Linux（Ubuntu）プレビュー
 
+**[Linux x86_64版（プレビュー）をダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/linux-preview-0.7.1b0.1/MangaCrisp-0.7.1b0-linux-x86_64.tar.gz)**
+
 Ubuntu 24.04以降のx86_64で、ソースからの起動と、ユーザー単位のインストーラ付きの
 tar.gz版を利用できます。公式のReal-CUGAN Ubuntu版エンジン（Vulkan）を同梱し、
 GNOMEのWayland／X11で連番キャプチャにも対応します。必要なパッケージ、導入方法、
 キャプチャの許可は[INSTALL.linux.ja.md](INSTALL.linux.ja.md)を参照してください。
+Linux版は新しい版です。お使いのGPUで動いたらぜひ報告してください。AMD／Intelの検証機材のための
+[支援](https://buymeacoffee.com/jydie5)も歓迎します。
 
 ## 最初の一冊を読む
 

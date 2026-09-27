@@ -26,7 +26,7 @@ The screenshots use *Pepper&Carrot* by David Revoy under
 
 MangaCrisp is independent, free MIT-licensed software. If it is useful to you,
 **[support continued development on Buy Me a Coffee](https://buymeacoffee.com/jydie5)**.
-Support helps pay for code signing, Windows/macOS hardware validation, build
+Support helps pay for code signing, Windows/macOS/Linux GPU validation, build
 services, and development AI/API usage. It never unlocks features or changes
 the license.
 
@@ -65,11 +65,14 @@ available if enhancement is unavailable. See
 
 ### Linux (Ubuntu) preview
 
-Ubuntu 24.04 or newer on x86_64 is supported from source and as a one-folder
-`tar.gz` build with a per-user installer. It bundles the official Real-CUGAN
+**[Download MangaCrisp for Linux x86_64 (Preview)](https://github.com/jydie5/MangaCrisp/releases/download/linux-preview-0.7.1b0.1/MangaCrisp-0.7.1b0-linux-x86_64.tar.gz)**
+
+Ubuntu 24.04 or newer on x86_64 is supported as a one-folder `tar.gz` build
+with a per-user installer (no root needed), or from source. It bundles the official Real-CUGAN
 Ubuntu engine (Vulkan) and supports sequential capture on GNOME Wayland and
 X11. See [INSTALL.linux.md](INSTALL.linux.md) for required packages,
-installation, and capture permissions.
+installation, and capture permissions. Linux is new: if it works on your GPU,
+please report it, and consider [supporting AMD/Intel test hardware](https://buymeacoffee.com/jydie5).
 
 ## Read your first book
 
