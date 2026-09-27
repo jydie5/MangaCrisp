@@ -65,7 +65,7 @@ available if enhancement is unavailable. See
 
 ### Linux (Ubuntu) preview
 
-**[Download MangaCrisp for Linux x86_64 (Preview)](https://github.com/jydie5/MangaCrisp/releases/download/linux-preview-0.7.1b0.1/MangaCrisp-0.7.1b0-linux-x86_64.tar.gz)**
+**[Download MangaCrisp for Linux x86_64 (Preview)](https://github.com/jydie5/MangaCrisp/releases/download/linux-preview-0.7.1b0.2/MangaCrisp-0.7.1b0-linux-x86_64.tar.gz)**
 
 Ubuntu 24.04 or newer on x86_64 is supported as a one-folder `tar.gz` build
 with a per-user installer (no root needed), or from source. It bundles the official Real-CUGAN
