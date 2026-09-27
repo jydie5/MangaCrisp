@@ -964,13 +964,23 @@ class LibraryImportService:
             )
         self._clear_page_dir(pages_dir)
         page_paths: list[Path] = []
-        with rarfile.RarFile(archive_path) as archive:
-            for index, info in enumerate(members, start=1):
-                suffix = Path(archive_display_name(info.filename)).suffix.lower() or ".img"
-                output = pages_dir / f"{index:06d}{suffix}"
-                with archive.open(info) as source, output.open("wb") as destination:
-                    copy_stream_limited(source, destination)
-                page_paths.append(output.resolve())
+        try:
+            with rarfile.RarFile(archive_path) as archive:
+                for index, info in enumerate(members, start=1):
+                    suffix = Path(archive_display_name(info.filename)).suffix.lower() or ".img"
+                    output = pages_dir / f"{index:06d}{suffix}"
+                    with archive.open(info) as source, output.open("wb") as destination:
+                        copy_stream_limited(source, destination)
+                    page_paths.append(output.resolve())
+        except rarfile.Error as exc:
+            # rarfile reads headers itself but needs an unrar-compatible tool on
+            # PATH to decompress. Fall back to the bundled 7-Zip when it has none.
+            return self._extract_external_pages(
+                archive_path,
+                pages_dir,
+                member_names=member_names,
+                primary_error=exc,
+            )
         return page_paths
 
     def _extract_7z_pages(self, archive_path: Path, pages_dir: Path, member_names: set[str] | None = None) -> list[Path]:
@@ -987,7 +997,7 @@ class LibraryImportService:
     ) -> list[Path]:
         self._clear_page_dir(pages_dir)
         extract_external_archive_images(archive_path, pages_dir, member_names=member_names, primary_error=primary_error)
-        return self._normalize_extracted_pages(pages_dir, member_names=None)
+        return self._normalize_extracted_pages(pages_dir, member_names=member_names)
 
     def _normalize_extracted_pages(self, pages_dir: Path, member_names: set[str] | None = None) -> list[Path]:
         image_paths = [
