@@ -37,3 +37,17 @@ The AppImage type 2 runtime statically links libfuse (LGPL-2.1), which would
 add a relinking obligation for a binary we do not build. The one-folder archive
 needs no extra runtime, and `install.sh` provides the desktop entry that the
 XDG portals need to store screen capture permissions for MangaCrisp.
+
+## Clean-system validation
+
+Validate a release archive in a clean container before publishing it. The
+script installs only the packages listed in `INSTALL.linux.md`:
+
+```bash
+packaging/linux/validate-clean-ubuntu.sh dist/MangaCrisp-<version>-linux-x86_64.tar.gz ubuntu:24.04
+packaging/linux/validate-clean-ubuntu.sh dist/MangaCrisp-<version>-linux-x86_64.tar.gz ubuntu:26.04
+```
+
+It checks installation, the packaged smoke test, opening a demo book, 7-Zip RAR
+support, Real-CUGAN on Mesa's CPU Vulkan driver, and uninstallation. GPU
+enhancement and screen capture still need a desktop session on real hardware.

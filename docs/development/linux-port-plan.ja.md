@@ -116,7 +116,10 @@ AGENTS.md に `linux/<topic>` を追加する (本計画の最初の `core/` PR 
 - [x] 同梱バイナリ (realcugan、7-Zip 26.02 `7zz`) の出所・checksum・ライセンスを
       `THIRD_PARTY_NOTICES.md` と `docs/development/linux-dependency-provenance.md` に記載。
 - [x] Linux CI (ubuntu-24.04) でパッケージをビルドし、スモークテストして artifact に保存。
-- [ ] まっさらな Ubuntu 24.04 (VM / コンテナ) での起動検証と記録。
+- [x] まっさらな Ubuntu 24.04 / 26.04 コンテナでの検証
+      (`packaging/linux/validate-clean-ubuntu.sh`)。CI でビルドした 0.7.1b0 で、
+      インストール、スモークテスト、デモ本の表示、7-Zip の RAR 対応、CPU Vulkan での
+      Real-CUGAN、アンインストールがすべて通った。
 - [ ] 検討 (後回し): `.deb`、Flatpak、AppImage。
 - 完了条件: クリーンな Ubuntu 24.04 で tar.gz を展開して `install.sh` を実行するだけで、
   全機能が動く。
