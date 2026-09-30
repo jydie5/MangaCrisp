@@ -238,6 +238,40 @@ automatically deleted. The PR passed macOS CI and the complete Windows portable
 build and audit. macOS continuation is documented in
 `docs/development/macos-handover.md`.
 
+## Windows catch-up after the Linux preview (2026-09-30)
+
+The reviewed shared baseline is `f50daa2` (PR #41), which links Linux preview
+`0.7.1b0.2`. Linux screen capture, global hotkeys, Vulkan diagnostics, and Linux
+packaging use platform-specific adapters; Windows already has the corresponding
+reader and capture workflows and does not need duplicate implementations.
+
+The published Windows preview remains `windows-preview-0.7.1b0.4`. A new local
+candidate includes the shared storage hygiene from PR #27 and the RAR fixes from
+PR #40: fall back to bundled 7-Zip when `rarfile` can list but cannot decompress
+an archive, and retain only the selected volume's pages during normalization.
+
+Local packaging exposed a separate build-environment issue: PyInstaller picked
+an unrelated tool's ICU DLL from inherited `PATH`. Its version-suffixed exports
+did not match Qt's Windows ICU imports, so the packaged app could not load
+`QtCore`, even though source startup passed. The Windows build now limits DLL
+discovery to Windows system directories and the active Python runtime, and
+removes inherited Python/Qt search-path overrides for the PyInstaller process.
+The caller's environment and other platforms' build scripts are unchanged.
+
+Verification on Windows x64:
+
+- `130 passed, 9 skipped` in the complete source suite.
+- Packaged-app smoke test and distribution audit pass (`baseline_ready=true`).
+- The ZIP extracted to a temporary directory passes startup with only Windows
+  system directories on `PATH`, without Python/uv/virtual-environment paths.
+- The local candidate's archive/manifest build identifier is
+  `0.7.1b0+win.sync.20260930`; the shared application version remains `0.7.1b0`.
+
+Stop for a human check of startup, color reading/comparison, capture and undo,
+and (when using multi-volume RARs) volume-specific page counts. This checkpoint
+does not publish or replace a release asset. Intel/AMD GPU and separate
+clean-account evidence remain the stable-release gates.
+
 ## Technology decision
 
 Continue with PySide6 and the existing Python code for the first Windows

@@ -214,6 +214,29 @@ def smoke_test(executable: Path) -> None:
         )
 
 
+def pyinstaller_environment() -> dict[str, str]:
+    environment = os.environ.copy()
+    for key in (
+        "PYTHONHOME",
+        "PYTHONPATH",
+        "QT_PLUGIN_PATH",
+        "QT_QPA_PLATFORM_PLUGIN_PATH",
+    ):
+        environment.pop(key, None)
+    system_root = Path(environment.get("SystemRoot", r"C:\Windows"))
+    # Qt uses the Windows ICU DLL. Unrelated tools on PATH may supply an ICU
+    # with incompatible exports that PyInstaller would otherwise bundle.
+    paths = (
+        system_root / "System32",
+        system_root,
+        Path(sys.executable).resolve().parent,
+        Path(sys.base_prefix),
+        Path(sys.base_prefix) / "DLLs",
+    )
+    environment["PATH"] = os.pathsep.join(dict.fromkeys(str(path) for path in paths))
+    return environment
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Build the Windows x64 MangaCrisp one-folder application."
@@ -293,7 +316,7 @@ def main() -> None:
         "cv2",
         str(ENTRYPOINT),
     ]
-    subprocess.run(command, cwd=ROOT_DIR, check=True)
+    subprocess.run(command, cwd=ROOT_DIR, env=pyinstaller_environment(), check=True)
     if not DIST_EXE.is_file():
         raise SystemExit(f"build did not create {DIST_EXE}")
     copy_public_files(licenses_dir, archive_tool_dir, engine_dir)

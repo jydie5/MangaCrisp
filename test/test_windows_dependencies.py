@@ -4,6 +4,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import os
 import sys
 import zipfile
 from pathlib import Path
@@ -170,6 +171,66 @@ def test_windows_build_copies_pdfium_runtime_licenses(
     assert pdfium_notices
     assert any(path.name.endswith("-Apache-2.0.txt") for path in pdfium_notices)
     assert any(path.name.endswith("-pdfium.txt") for path in pdfium_notices)
+
+
+def test_windows_build_isolates_dll_discovery(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    system_root = tmp_path / "Windows"
+    python_root = tmp_path / "Python"
+    executable = tmp_path / "venv" / "Scripts" / "python.exe"
+    inherited = {
+        "SystemRoot": str(system_root),
+        "PATH": str(tmp_path / "unrelated-tools"),
+        "PYTHONHOME": str(tmp_path / "another-python"),
+        "PYTHONPATH": str(tmp_path / "other-modules"),
+        "QT_PLUGIN_PATH": str(tmp_path / "other-qt"),
+        "QT_QPA_PLATFORM_PLUGIN_PATH": str(tmp_path / "other-qt-platforms"),
+        "PYTHONUTF8": "1",
+    }
+    monkeypatch.setattr(BUILD_WINDOWS_APP.os, "environ", inherited)
+    monkeypatch.setattr(BUILD_WINDOWS_APP.sys, "executable", str(executable))
+    monkeypatch.setattr(BUILD_WINDOWS_APP.sys, "base_prefix", str(python_root))
+
+    environment = BUILD_WINDOWS_APP.pyinstaller_environment()
+
+    assert environment["PATH"].split(os.pathsep) == [
+        str(system_root / "System32"),
+        str(system_root),
+        str(executable.resolve().parent),
+        str(python_root),
+        str(python_root / "DLLs"),
+    ]
+    for key in (
+        "PYTHONHOME",
+        "PYTHONPATH",
+        "QT_PLUGIN_PATH",
+        "QT_QPA_PLATFORM_PLUGIN_PATH",
+    ):
+        assert key not in environment
+        assert key in inherited
+    assert environment["PYTHONUTF8"] == "1"
+    assert inherited["PATH"] == str(tmp_path / "unrelated-tools")
+
+
+def test_windows_build_uses_default_system_root_and_deduplicates_paths(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(BUILD_WINDOWS_APP.os, "environ", {})
+    monkeypatch.setattr(
+        BUILD_WINDOWS_APP.sys, "executable", str(tmp_path / "python.exe")
+    )
+    monkeypatch.setattr(BUILD_WINDOWS_APP.sys, "base_prefix", str(tmp_path.resolve()))
+
+    paths = BUILD_WINDOWS_APP.pyinstaller_environment()["PATH"].split(os.pathsep)
+
+    assert paths[:2] == [
+        str(Path(r"C:\Windows") / "System32"),
+        str(Path(r"C:\Windows")),
+    ]
+    assert paths.count(str(tmp_path.resolve())) == 1
 
 
 @pytest.mark.parametrize(
