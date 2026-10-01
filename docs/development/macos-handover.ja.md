@@ -10,15 +10,18 @@ Windows側の作業がPR #27まで先行したあと、macOSでMangaCrisp開発�
 
 - 最低限必要な共通チェックポイントはcommit `9f463c0`（PR #27）です。この引き継ぎ自体が
   mainへ入るとさらに先のcommitになるため、固定commitへ戻らず最新のremote headを使います。
-- macOS配布版はApple Silicon向け`v0.7.1-beta`です。
+- macOS配布版はApple Silicon向け`macos-beta-0.7.1b0.2`（2026-10-01、PR #42時点の
+  mainからビルド）です。`v0.7.1-beta`を置き換え、Linux preview `0.7.1b0.2`と同じ
+  共通ソースです。
 - Windows配布版はDevelopment Preview `windows-preview-0.7.1b0.4`です。
 - PR #27は全ソーステスト（`99 passed, 3 skipped`）、macOS source/package CI、Windowsの
   portable build、配布監査、開発環境なしの展開スモークテストを通過しました。
 - Windows b0.4のヒューマンチェックで2キー操作を確認済みです。Windowsは
   `Alt+C`／`Alt+U`、macOSは従来どおり`Option+C`／`Option+Z`です。
 
-macOSのrelease assetはPR #27より前に作られていますが、ソースが分岐したわけではありません。
-macOS作業前にmainをpullしてください。既存の`v0.7.1-beta` assetは置き換えず、新しいmacOS
+macOS作業前にmainをpullしてください。既存のmacOS release assetは置き換えません。製品
+バージョンを変えないmacOS更新は、Windows／Linuxのpreview tagと同様に
+`macos-beta-<version>.<n>`のtagで公開します。新しいmacOS
 配布物は別のversion/tagとリリース判断で公開します。
 
 ## Windows先行作業でmainへ入った内容

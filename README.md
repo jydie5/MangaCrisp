@@ -39,7 +39,12 @@ Trust only funding links published in this repository.
 
 The standalone build does not require Python, uv, or Terminal.
 
-### [Download MangaCrisp v0.7.1-beta for Apple Silicon](https://github.com/jydie5/MangaCrisp/releases/download/v0.7.1-beta/MangaCrisp-v0.7.1-beta-macos-apple-silicon-standalone.zip)
+### [Download MangaCrisp for macOS (Apple Silicon) — Beta 0.7.1b0.2](https://github.com/jydie5/MangaCrisp/releases/download/macos-beta-0.7.1b0.2/MangaCrisp-v0.7.1b0.2-macos-apple-silicon-standalone.zip)
+
+This is the current macOS build. It is built from the same shared source as
+the Linux preview 0.7.1b0.2 and adds bounded caches, interrupted-import
+recovery, and the RAR/CBR extraction fallback to `v0.7.1-beta`. See the
+[release notes](docs/releases/macos-beta-0.7.1b0.2.md).
 
 1. Download the standalone ZIP from the link above.
 2. Unzip it and move `MangaCrisp.app` to Applications.

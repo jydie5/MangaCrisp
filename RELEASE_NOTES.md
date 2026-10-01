@@ -1,3 +1,27 @@
+# MangaCrisp for macOS — Beta 0.7.1b0.2
+
+This macOS update is built from the same shared source as the Linux preview
+0.7.1b0.2 and replaces `v0.7.1-beta` as the current macOS download.
+
+## Changes
+
+- Limit the PDF render and AI enhancement caches to 2 GiB each and prune entries unused for more than 30 days.
+- Clean up or restore interrupted imports at the next launch.
+- Retry RAR/CBR extraction with an external tool when the RAR reader cannot decompress an archive.
+- Split multi-volume archives into one book per volume with only that volume's pages.
+
+## 日本語
+
+- PDF描画キャッシュとAI補正キャッシュをそれぞれ最大2 GiBに制限し、30日以上未使用の項目を整理します。
+- 中断した取り込みを次回起動時に片付けるか元へ戻します。
+- RARを展開できない場合、外部ツールでRAR／CBRの展開を再試行します。
+- 複数巻をまとめたアーカイブを、巻ごとに1冊ずつその巻のページだけで取り込みます。
+
+Linux版Preview 0.7.1b0.2と同じ共通ソースからビルドした、現在の最新のmacOS版です。
+実機キャプチャのヒューマンチェックはこの版では繰り返していません。
+
+詳細は[リリース文書](docs/releases/macos-beta-0.7.1b0.2.md)を参照してください。
+
 # MangaCrisp v0.7.1-beta
 
 This macOS beta adds manual sequential screen capture and a Single Page reader
