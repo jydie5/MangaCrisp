@@ -12,7 +12,9 @@ shared files.
 - The minimum shared checkpoint is commit `9f463c0` (PR #27). This handover
   itself will make `main` a later descendant, so always use the current remote
   head rather than checking out that commit directly.
-- The current macOS package is the `v0.7.1-beta` Apple Silicon prerelease.
+- The current macOS package is the `macos-beta-0.7.1b0.2` Apple Silicon
+  prerelease (2026-10-01), built from `main` at PR #42. It supersedes
+  `v0.7.1-beta` and matches the shared source of Linux preview `0.7.1b0.2`.
 - The current Windows package is Development Preview
   `windows-preview-0.7.1b0.4`.
 - PR #27 passed the complete source suite (`99 passed, 3 skipped`), macOS source
@@ -21,8 +23,9 @@ shared files.
 - The b0.4 Windows human check accepted the two-key capture controls. Windows
   capture defaults to `Alt+C` / `Alt+U`; macOS remains `Option+C` / `Option+Z`.
 
-The macOS release asset predates PR #27. This is not a source divergence: pull
-`main` before macOS work. Do not replace the existing `v0.7.1-beta` asset. A new
+Pull `main` before macOS work. Do not replace an existing macOS release asset.
+macOS updates on the unchanged product version use `macos-beta-<version>.<n>`
+tags, like the Windows and Linux preview tags. A new
 macOS package requires a new version/tag and a separate release decision.
 
 ## What arrived from the Windows-forward work

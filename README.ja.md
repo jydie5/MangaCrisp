@@ -33,7 +33,11 @@ MangaCrispは個人で開発している、MIT Licenseの無料ソフトウェ�
 
 一般ユーザーにPython、uv、ターミナル操作は不要です。
 
-### [MangaCrisp v0.7.1-beta Apple Silicon版をダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/v0.7.1-beta/MangaCrisp-v0.7.1-beta-macos-apple-silicon-standalone.zip)
+### [MangaCrisp macOS版（Apple Silicon）Beta 0.7.1b0.2をダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/macos-beta-0.7.1b0.2/MangaCrisp-v0.7.1b0.2-macos-apple-silicon-standalone.zip)
+
+現在の最新のmacOS版です。Linux版Preview 0.7.1b0.2と同じ共通ソースからビルドしており、
+`v0.7.1-beta`にキャッシュ上限、中断した取り込みの復旧、RAR／CBR展開の外部ツール切り替えを
+加えています。詳細は[リリース文書](docs/releases/macos-beta-0.7.1b0.2.md)を参照してください。
 
 1. 上のリンクからstandalone ZIPをダウンロードします。
 2. ZIPをダブルクリックして展開します。
