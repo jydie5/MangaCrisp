@@ -224,13 +224,16 @@ def test_windows_build_uses_default_system_root_and_deduplicates_paths(
     )
     monkeypatch.setattr(BUILD_WINDOWS_APP.sys, "base_prefix", str(tmp_path.resolve()))
 
-    paths = BUILD_WINDOWS_APP.pyinstaller_environment()["PATH"].split(os.pathsep)
-
-    assert paths[:2] == [
-        str(Path(r"C:\Windows") / "System32"),
-        str(Path(r"C:\Windows")),
-    ]
-    assert paths.count(str(tmp_path.resolve())) == 1
+    # Compare the joined value: the default Windows drive colon is not a PATH
+    # separator, even when this Windows-specific helper is tested on Linux.
+    assert BUILD_WINDOWS_APP.pyinstaller_environment()["PATH"] == os.pathsep.join(
+        (
+            str(Path(r"C:\Windows") / "System32"),
+            str(Path(r"C:\Windows")),
+            str(tmp_path.resolve()),
+            str(tmp_path.resolve() / "DLLs"),
+        )
+    )
 
 
 @pytest.mark.parametrize(
