@@ -122,6 +122,8 @@ Linux previews pick these up on their next build.
 
 - The spread you are looking at is corrected before the lookahead pages, so a
   newly opened or jumped-to spread no longer waits behind 12-24 queued pages.
+- A corrected spread no longer flashes to the original image a few seconds
+  after a page turn when the background prefetch finishes.
 
 ## New in v0.7.1-beta
 

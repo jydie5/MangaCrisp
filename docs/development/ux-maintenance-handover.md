@@ -3,7 +3,8 @@
 [日本語](ux-maintenance-handover.ja.md)
 
 The macOS side moved shared reader and bookshelf behavior forward in PR #44
-(`core/reader-bookshelf-ux`, merged 2026-10-15). This document tells the
+(`core/reader-bookshelf-ux`) and the follow-up fix PR #47
+(`core/fix-corrected-flash`), both merged 2026-10-15. This document tells the
 Windows and Linux maintainers what changed in shared code, what was verified
 only on macOS, and what each platform needs to check before its next preview
 build. Start every Windows or Linux task from the current `origin/main`.
@@ -20,11 +21,12 @@ All changes live in `src/mangacrisp_app/` and are OS-independent. No
 | Bookshelf multi-select and right-click | `bookshelf.py`, `i18n.py` | `QListWidget.ExtendedSelection` (Qt supplies Ctrl/Shift on Windows and Linux, Command/Shift on macOS). Right-click menu: *Read* / *Remove from bookshelf*. Right-clicking an unselected book selects only that book; inside the selection keeps it. |
 | Shared delete flow | `bookshelf.py`, `viewer.py` | Delete/Backspace, the bottom button and the menu all call `BookshelfWindow.delete_books()`: one confirmation with the count and first three titles, then per-book removal of the managed copy, reading position, bookmarks, PDF render cache and per-page AI correction cache (`remove_enhancement_cache_for_sources`). Source archives are kept. Failures are reported together; successes stay removed. |
 | Correction priority queue | `viewer.py` | The Real-CUGAN worker takes pages from `correction_queue` in `correction_priority` order (visible → forward → previous). Navigation while a worker runs calls `refresh_correction_queue()`, which re-prioritises and adds the newly visible pages. The in-flight page (`correction_in_flight`) is never re-queued. |
+| Corrected display stability (PR #47) | `viewer.py` | `load_cached_outputs` touches each correction file only once per reader session (`touched_output_paths`); the display cache key embeds the file mtime, so touching on every render forced a re-decode and a visible corrected → original → corrected flash when a prefetch batch finished. `apply_ready_spread_pixmaps` also keeps the pixmap already shown when the pending key names the same file at the same size (`display_keys_show_same_image`). |
 | Prefetch tuning | `viewer.py` | `DEFAULT_PREVIOUS_PREFETCH_COUNT` 4 → 6. Forward window is 12–24 normally, drops to `MIN_FORWARD_PREFETCH_COUNT` (6) when the median page-turn interval is ≥ `SLOW_READER_INTERVAL_SECONDS` (8 s), and the lead is multiplied by `CORRECTION_MISS_LEAD_FACTOR` (1.5) when the visible spread was shown uncorrected ≥ `CORRECTION_MISS_THRESHOLD` (2) times in the last `CORRECTION_MISS_WINDOW` (10) turns. |
 
 New or changed tests: `test/test_cursor_autohide.py`, `test/test_bookshelf_delete.py`,
 `test/test_prefetch_policy.py`, and additions to `test/test_viewer_navigation.py`.
-The shared suite is `180 passed, 8 skipped` on macOS.
+The shared suite is `183 passed, 8 skipped` on macOS.
 
 ## Verified on macOS only
 
@@ -41,6 +43,8 @@ and the `demo/` Pepper&Carrot volumes:
   after toggling `O` several times
 - forward prefetch count falling to 6 while lingering, returning to 12+ when
   turning pages quickly
+- no corrected → original → corrected flash when the prefetch batch finishes a
+  few seconds after a page turn (PR #47)
 
 ## What Windows must check
 
@@ -66,7 +70,10 @@ Use the portable build from `scripts/build_windows_app.py` and
 6. **Prefetch**: open a book, turn pages at about one per second, then linger
    10 s and turn again; the settings panel status should show the prefetch
    count dropping to 6 and rising back.
-7. Run the shared suite and the Windows-specific tests:
+7. **No flash**: with enhancement on, turn one page and keep still for ten
+   seconds; the corrected spread must not blink to the original when the
+   status changes to "prefetch complete".
+8. Run the shared suite and the Windows-specific tests:
    `uv run pytest -q`.
 
 Capture (`platform/capture_windows.py`), `Alt+C` / `Alt+U` and the taskbar
@@ -119,7 +126,7 @@ Use `scripts/build_linux_app.py` on Ubuntu 24.04 or newer.
    compositor-driven; the menu should still open at the pointer).
 5. **Removal and cache cleanup** as for Windows, using
    `~/.local/share` / app-support `upscale/interactive/<key>/`.
-6. **Prefetch** as for Windows.
+6. **Prefetch** and **No flash** as for Windows.
 7. Run `uv run pytest -q` including the Linux capture tests.
 
 Capture (`platform/capture_linux.py`) and the GNOME portal flow are
@@ -129,7 +136,7 @@ unaffected.
 
 | File | What changed | Conflict advice |
 |---|---|---|
-| `src/mangacrisp_app/viewer.py` | cursor timer and event tracking, overlay button, `return_to_bookshelf`, correction queue, prefetch constants and policy functions, `remove_enhancement_cache_for_sources` | Rebase onto `main` before touching `eventFilter`, `toggle_fullscreen`, `closeEvent`, `request_prefetch`, `start_prefetch`, `_process_pages_worker`, or `on_upscale_done`. The worker signature changed to `(settings, generation, parameter_key, is_prefetch)`. |
+| `src/mangacrisp_app/viewer.py` | cursor timer and event tracking, overlay button, `return_to_bookshelf`, correction queue, prefetch constants and policy functions, `remove_enhancement_cache_for_sources`, `touched_output_paths` in `load_cached_outputs`, `apply_ready_spread_pixmaps` / `show_display_pixmap` / `clear_display_pixmap` | Rebase onto `main` before touching `eventFilter`, `toggle_fullscreen`, `closeEvent`, `request_prefetch`, `start_prefetch`, `_process_pages_worker`, `on_upscale_done`, `load_cached_outputs`, or `apply_ready_spread_pixmaps`. The worker signature changed to `(settings, generation, parameter_key, is_prefetch)`. |
 | `src/mangacrisp_app/bookshelf.py` | selection mode, context menu, `delete_books`, `selected_book_ids`, `remove_enhancement_cache`, helper functions above the class | `delete_selected_book` now delegates to `delete_books`; keep new removal paths going through it. |
 | `src/mangacrisp_app/i18n.py` | new English strings for the overlay button, removal messages and bookshelf help | Append new strings; do not reorder the dictionary. |
 | `test/test_viewer_navigation.py` | split into `ViewerWindowTestCase` base + test classes | Subclass `ViewerWindowTestCase` for new reader window tests. |
@@ -144,9 +151,11 @@ document should list, in both languages:
 - bookshelf multi-select, right-click menu and batch removal
 - visible-spread-first correction queue and the 6-page backward window
 - the slower-reader prefetch reduction
+- fix: the corrected spread no longer flashes to the original a few seconds
+  after a page turn
 
 The README already describes these as shared features; only the platform
-download paragraphs need the "built from `main` at PR #44 or later" note.
+download paragraphs need the "built from `main` at PR #47 or later" note.
 
 ## Open questions for the other platforms
 
