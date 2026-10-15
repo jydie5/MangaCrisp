@@ -61,10 +61,11 @@ Intel／AMD GPUの補正証跡と、別のクリーンなWindowsアカウント�
 正式Windows版までの残項目です。補正できない場合も原画で閲覧できます。
 導入方法と制限は[INSTALL.windows.ja.md](INSTALL.windows.ja.md)を参照してください。
 
-> 現在はmacOS版が先行しています。読書・本棚のUXメンテナンス（全画面のカーソル自動非表示、
+> 読書・本棚のUXメンテナンス（全画面のカーソル自動非表示、
 > オーバーレイの本棚へボタン、本棚の複数選択とまとめて削除、表示中見開き優先の補正、
-> 先読み調整）は`main`に入りmacOSで確認済みです。上のWindows previewはそれより前の版で、
-> 次回ビルドで取り込まれます。詳細は
+> 先読み調整）は`main`に入り、macOSの確認とローカルWindows候補版のヒューマンチェックは合格済みです。
+> ただし上のWindowsダウンロードはそれより前の版です。今回のソース・文書更新では
+> 新しいZIPは公開していません。詳細は
 > [docs/development/ux-maintenance-handover.ja.md](docs/development/ux-maintenance-handover.ja.md)を参照してください。
 
 ### Linux（Ubuntu）プレビュー
@@ -78,7 +79,8 @@ GNOMEのWayland／X11で連番キャプチャにも対応します。必要な�
 Linux版は新しい版です。お使いのGPUで動いたらぜひ報告してください。AMD／Intelの検証機材のための
 [支援](https://buymeacoffee.com/jydie5)も歓迎します。
 
-> 上のLinux previewもmacOS先行のUXメンテナンスより前の版です。Windows previewの注記を参照してください。
+> 上のLinux previewも共通UXメンテナンスより前の版です。Linux実機確認は未完了です。
+> [Linux引継ぎ書](docs/development/linux-handover.ja.md)を参照してください。
 
 ## 最初の一冊を読む
 
@@ -92,8 +94,9 @@ Linux版は新しい版です。お使いのGPUで動いたらぜひ報告して
 
 ## `main`の未リリース変更（macOS先行、0.7.1b0.2以降）
 
-mainへ反映済みでmacOSで確認済みですが、まだどのダウンロードにも入っていません。
-Windows／Linux previewは次回ビルドで取り込みます。
+UX変更はmacOSで確認し、ローカルWindows候補版も合格済みです。
+ソースには下記の共通削除エラー修正も含みます。上記ダウンロードにはまだ入っておらず、
+Linux実機確認も未完了です。
 
 **機能**
 
@@ -107,6 +110,8 @@ Windows／Linux previewは次回ビルドで取り込みます。
 - 表示中の見開きを先読みより先に補正するため、開いた直後やジャンプ先の見開きが
   12〜24ページ分のキュー待ちになる問題を直しました。
 - ページ送りの数秒後に先読みが完了したとき、補正済み表示が一瞬原画へ戻る問題を直しました。
+- 管理コピーの削除に失敗した場合はDB登録を残して通知し、他の本の削除成功は反映します。
+  元アーカイブは残りますが、失敗した管理コピーは途中まで消える場合があります。
 
 ## v0.7.1-betaの新機能
 
