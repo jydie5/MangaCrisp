@@ -532,6 +532,7 @@ class SpreadWindow(QMainWindow):
         self.prefetch_target_indexes: set[int] = set()
         self.correction_queue: dict[int, Path] = {}
         self.correction_priority: list[int] = []
+        self.correction_in_flight: int | None = None
         self.correction_queue_lock = threading.Lock()
         self.running_parameter_key: str | None = None
         self.active_output_paths: set[Path] = set()
@@ -2208,6 +2209,8 @@ class SpreadWindow(QMainWindow):
         for index in target_indexes:
             if self.should_skip_upscale(index) or self.processed_pages[index] is not None:
                 continue
+            if index == self.correction_in_flight:
+                continue
             output_path = self.current_output_path(index)
             if output_path.exists():
                 continue
@@ -2280,7 +2283,9 @@ class SpreadWindow(QMainWindow):
             index = pick_next_correction_index(self.correction_priority, self.correction_queue, targets)
             if index is None:
                 self.correction_queue.clear()
+                self.correction_in_flight = None
                 return None
+            self.correction_in_flight = index
             return index, self.correction_queue.pop(index)
 
     def _process_pages_worker(
@@ -2320,6 +2325,11 @@ class SpreadWindow(QMainWindow):
                     )
             except Exception as exc:
                 errors.append(f"{self.pages[index].name}: {exc}")
+            finally:
+                with self.correction_queue_lock:
+                    if self.correction_in_flight == index:
+                        self.correction_in_flight = None
+                    self.correction_queue.pop(index, None)
         self.signals.upscale_done.emit(
             round((time.perf_counter() - started) * 1000),
             completed_output_paths,
@@ -2378,6 +2388,7 @@ class SpreadWindow(QMainWindow):
         self.running_parameter_key = None
         with self.correction_queue_lock:
             self.correction_queue.clear()
+            self.correction_in_flight = None
         self.active_output_paths.clear()
         self.last_disk_cache_prune_signature = None
         self.apply_button.setEnabled(True)

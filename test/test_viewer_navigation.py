@@ -278,6 +278,57 @@ class ViewerNavigationTests(ViewerWindowTestCase):
         self.assertIn(11, self.window.correction_queue)
         self.assertIn(self.window.correction_queue[10], self.window.active_output_paths)
 
+    def test_refresh_does_not_requeue_the_page_being_corrected(self) -> None:
+        self.window.prefetch_enabled = True
+        self.window.prefetch_count_default = 2
+        self.window.adaptive_prefetch_count = 2
+        with (
+            patch("mangacrisp_app.viewer.realcugan_executable", return_value=self.root / "realcugan"),
+            patch("mangacrisp_app.viewer.threading.Thread"),
+        ):
+            self.window.start_prefetch()
+            self.window.prefetch_target_indexes = set(self.window.correction_queue)
+            taken = self.window.take_next_correction(True)
+            self.assertIsNotNone(taken)
+            in_flight = taken[0]
+            self.assertEqual(self.window.correction_in_flight, in_flight)
+            self.assertNotIn(in_flight, self.window.correction_queue)
+
+            self.window.request_prefetch()
+
+        self.assertNotIn(in_flight, self.window.correction_queue)
+
+    def test_worker_never_corrects_the_same_page_twice_when_requeued_mid_run(self) -> None:
+        output_paths = {index: self.root / "outputs" / f"{index:04d}.png" for index in (0, 1)}
+        self.window.prefetch_target_indexes = {0, 1}
+        self.window.correction_queue = dict(output_paths)
+        self.window.correction_priority = [0, 1]
+        processed_indexes: list[int] = []
+
+        def fake_realcugan(source: Path, output: Path, **_settings):
+            index = self.pages.index(source)
+            processed_indexes.append(index)
+            # A page turn arrives while this page is still being corrected.
+            self.window.refresh_correction_queue()
+            output.parent.mkdir(parents=True, exist_ok=True)
+            Image.open(source).save(output)
+            return SimpleNamespace(returncode=0, output_exists=True)
+
+        settings = {"scale": 2, "noise": 0, "tile": 0, "model": "models-se", "tta": False}
+        self.window.running_parameter_key = self.window.current_parameter_key()
+        self.window.prefetch_enabled = True
+        self.window.adaptive_prefetch_count = 0
+        self.window.previous_prefetch_count = 0
+        with patch("mangacrisp_app.viewer.run_realcugan", side_effect=fake_realcugan):
+            self.window._process_pages_worker(
+                settings,
+                self.window.processing_generation,
+                self.window.current_parameter_key(),
+                True,
+            )
+
+        self.assertEqual(processed_indexes, [0, 1])
+
     def test_pick_next_correction_index_follows_priority_and_targets(self) -> None:
         self.assertEqual(pick_next_correction_index([3, 1, 2], {1, 2, 3}), 3)
         self.assertEqual(pick_next_correction_index([3, 1, 2], {1, 2}), 1)
