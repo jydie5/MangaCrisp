@@ -2,6 +2,24 @@
 
 [日本語](linux-handover.ja.md)
 
+## Linux preview b0.3 validation checkpoint (2026-10-15)
+
+The candidate uses the Ubuntu 24.04 CI package from main `6d9600f`,
+[run 38709826090](https://github.com/jydie5/MangaCrisp/actions/runs/38709826090).
+Its archive SHA-256 is `f95b123d2f252e4083409afeedaf890a750a837e25693eea9a5644503acb3408`.
+Linux source checks pass with **187 tests, 8 skips and 5 subtests passed**.
+Clean Ubuntu 24.04 and 26.04 pass installation, packaged smoke, demo reading,
+bundled RAR support, CPU Vulkan enhancement and uninstallation.
+The fixed engine also passes 2× enhancement on a GTX 1060 6GB.
+
+The same package was checked on Ubuntu 26.04.1 / GNOME 50.1 / Wayland / Qt 6.11.1
+with an isolated demo-only library. The user accepted the candidate on 2026-10-15
+("確認しました。mainにまーじ"). This is general desktop acceptance; individual
+checklist sign-offs were not reported. AMD/Intel real GPUs,
+a physical X11 session, and fractional scaling are not validated by this run.
+See the [validation record](../testing/linux-ux-20261015-validation.ja.md) and
+[b0.3 release notes](../releases/linux-preview-0.7.1b0.3.md).
+
 ## Incoming checkpoint: Windows UX acceptance (2026-10-15)
 
 The user accepted the Windows candidate `0.7.1b0+win.ux.20261015.2`

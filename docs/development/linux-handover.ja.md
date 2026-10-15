@@ -2,6 +2,22 @@
 
 [English](linux-handover.md)
 
+## Linux preview b0.3の検証（2026-10-15）
+
+main `6d9600f`のUbuntu 24.04 CI配布物
+（[run 38709826090](https://github.com/jydie5/MangaCrisp/actions/runs/38709826090)）を使用。
+アーカイブのSHA-256は`f95b123d2f252e4083409afeedaf890a750a837e25693eea9a5644503acb3408`。
+Linuxテストは**187成功、8スキップ、5サブテスト成功**。
+クリーンなUbuntu 24.04 / 26.04でインストール、配布版スモーク、デモ表示、同梱RAR対応、
+CPU Vulkan補正、アンインストールがすべて合格。GTX 1060 6GBで固定エンジンの2倍補正も合格。
+
+同じ配布物をUbuntu 26.04.1 / GNOME 50.1 / Wayland / Qt 6.11.1で起動し、
+専用のデモ本棚で確認。2026-10-15に利用者から「確認しました。mainにまーじ」と
+候補版の全体合格とマージ指示を受領した。詳細項目それぞれの個別報告ではない。
+AMD / Intel実GPU、実デスクトップのX11、小数倍率は今回未確認。
+[検証記録](../testing/linux-ux-20261015-validation.ja.md)と
+[b0.3リリースノート](../releases/linux-preview-0.7.1b0.3.md)を参照。
+
 ## Windows UX確認後の引継ぎ（2026-10-15）
 
 Windows候補版`0.7.1b0+win.ux.20261015.2`について、利用者から「問題なさそうです」と
