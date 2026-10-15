@@ -37,6 +37,8 @@ The local Linux source suite passed 187 tests, with 8 skips and 5 subtests passe
 The fixed Real-CUGAN engine passed a 2× enhancement check on an NVIDIA GTX 1060 6GB.
 Clean Ubuntu 24.04 and 26.04 containers passed installation, packaged startup,
 demo reading, bundled RAR support, CPU Vulkan enhancement, and uninstallation.
+The user accepted the candidate on Ubuntu 26.04.1 / GNOME 50.1 / Wayland on
+2026-10-15. This is general desktop acceptance, not individual checklist sign-offs.
 Package and desktop validation results are recorded in the
 [Linux validation record](../testing/linux-ux-20261015-validation.ja.md).
 
@@ -87,7 +89,9 @@ Ubuntu 24.04のCIでmain `6d9600f`からビルド。Linuxの共通テストは18
 5サブテスト成功です。NVIDIA GTX 1060 6GBで固定エンジンの2倍補正も確認しました。
 クリーンなUbuntu 24.04 / 26.04でインストール、配布版起動、デモ表示、同梱RAR対応、
 CPU Vulkan補正、アンインストールをすべて確認しました。
-配布物と実機確認の結果は[検証記録](../testing/linux-ux-20261015-validation.ja.md)にまとめます。
+Ubuntu 26.04.1 / GNOME 50.1 / Waylandの候補版について、2026-10-15に利用者の全体合格を受領しました。
+細目それぞれの個別合格を意味するものではありません。
+配布物と実機確認の結果は[検証記録](../testing/linux-ux-20261015-validation.ja.md)に記録しています。
 AMD / Intel実GPU、実デスクトップのX11、他ディストリビューション、aarch64、
 他のWaylandコンポジタは未確認です。Xvfbでのキャプチャ・キー入力テストは実機合格の代用にはしません。
 未署名のpreviewとして扱い、正式版の合格とはしません。

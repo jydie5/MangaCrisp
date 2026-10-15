@@ -12,9 +12,10 @@ Clean Ubuntu 24.04 and 26.04 pass installation, packaged smoke, demo reading,
 bundled RAR support, CPU Vulkan enhancement and uninstallation.
 The fixed engine also passes 2× enhancement on a GTX 1060 6GB.
 
-The same package is running on Ubuntu 26.04.1 / GNOME 50.1 / Wayland / Qt 6.11.1
-with an isolated demo-only library. Desktop human acceptance is pending;
-the release is a draft until the result is recorded. AMD/Intel real GPUs,
+The same package was checked on Ubuntu 26.04.1 / GNOME 50.1 / Wayland / Qt 6.11.1
+with an isolated demo-only library. The user accepted the candidate on 2026-10-15
+("確認しました。mainにまーじ"). This is general desktop acceptance; individual
+checklist sign-offs were not reported. AMD/Intel real GPUs,
 a physical X11 session, and fractional scaling are not validated by this run.
 See the [validation record](../testing/linux-ux-20261015-validation.ja.md) and
 [b0.3 release notes](../releases/linux-preview-0.7.1b0.3.md).
