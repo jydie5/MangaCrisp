@@ -272,6 +272,27 @@ and (when using multi-volume RARs) volume-specific page counts. This checkpoint
 does not publish or replace a release asset. Intel/AMD GPU and separate
 clean-account evidence remain the stable-release gates.
 
+## Reader/bookshelf follow-up: PR #47 and #48 (2026-10-15)
+
+Updated main with `git pull --ff-only origin main` to `b892536`, then created
+`windows/corrected-flash-sync`. The local integration candidate also retains
+the shared `core/managed-removal-errors` fix (PR #49), published separately
+before the dependent Windows acceptance-document PR.
+
+The local build identifier is `0.7.1b0+win.ux.20261015.2`, distinct from the
+earlier UX candidate and public Windows b0.4. The full Windows suite passes
+with 186 tests, 9 skips and 5 passing subtests. Distribution audit and
+extracted-ZIP startup without development-tool paths pass.
+
+Eight-item coverage and remaining manual checks are recorded in
+`docs/testing/windows-ux-pr47-validation.ja.md`; the next preview's bilingual
+draft is `docs/releases/windows-ux-20261015.2-candidate.md`. The user accepted
+the local Windows candidate on 2026-10-15 ("問題なさそうです"); individual checklist
+sign-offs were not reported. Intel/AMD and clean-account gates remain pending.
+Source and documents are updated on GitHub, not the existing release ZIPs.
+Linux Wayland/X11 is not verified from this Windows PC, and no Linux adapter
+changes were made. Continue with [the Linux handover](linux-handover.md).
+
 ## Technology decision
 
 Continue with PySide6 and the existing Python code for the first Windows
