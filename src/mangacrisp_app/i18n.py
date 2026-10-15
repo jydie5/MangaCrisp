@@ -239,6 +239,8 @@ ENGLISH_TRANSLATIONS = {
     "状態: {state}": "Status: {state}",
     "先読み: {state} / 縦{threshold}px以上は原画": "Prefetch: {state} / original at {threshold}px height or above",
     "本棚へ戻る": "Back to Bookshelf",
+    "本棚へ": "Bookshelf",
+    "読書位置を保存して本棚へ戻ります": "Save the reading position and return to the bookshelf",
     "読書画面を閉じて本棚に戻ります。": "Close the reader and return to the bookshelf.",
     "画質モード": "Quality Mode",
     "選択中: {name}": "Selected: {name}",

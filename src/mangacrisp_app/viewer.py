@@ -603,7 +603,29 @@ class SpreadWindow(QMainWindow):
             " border-radius: 5px;"
             "}"
         )
-        reading_info_layout.addWidget(self.reading_info_label)
+        self.reading_info_bookshelf_button = QPushButton(tr("本棚へ"), self.reading_info_panel)
+        self.reading_info_bookshelf_button.setToolTip(tr("読書位置を保存して本棚へ戻ります"))
+        self.reading_info_bookshelf_button.setCursor(Qt.PointingHandCursor)
+        self.reading_info_bookshelf_button.setFocusPolicy(Qt.NoFocus)
+        self.reading_info_bookshelf_button.setStyleSheet(
+            "QPushButton {"
+            " background: rgba(255, 255, 255, 28);"
+            " border: 1px solid rgba(255, 255, 255, 70);"
+            " border-radius: 6px;"
+            " color: #ffffff;"
+            " font-size: 14px;"
+            " padding: 6px 14px;"
+            "}"
+            "QPushButton:hover { background: rgba(255, 255, 255, 60); }"
+            "QPushButton:pressed { background: rgba(255, 255, 255, 90); }"
+        )
+        self.reading_info_bookshelf_button.clicked.connect(self.return_to_bookshelf)
+        reading_info_header = QHBoxLayout()
+        reading_info_header.setContentsMargins(0, 0, 0, 0)
+        reading_info_header.setSpacing(10)
+        reading_info_header.addWidget(self.reading_info_label, 1)
+        reading_info_header.addWidget(self.reading_info_bookshelf_button, 0, Qt.AlignTop)
+        reading_info_layout.addLayout(reading_info_header)
         reading_info_layout.addWidget(self.reading_progress)
         self.reading_info_panel.setStyleSheet(
             "background: rgba(12, 12, 12, 150);"
@@ -1834,6 +1856,15 @@ class SpreadWindow(QMainWindow):
         if self.index + 1 >= len(self.pages):
             return [self.index]
         return [self.index, self.index + 1]
+
+    def return_to_bookshelf(self) -> None:
+        """Save the reading position and close the reader so the bookshelf shows again."""
+        if self.is_closing:
+            return
+        if self.is_fullscreen:
+            self.toggle_fullscreen()
+        self.flush_page_changed()
+        self.close()
 
     def toggle_reading_info(self) -> None:
         self.reading_info_visible = not self.reading_info_visible

@@ -25,7 +25,7 @@ from mangacrisp_app.viewer import (
 )
 
 
-class ViewerNavigationTests(unittest.TestCase):
+class ViewerWindowTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.application = QApplication.instance() or QApplication([])
@@ -60,6 +60,8 @@ class ViewerNavigationTests(unittest.TestCase):
         self.application.processEvents()
         self.temporary_directory.cleanup()
 
+
+class ViewerNavigationTests(ViewerWindowTestCase):
     def test_back_and_forth_does_not_cancel_active_prefetch(self) -> None:
         self.window.prefetch_running = True
         generation = self.window.processing_generation
@@ -488,3 +490,37 @@ class ViewerNavigationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ReadingInfoBookshelfButtonTests(ViewerWindowTestCase):
+    def test_overlay_has_bookshelf_button_that_is_not_a_page_turn(self) -> None:
+        self.window.toggle_reading_info()
+        button = self.window.reading_info_bookshelf_button
+        self.assertTrue(self.window.reading_info_panel.isVisibleTo(self.window))
+        self.assertIs(button.parent(), self.window.reading_info_panel)
+        self.assertNotIn(button, {self.window.left, self.window.right})
+
+    def test_bookshelf_button_saves_position_and_closes_reader(self) -> None:
+        closed: list[SpreadWindow] = []
+        saved: list[int] = []
+        self.window.close_callback = closed.append
+        self.window.page_changed_callback = saved.append
+        self.window.move_by(2)
+        self.window.notify_page_changed()
+
+        self.window.reading_info_bookshelf_button.click()
+        self.application.processEvents()
+
+        self.assertEqual(saved[-1], self.window.index)
+        self.assertEqual(closed, [self.window])
+
+    def test_bookshelf_button_leaves_fullscreen_before_closing(self) -> None:
+        self.window.close_callback = lambda _window: None
+        self.window.toggle_fullscreen()
+        self.assertTrue(self.window.is_fullscreen)
+
+        self.window.return_to_bookshelf()
+        self.application.processEvents()
+
+        self.assertFalse(self.window.is_fullscreen)
+        self.assertTrue(self.window.is_closing)
