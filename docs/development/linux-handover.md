@@ -4,7 +4,8 @@
 
 ## Linux preview b0.3 validation checkpoint (2026-10-15)
 
-The candidate uses the Ubuntu 24.04 CI package from main `6d9600f`,
+[Linux preview b0.3](https://github.com/jydie5/MangaCrisp/releases/tag/linux-preview-0.7.1b0.3)
+is published with its archive and `SHA256SUMS.txt`. It uses the Ubuntu 24.04 CI package from main `6d9600f`,
 [run 38709826090](https://github.com/jydie5/MangaCrisp/actions/runs/38709826090).
 Its archive SHA-256 is `f95b123d2f252e4083409afeedaf890a750a837e25693eea9a5644503acb3408`.
 Linux source checks pass with **187 tests, 8 skips and 5 subtests passed**.

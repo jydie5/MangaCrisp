@@ -78,7 +78,7 @@ available if enhancement is unavailable. See
 
 ### Linux (Ubuntu) preview
 
-**[Download MangaCrisp for Linux x86_64 (Preview)](https://github.com/jydie5/MangaCrisp/releases/download/linux-preview-0.7.1b0.2/MangaCrisp-0.7.1b0-linux-x86_64.tar.gz)**
+**[Download MangaCrisp for Linux x86_64 (Preview 0.7.1b0.3)](https://github.com/jydie5/MangaCrisp/releases/download/linux-preview-0.7.1b0.3/MangaCrisp-0.7.1b0-linux-x86_64.tar.gz)**
 
 Ubuntu 24.04 or newer on x86_64 is supported as a one-folder `tar.gz` build
 with a per-user installer (no root needed), or from source. It bundles the official Real-CUGAN
@@ -87,9 +87,11 @@ X11. See [INSTALL.linux.md](INSTALL.linux.md) for required packages,
 installation, and capture permissions. Linux is new: if it works on your GPU,
 please report it, and consider [supporting AMD/Intel test hardware](https://buymeacoffee.com/jydie5).
 
-> The Linux preview above also predates the macOS-first UX maintenance in
-> `main`; Linux native checks remain. See the
-> [Linux handover](docs/development/linux-handover.md).
+Preview 0.7.1b0.3 includes the reader/bookshelf UX improvements and fixes for
+corrected-display flashing and managed-copy removal errors. It passed clean
+Ubuntu 24.04/26.04 validation and a GNOME Wayland human check. AMD/Intel GPUs,
+a physical X11 session and fractional scaling remain unverified. See the
+[release notes](docs/releases/linux-preview-0.7.1b0.3.md).
 
 ## Read your first book
 
@@ -104,11 +106,11 @@ extracted reading copy in `~/MangaCrisp Library`. For existing RAIV for mac
 users, the previous default `~/RAIV Library` is renamed to this location on
 first launch. A custom library location selected by the user is left unchanged.
 
-## Unreleased changes on `main` (macOS-first, after 0.7.1b0.2)
+## Reader and bookshelf UX update (Linux preview 0.7.1b0.3)
 
-The UX changes were verified on macOS and accepted in a local Windows
-candidate. The source also includes the shared removal-error fix below.
-None is yet in the downloads above; Linux native verification remains.
+The Linux preview above includes the following changes. They were also
+verified on macOS and accepted in a local Windows candidate; the macOS and
+Windows downloads above still predate this update.
 
 **Features**
 
