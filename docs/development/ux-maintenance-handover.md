@@ -72,6 +72,37 @@ Use the portable build from `scripts/build_windows_app.py` and
 Capture (`platform/capture_windows.py`), `Alt+C` / `Alt+U` and the taskbar
 controller behavior are unaffected.
 
+## Windows local candidate checkpoint (2026-10-15)
+
+Windows caught up from `5e32e42` on `origin/main`. The candidate build identifier
+is `0.7.1b0+win.ux.20261015`; the shared product version is still `0.7.1b0`.
+The published Windows b0.4 download and release assets have not been changed.
+
+- The Windows source suite passes: **183 passed, 9 skipped, 5 subtests passed**.
+- Packaged GUI checks with an isolated Pepper&Carrot-only library cover color
+  original/enhanced display, idle fullscreen cursor hiding, the overlay
+  Bookshelf button, Shift range selection, right-click retaining two selected
+  books, and the single removal dialog followed by cancellation.
+- A real Windows open-file lock exposed an existing importer problem:
+  `delete_managed_storage()` suppressed removal errors, allowing the database
+  entry to disappear although managed files remained. The local
+  `core/managed-removal-errors` fix propagates storage errors before deleting
+  the database entry and tolerates already-missing storage. Its Windows
+  regression verifies that the failed book remains registered, another book
+  is removed successfully, and both source ZIPs remain unchanged.
+- Failed recursive deletion can leave a partially removed managed copy. The
+  source archive remains available for retry/re-import; deletion is not atomic.
+
+Human acceptance is **pending**, not inferred from automated GUI checks. Use
+[the Windows checklist](../testing/reader-bookshelf-human-check.windows.ja.md)
+for Ctrl+click, app-switch cursor recovery, real deletion confirmation, and
+longer reading/prefetch feel. No Windows/Linux source implementation of the
+shared UX was duplicated, and capture adapters/hotkeys are unchanged.
+
+The managed-removal fix is a shared `core/` change awaiting review. Other
+platforms should take it through that branch/PR rather than copying a
+Windows-specific workaround into their packaging.
+
 ## What Linux must check
 
 Use `scripts/build_linux_app.py` on Ubuntu 24.04 or newer.
