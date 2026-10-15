@@ -269,6 +269,24 @@ def output_cache_source_key(source: Path) -> str:
     return sha1(identity.encode("utf-8")).hexdigest()[:16]
 
 
+def remove_enhancement_cache_for_sources(sources: Sequence[Path], cache_root: Path | None = None) -> int:
+    """Delete the per-page AI correction cache folders that belong to the given source images."""
+    interactive_root = (cache_root or DEFAULT_UPSCALE_DIR) / "interactive"
+    if not interactive_root.is_dir():
+        return 0
+    keys = {output_cache_source_key(source) for source in sources}
+    removed = 0
+    for parameter_dir in interactive_root.iterdir():
+        if not parameter_dir.is_dir():
+            continue
+        for key in keys:
+            target = parameter_dir / key
+            if target.is_dir():
+                shutil.rmtree(target, ignore_errors=True)
+                removed += 1
+    return removed
+
+
 def display_cache_path_for(display_path: Path) -> Path | None:
     try:
         stat = display_path.stat()
