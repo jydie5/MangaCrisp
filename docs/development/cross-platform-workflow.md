@@ -23,7 +23,8 @@ Platform handover checkpoints are maintained in:
 
 - `docs/development/macos-handover.md`
 - `docs/development/windows-handover.md`
-- `docs/development/linux-port-plan.ja.md` (Linux plan until a handover exists)
+- `docs/development/linux-handover.md` ([日本語](linux-handover.ja.md))
+- `docs/development/linux-port-plan.ja.md` (Linux port history and plan)
 - `docs/development/ux-maintenance-handover.md` (macOS-first reader/bookshelf UX
   changes awaiting Windows and Linux verification)
 

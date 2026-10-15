@@ -756,6 +756,7 @@ class LibraryImportService:
         return managed_book_dir_for_book(book, self.paths.library_dir)
 
     def delete_managed_storage(self, book_id: str) -> None:
+        storage_dirs = [self.book_dir_for_id(book_id)]
         book = self.books.get(book_id)
         if book is not None:
             if book.file_kind == "pdf":
@@ -765,8 +766,15 @@ class LibraryImportService:
                     shutil.rmtree(cache_dir, ignore_errors=True)
             current_dir = managed_book_dir_from_book(book, self.paths.library_dir)
             if current_dir is not None:
-                shutil.rmtree(current_dir, ignore_errors=True)
-        shutil.rmtree(self.book_dir_for_id(book_id), ignore_errors=True)
+                storage_dirs.insert(0, current_dir)
+        for storage_dir in dict.fromkeys(storage_dirs):
+            try:
+                shutil.rmtree(storage_dir)
+            except FileNotFoundError:
+                # Missing storage is already removed. Other failures must reach
+                # the caller before its database entry can be deleted.
+                if storage_dir.exists():
+                    raise
 
     def import_book(self, book: Book) -> ImportResult:
         book_dir = self.book_dir_for_book(book)

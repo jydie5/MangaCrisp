@@ -68,11 +68,12 @@ remain before the stable Windows release. Original-image reading remains
 available if enhancement is unavailable. See
 [INSTALL.windows.md](INSTALL.windows.md) for installation and limitations.
 
-> macOS is currently ahead: the reader and bookshelf UX maintenance (fullscreen
+> The reader and bookshelf UX maintenance (fullscreen
 > cursor auto-hide, overlay Bookshelf button, bookshelf multi-select and batch
-> removal, visible-spread-first correction, prefetch tuning) is in `main` and
-> verified on macOS. The Windows preview above predates it and will pick it up
-> on its next build. See
+> removal, visible-spread-first correction, prefetch tuning) is in `main`.
+> The macOS checks and a local Windows candidate's human check have passed;
+> the Windows download above still predates it. No new ZIP is published by
+> the source/documentation update. See
 > [docs/development/ux-maintenance-handover.md](docs/development/ux-maintenance-handover.md).
 
 ### Linux (Ubuntu) preview
@@ -87,7 +88,8 @@ installation, and capture permissions. Linux is new: if it works on your GPU,
 please report it, and consider [supporting AMD/Intel test hardware](https://buymeacoffee.com/jydie5).
 
 > The Linux preview above also predates the macOS-first UX maintenance in
-> `main`; see the note under the Windows preview.
+> `main`; Linux native checks remain. See the
+> [Linux handover](docs/development/linux-handover.md).
 
 ## Read your first book
 
@@ -104,8 +106,9 @@ first launch. A custom library location selected by the user is left unchanged.
 
 ## Unreleased changes on `main` (macOS-first, after 0.7.1b0.2)
 
-Already merged and verified on macOS; not yet in any download. Windows and
-Linux previews pick these up on their next build.
+The UX changes were verified on macOS and accepted in a local Windows
+candidate. The source also includes the shared removal-error fix below.
+None is yet in the downloads above; Linux native verification remains.
 
 **Features**
 
@@ -124,6 +127,9 @@ Linux previews pick these up on their next build.
   newly opened or jumped-to spread no longer waits behind 12-24 queued pages.
 - A corrected spread no longer flashes to the original image a few seconds
   after a page turn when the background prefetch finishes.
+- Managed-copy deletion failures are reported before removing the book's
+  database entry; successful deletions of other books are retained. Source
+  archives are preserved, though a failed managed copy may be partly removed.
 
 ## New in v0.7.1-beta
 
