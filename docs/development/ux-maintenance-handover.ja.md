@@ -2,8 +2,8 @@
 
 [English](ux-maintenance-handover.md)
 
-macOS側で共通の読書画面と本棚の挙動を先に進めました（PR #44、
-`core/reader-bookshelf-ux`、2026-10-15にmainへ反映）。この文書は、Windows／Linux担当者が
+macOS側で共通の読書画面と本棚の挙動を先に進めました（PR #44 `core/reader-bookshelf-ux`と、
+その後の修正PR #47 `core/fix-corrected-flash`、いずれも2026-10-15にmainへ反映）。この文書は、Windows／Linux担当者が
 共通コードの変更点、macOSでしか確認していない点、次のpreview build前に各OSで確認すべき点を
 把握するためのものです。Windows／Linuxの作業は必ず最新の`origin/main`から始めてください。
 
@@ -19,11 +19,12 @@ scriptは触っていません。
 | 本棚の複数選択と右クリック | `bookshelf.py`、`i18n.py` | `QListWidget.ExtendedSelection`（Windows／LinuxはCtrl／Shift、macOSはCommand／ShiftをQtが供給）。右クリックメニューは「読む」「本棚から削除」。未選択の本を右クリックするとその本だけ選択、選択内なら選択を維持。 |
 | 共通の削除フロー | `bookshelf.py`、`viewer.py` | Delete／Backspace、下部ボタン、メニューはすべて`BookshelfWindow.delete_books()`を通る。確認は1回で冊数と先頭3件の書名を表示。本ごとに管理コピー、読書位置、しおり、PDF描画キャッシュ、ページ単位のAI補正キャッシュ（`remove_enhancement_cache_for_sources`）を削除。元アーカイブは残す。失敗はまとめて通知し、成功分は反映。 |
 | 補正の優先度キュー | `viewer.py` | Real-CUGANワーカーは`correction_queue`から`correction_priority`順（表示中 → 前方 → 後方）に取り出す。ワーカー実行中のページ移動で`refresh_correction_queue()`が優先順を更新し、新しく表示されたページを追加。処理中のページ（`correction_in_flight`）は再登録しない。 |
+| 補正済み表示の安定化（PR #47） | `viewer.py` | `load_cached_outputs`は補正ファイルの`touch`を1セッションに1回だけ行う（`touched_output_paths`）。表示キャッシュのキーはファイルのmtimeを含むため、描画ごとにtouchすると再デコードが起き、先読み完了時に「補正済み → 原画 → 補正済み」のフラッシュが見えていた。`apply_ready_spread_pixmaps`は、待機中のキーが同じファイル・同じサイズなら表示中のpixmapを維持する（`display_keys_show_same_image`）。 |
 | 先読み調整 | `viewer.py` | `DEFAULT_PREVIOUS_PREFETCH_COUNT` 4 → 6。前方は通常12〜24、ページ送り間隔の中央値が`SLOW_READER_INTERVAL_SECONDS`（8秒）以上なら`MIN_FORWARD_PREFETCH_COUNT`（6）まで減少。直近`CORRECTION_MISS_WINDOW`（10）回中`CORRECTION_MISS_THRESHOLD`（2）回以上表示ページが未補正だったら先行量を`CORRECTION_MISS_LEAD_FACTOR`（1.5）倍。 |
 
 新規・変更テスト: `test/test_cursor_autohide.py`、`test/test_bookshelf_delete.py`、
 `test/test_prefetch_policy.py`、`test/test_viewer_navigation.py`への追加。
-共通suiteはmacOSで`180 passed, 8 skipped`です。
+共通suiteはmacOSで`183 passed, 8 skipped`です。
 
 ## macOSでのみ確認した項目
 
@@ -37,6 +38,7 @@ Apple Silicon Macで`scripts/build_macos_app.py --bundle-engine`により作っ�
   確認1回、元ZIPが残ること
 - ページ送り後、エンジン1回分程度で補正版が出ること（`O`を何度か押した後も同様）
 - じっくり読む間に前方先読みが6まで下がり、速く送ると12以上に戻ること
+- ページ送りの数秒後に先読みが完了しても「補正済み → 原画 → 補正済み」のフラッシュが出ないこと（PR #47）
 
 ## Windowsで確認すること
 
@@ -57,7 +59,9 @@ Windows上で`scripts/build_windows_app.py`と`scripts/package_windows_portable.
    `upscale/interactive/<key>/`にその本のページフォルダが残っていないこと。
 6. **先読み**: 本を開き約1秒間隔でページを送り、10秒止まってから再度送る。設定パネルの
    状態欄で先読み枚数が6へ下がり、再び増えること。
-7. 共通suiteとWindows固有テストを実行: `uv run pytest -q`。
+7. **フラッシュなし**: 補正ONで1ページ送り、10秒そのまま待つ。状態欄が「先読み補正完了」に
+   変わる瞬間に補正済み表示が原画へ瞬き戻らないこと。
+8. 共通suiteとWindows固有テストを実行: `uv run pytest -q`。
 
 キャプチャ（`platform/capture_windows.py`）、`Alt+C`／`Alt+U`、タスクバーのcontroller挙動は
 影響を受けません。
@@ -76,7 +80,7 @@ Ubuntu 24.04以降で`scripts/build_linux_app.py`を使います。
    出ること）。
 5. **削除とキャッシュ整理**: Windowsと同様に`~/.local/share`／app-support配下の
    `upscale/interactive/<key>/`を確認。
-6. **先読み**: Windowsと同様。
+6. **先読み**と**フラッシュなし**: Windowsと同様。
 7. Linuxキャプチャテストを含めて`uv run pytest -q`。
 
 キャプチャ（`platform/capture_linux.py`）とGNOME portalの流れは影響を受けません。
@@ -85,7 +89,7 @@ Ubuntu 24.04以降で`scripts/build_linux_app.py`を使います。
 
 | ファイル | 変更 | 競合時の注意 |
 |---|---|---|
-| `src/mangacrisp_app/viewer.py` | カーソルタイマーとイベント追跡、オーバーレイボタン、`return_to_bookshelf`、補正キュー、先読み定数と判定関数、`remove_enhancement_cache_for_sources` | `eventFilter`、`toggle_fullscreen`、`closeEvent`、`request_prefetch`、`start_prefetch`、`_process_pages_worker`、`on_upscale_done`に触る前に`main`へrebaseしてください。ワーカーの引数は`(settings, generation, parameter_key, is_prefetch)`に変わりました。 |
+| `src/mangacrisp_app/viewer.py` | カーソルタイマーとイベント追跡、オーバーレイボタン、`return_to_bookshelf`、補正キュー、先読み定数と判定関数、`remove_enhancement_cache_for_sources`、`load_cached_outputs`の`touched_output_paths`、`apply_ready_spread_pixmaps`／`show_display_pixmap`／`clear_display_pixmap` | `eventFilter`、`toggle_fullscreen`、`closeEvent`、`request_prefetch`、`start_prefetch`、`_process_pages_worker`、`on_upscale_done`、`load_cached_outputs`、`apply_ready_spread_pixmaps`に触る前に`main`へrebaseしてください。ワーカーの引数は`(settings, generation, parameter_key, is_prefetch)`に変わりました。 |
 | `src/mangacrisp_app/bookshelf.py` | 選択モード、コンテキストメニュー、`delete_books`、`selected_book_ids`、`remove_enhancement_cache`、クラス上部のヘルパー関数 | `delete_selected_book`は`delete_books`へ委譲します。新しい削除経路もここを通してください。 |
 | `src/mangacrisp_app/i18n.py` | オーバーレイボタン、削除メッセージ、本棚ヘルプの英語文言 | 文言は末尾に追加し、辞書の並び替えはしないでください。 |
 | `test/test_viewer_navigation.py` | `ViewerWindowTestCase`基底クラスとテストクラスに分割 | 読書画面のテストは`ViewerWindowTestCase`を継承してください。 |
@@ -99,9 +103,10 @@ Windows／Linux previewを次に`main`から再ビルドしたら、リリース
 - 本棚の複数選択、右クリックメニュー、まとめて削除
 - 表示中見開きを優先する補正キューと後方6ページ
 - じっくり読む時の先読み縮小
+- 修正: ページ送りの数秒後に補正済み表示が原画へ瞬き戻る問題
 
 READMEでは共通機能として既に記載済みなので、各OSのダウンロード段落に
-「PR #44以降の`main`からビルド」の一文を足すだけで済みます。
+「PR #47以降の`main`からビルド」の一文を足すだけで済みます。
 
 ## 他OSへの確認事項
 
