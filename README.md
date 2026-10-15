@@ -102,6 +102,27 @@ extracted reading copy in `~/MangaCrisp Library`. For existing RAIV for mac
 users, the previous default `~/RAIV Library` is renamed to this location on
 first launch. A custom library location selected by the user is left unchanged.
 
+## Unreleased changes on `main` (macOS-first, after 0.7.1b0.2)
+
+Already merged and verified on macOS; not yet in any download. Windows and
+Linux previews pick these up on their next build.
+
+**Features**
+
+- Fullscreen hides the mouse cursor after two seconds of no input.
+- A **Bookshelf** button on the reading-information overlay returns to the
+  bookshelf by mouse, including from full screen.
+- The bookshelf supports multi-select (Command/Ctrl and Shift), a right-click
+  menu, and removing several books with one confirmation.
+- Prefetch follows the reader's pace: six pages behind, and the forward window
+  shrinks to six pages while you linger on a page and grows back to 12-24 when
+  you read faster.
+
+**Fixes**
+
+- The spread you are looking at is corrected before the lookahead pages, so a
+  newly opened or jumped-to spread no longer waits behind 12-24 queued pages.
+
 ## New in v0.7.1-beta
 
 - **Sequential screen capture for macOS, Windows, and Linux:** manually save an authorized screen
