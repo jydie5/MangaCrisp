@@ -108,7 +108,7 @@ first capture. macOS users must also follow the
 
 ## Features
 
-- Cover-based bookshelf with multi-file drag and drop
+- Cover-based bookshelf with multi-file drag and drop, multi-select, and right-click read/remove
 - Sequential fixed-region screen capture to color PNG and CBZ/ZIP on macOS, Windows, and Linux
 - PDF, ZIP/CBZ, RAR/CBR, 7z/CB7, image folders, and individual images
 - On-demand PDF rendering that preserves color without converting the whole book during import
@@ -146,7 +146,7 @@ Development Preview bundles the pinned, audited Zig-built Windows engine and
 the same models. Both need no additional engine setup.
 
 MangaCrisp automatically processes the visible spread and nearby pages in the
-background. The cache revolves as you read: normally 12-24 pages ahead and four
+background. The cache revolves as you read: normally 6-24 pages ahead and six
 pages behind are retained. Original pages remain available immediately while
 enhancement catches up.
 
@@ -195,9 +195,12 @@ windowed and full-screen reading.
 | `Shift` + side click | Move one page forward or backward |
 | Click the center 20% | Show or hide reading information |
 | Right-click | Previous spread |
+| **Bookshelf** button on the reading information overlay | Save the position and return to the bookshelf |
 
 For right-bound manga, the left side advances and the right side goes back.
 Left-bound comics use the opposite mapping. Dragging does not turn a page.
+In full screen the mouse cursor disappears after two seconds without input
+and comes back as soon as you move the mouse or press a key.
 
 When one captured image already contains a complete two-page spread, choose
 **Single Page (1 image)** in Reading Settings. MangaCrisp centers that image,

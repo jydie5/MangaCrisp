@@ -6,7 +6,7 @@ import sys
 import threading
 from pathlib import Path
 
-from mangacrisp_app.archive_utils import natural_sort_key
+from mangacrisp_app.archive_utils import is_image, natural_sort_key
 from mangacrisp_app.branding import APP_NAME
 from mangacrisp_app.capture_window import CaptureWindow
 from mangacrisp_app.diagnostics import diagnostics_text
@@ -22,6 +22,7 @@ from mangacrisp_app.library import (
     LibraryService,
     ReadingState,
     is_library_dir_confirmed,
+    managed_book_dir_from_book,
     save_library_settings,
     utc_now_iso,
 )
@@ -34,11 +35,20 @@ from mangacrisp_app.viewer import (
     SpreadWindow,
     collect_processed_pages,
     default_spread_order,
+    remove_enhancement_cache_for_sources,
     show_help_dialog,
 )
 
 if PYSIDE_IMPORT_ERROR is None:
-    from PySide6.QtCore import QEvent, QObject, QSize, Qt, QTimer, Signal
+    from PySide6.QtCore import (
+        QEvent,
+        QItemSelectionModel,
+        QObject,
+        QSize,
+        Qt,
+        QTimer,
+        Signal,
+    )
     from PySide6.QtGui import QAction, QIcon
     from PySide6.QtWidgets import (
         QApplication,
@@ -58,7 +68,7 @@ if PYSIDE_IMPORT_ERROR is None:
         QWidget,
     )
 else:
-    QEvent = QTimer = QObject = QSize = Qt = Signal = QAction = QIcon = QApplication = QFileDialog = QComboBox = QHBoxLayout = QLabel = QListWidget = QListWidgetItem = QMessageBox = QMenu = QPushButton = QStackedWidget = QToolButton = QVBoxLayout = QWidget = None
+    QEvent = QItemSelectionModel = QTimer = QObject = QSize = Qt = Signal = QAction = QIcon = QApplication = QFileDialog = QComboBox = QHBoxLayout = QLabel = QListWidget = QListWidgetItem = QMessageBox = QMenu = QPushButton = QStackedWidget = QToolButton = QVBoxLayout = QWidget = None
     QMainWindow = object
 
 
@@ -199,6 +209,8 @@ def bookshelf_shortcuts_text() -> str:
             "ファイル/フォルダをドロップ: 本棚へ登録",
             "ダブルクリック: 読む",
             "読む: 選択中の本を開く",
+            "Command/Ctrl+クリック, Shift+クリック: 複数選択",
+            "右クリック: 読む / 本棚から削除",
             "Delete: 選択中の本を本棚から削除。元ZIP/RARは残す",
             "本棚から削除: 確認後、MangaCrisp管理フォルダを削除。元ZIP/RARは残す",
             "保存先を開く: ファイル管理画面でMangaCrisp Libraryを表示",
@@ -218,6 +230,51 @@ def dropped_local_paths(mime_data) -> list[Path]:
         if local_path:
             paths.append(Path(local_path))
     return paths
+
+
+DELETE_CONFIRMATION_TITLE_PREVIEW = 3
+
+
+def context_menu_target_ids(clicked_id: str | None, selected_ids: list[str]) -> list[str]:
+    """Books a right-click acts on: the selection when the clicked book is in it, otherwise just that book."""
+    if clicked_id is None:
+        return []
+    if clicked_id in selected_ids:
+        return list(selected_ids)
+    return [clicked_id]
+
+
+def delete_confirmation_text(titles: list[str], preview_limit: int = DELETE_CONFIRMATION_TITLE_PREVIEW) -> tuple[str, str]:
+    """Question and detail text for one shared delete confirmation, whatever the book count."""
+    count = len(titles)
+    if count == 1:
+        question = tr("この本を本棚から削除しますか？")
+    else:
+        question = tr("{count}冊を本棚から削除しますか？", count=count)
+    shown = titles[:preview_limit]
+    lines = list(shown)
+    if count > len(shown):
+        lines.append(tr("ほか{count}冊", count=count - len(shown)))
+    detail = "\n".join(lines) + "\n\n" + tr(
+        "MangaCrispが作成した展開済みフォルダ、読書位置、しおりを削除します。\n元のZIP/RAR/7zファイルは削除しません。"
+    )
+    return question, detail
+
+
+def delete_outcome_message(deleted_titles: list[str], failed_titles: list[str]) -> str:
+    if failed_titles and not deleted_titles:
+        if len(failed_titles) == 1:
+            return tr("削除できませんでした: {title}", title=failed_titles[0])
+        return tr("削除できませんでした: {count}冊 ({titles})", count=len(failed_titles), titles=", ".join(failed_titles))
+    if failed_titles:
+        return tr(
+            "{deleted}冊を削除しました。削除できませんでした: {titles}",
+            deleted=len(deleted_titles),
+            titles=", ".join(failed_titles),
+        )
+    if len(deleted_titles) == 1:
+        return tr("本棚から削除しました: {title}", title=deleted_titles[0])
+    return tr("{count}冊を本棚から削除しました。", count=len(deleted_titles))
 
 
 class BookshelfWindow(QMainWindow):
@@ -313,6 +370,9 @@ class BookshelfWindow(QMainWindow):
         self.list_widget.setIconSize(QSize(132, 192))
         self.list_widget.setGridSize(QSize(190, 292))
         self.list_widget.setSpacing(16)
+        self.list_widget.setSelectionMode(QListWidget.ExtendedSelection)
+        self.list_widget.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.list_widget.customContextMenuRequested.connect(self.show_book_context_menu)
         self.list_widget.setAcceptDrops(True)
         self.list_widget.viewport().setAcceptDrops(True)
         self.list_widget.installEventFilter(self)
@@ -722,32 +782,76 @@ class BookshelfWindow(QMainWindow):
         book_id = item.data(Qt.UserRole)
         return self.library.books.get(book_id)
 
+    def selected_book_ids(self) -> list[str]:
+        ids: list[str] = []
+        for row in range(self.list_widget.count()):
+            item = self.list_widget.item(row)
+            if item is not None and item.isSelected():
+                ids.append(item.data(Qt.UserRole))
+        return ids
+
+    def show_book_context_menu(self, position) -> None:
+        menu = self.build_book_context_menu(self.list_widget.itemAt(position))
+        if menu is not None:
+            menu.exec(self.list_widget.viewport().mapToGlobal(position))
+
+    def build_book_context_menu(self, item) -> QMenu | None:
+        """Select the clicked book unless it is already part of the selection, then build its menu."""
+        if item is None:
+            return None
+        clicked_id = item.data(Qt.UserRole)
+        target_ids = context_menu_target_ids(clicked_id, self.selected_book_ids())
+        if clicked_id not in self.selected_book_ids():
+            self.list_widget.clearSelection()
+            item.setSelected(True)
+        self.list_widget.setCurrentItem(item, QItemSelectionModel.NoUpdate)
+        menu = QMenu(self.list_widget)
+        read_action = QAction(tr("読む"), menu)
+        read_action.triggered.connect(lambda: self.open_book(clicked_id))
+        menu.addAction(read_action)
+        delete_label = tr("本棚から削除") if len(target_ids) == 1 else tr("{count}冊を本棚から削除", count=len(target_ids))
+        delete_action = QAction(delete_label, menu)
+        delete_action.triggered.connect(lambda: self.delete_books(target_ids))
+        menu.addAction(delete_action)
+        return menu
+
     def delete_selected_book(self) -> None:
-        book = self.selected_book()
-        if book is None:
+        self.delete_books(self.selected_book_ids())
+
+    def delete_books(self, book_ids: list[str]) -> None:
+        books = [book for book in (self.library.books.get(book_id) for book_id in book_ids) if book is not None]
+        if not books:
             self.status_label.setText(tr("削除する本を選んでください。"))
             return
-        title = book.title
+        question, detail = delete_confirmation_text([book.title for book in books])
         message = QMessageBox(self)
         message.setWindowTitle(tr("本棚から削除"))
         message.setIcon(QMessageBox.Warning)
-        message.setText(tr("この本を本棚から削除しますか？"))
-        message.setInformativeText(
-            f"{title}\n\n"
-            + tr(
-                "MangaCrispが作成した展開済みフォルダ、読書位置、しおりを削除します。\n元のZIP/RAR/7zファイルは削除しません。"
-            )
-        )
+        message.setText(question)
+        message.setInformativeText(detail)
         message.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
         message.setDefaultButton(QMessageBox.No)
         if message.exec() != QMessageBox.Yes:
             self.status_label.setText(tr("削除をキャンセルしました。"))
             return
-        if self.library.delete_book(book.id):
-            self.reload_books()
-            self.status_label.setText(tr("本棚から削除しました: {title}", title=title))
-        else:
-            self.status_label.setText(tr("削除できませんでした: {title}", title=title))
+        deleted: list[str] = []
+        failed: list[str] = []
+        for book in books:
+            try:
+                self.remove_enhancement_cache(book)
+                removed = self.library.delete_book(book.id)
+            except OSError:
+                removed = False
+            (deleted if removed else failed).append(book.title)
+        self.reload_books()
+        self.status_label.setText(delete_outcome_message(deleted, failed))
+
+    def remove_enhancement_cache(self, book: Book) -> None:
+        book_dir = managed_book_dir_from_book(book, self.library.paths.library_dir)
+        if book_dir is None or not book_dir.is_dir():
+            return
+        sources = [path for path in book_dir.rglob("*") if path.is_file() and is_image(path)]
+        remove_enhancement_cache_for_sources(sources)
 
     def open_selected_book(self) -> None:
         book = self.selected_book()
