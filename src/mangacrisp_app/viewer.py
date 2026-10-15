@@ -6,7 +6,7 @@ import threading
 import time
 from argparse import ArgumentParser, Namespace
 from collections import OrderedDict, deque
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from hashlib import sha1
 from html import escape
 from math import ceil
@@ -368,6 +368,19 @@ def missing_processed_indexes(
     ]
 
 
+def pick_next_correction_index(
+    priority: Sequence[int],
+    queued: Iterable[int],
+    targets: set[int] | None = None,
+) -> int | None:
+    """Choose the next page to correct: the earliest queued page in priority order that is still wanted."""
+    queued_set = set(queued)
+    for index in priority:
+        if index in queued_set and (targets is None or index in targets):
+            return index
+    return None
+
+
 class WorkerSignals(QObject):
     upscale_page_done = Signal(int, object, int, object)
     upscale_done = Signal(int, object, object, int, object, bool)
@@ -489,6 +502,10 @@ class SpreadWindow(QMainWindow):
         self.processing_generation = 0
         self.is_closing = False
         self.prefetch_target_indexes: set[int] = set()
+        self.correction_queue: dict[int, Path] = {}
+        self.correction_priority: list[int] = []
+        self.correction_queue_lock = threading.Lock()
+        self.running_parameter_key: str | None = None
         self.active_output_paths: set[Path] = set()
         self.output_path_cache: dict[tuple[str, int], Path] = {}
         self.current_quality_preset = "自然"
@@ -2101,12 +2118,16 @@ class SpreadWindow(QMainWindow):
         self.apply_button.setEnabled(False)
         generation = self.processing_generation
         parameter_key = self.current_parameter_key()
+        self.running_parameter_key = parameter_key
+        with self.correction_queue_lock:
+            self.correction_queue = dict(output_paths)
+            self.correction_priority = list(indexes)
         self.parameter_status.setText(tr("現在の見開きを補正中..."))
         self.update_quality_state()
         self.update_reading_info()
         threading.Thread(
             target=self._process_pages_worker,
-            args=(indexes, output_paths, settings, generation, parameter_key, False),
+            args=(settings, generation, parameter_key, False),
             daemon=True,
         ).start()
 
@@ -2132,7 +2153,29 @@ class SpreadWindow(QMainWindow):
             )
             return
         self.prefetch_target_indexes = set(self.visible_and_prefetch_indexes())
+        if self.prefetch_running:
+            self.refresh_correction_queue()
         self.prefetch_request_timer.start(PREFETCH_DEBOUNCE_MS)
+
+    def refresh_correction_queue(self) -> None:
+        """Let a running prefetch pick up the current spread first instead of finishing its old list."""
+        if self.running_parameter_key != self.current_parameter_key():
+            return
+        target_indexes = self.visible_and_prefetch_indexes()
+        self.load_cached_outputs(target_indexes)
+        additions: dict[int, Path] = {}
+        for index in target_indexes:
+            if self.should_skip_upscale(index) or self.processed_pages[index] is not None:
+                continue
+            output_path = self.current_output_path(index)
+            if output_path.exists():
+                continue
+            additions[index] = output_path
+        with self.correction_queue_lock:
+            self.correction_priority = list(target_indexes)
+            for index, output_path in additions.items():
+                self.correction_queue.setdefault(index, output_path)
+            self.active_output_paths.update(self.correction_queue.values())
 
     def start_prefetch(self) -> None:
         if self.is_closing:
@@ -2171,6 +2214,9 @@ class SpreadWindow(QMainWindow):
         output_paths = {index: self.current_output_path(index) for index in indexes}
         self.prefetch_running = True
         self.active_output_paths = set(output_paths.values())
+        with self.correction_queue_lock:
+            self.correction_queue = dict(output_paths)
+            self.correction_priority = list(target_indexes)
         skipped_count = len(target_indexes) - len(indexes)
         suffix = tr(" / {count}ページはスキップ", count=skipped_count) if skipped_count else ""
         self.parameter_status.setText(
@@ -2180,16 +2226,24 @@ class SpreadWindow(QMainWindow):
         self.update_reading_info()
         generation = self.processing_generation
         parameter_key = self.current_parameter_key()
+        self.running_parameter_key = parameter_key
         threading.Thread(
             target=self._process_pages_worker,
-            args=(indexes, output_paths, settings, generation, parameter_key, True),
+            args=(settings, generation, parameter_key, True),
             daemon=True,
         ).start()
 
+    def take_next_correction(self, is_prefetch: bool) -> tuple[int, Path] | None:
+        with self.correction_queue_lock:
+            targets = self.prefetch_target_indexes if is_prefetch else None
+            index = pick_next_correction_index(self.correction_priority, self.correction_queue, targets)
+            if index is None:
+                self.correction_queue.clear()
+                return None
+            return index, self.correction_queue.pop(index)
+
     def _process_pages_worker(
         self,
-        indexes: list[int],
-        output_paths: dict[int, Path],
         settings: dict,
         generation: int,
         parameter_key: str,
@@ -2198,15 +2252,15 @@ class SpreadWindow(QMainWindow):
         started = time.perf_counter()
         errors: list[str] = []
         completed_output_paths: dict[int, Path] = {}
-        for index in output_paths:
-            if generation != self.processing_generation or self.is_closing:
+        while generation == self.processing_generation and not self.is_closing:
+            item = self.take_next_correction(is_prefetch)
+            if item is None:
                 break
-            if is_prefetch and index not in self.prefetch_target_indexes:
-                continue
+            index, output_path = item
             try:
                 result = run_realcugan(
                     self.pages[index],
-                    output_paths[index],
+                    output_path,
                     scale=settings["scale"],
                     noise=settings["noise"],
                     tile=settings["tile"],
@@ -2216,10 +2270,10 @@ class SpreadWindow(QMainWindow):
                 if result.returncode != 0 or not result.output_exists:
                     errors.append(f"{self.pages[index].name}: code {result.returncode}")
                 else:
-                    completed_output_paths[index] = output_paths[index]
+                    completed_output_paths[index] = output_path
                     self.signals.upscale_page_done.emit(
                         index,
-                        output_paths[index],
+                        output_path,
                         generation,
                         parameter_key,
                     )
@@ -2280,6 +2334,9 @@ class SpreadWindow(QMainWindow):
                 self.processed_pages[index] = output_path
         self.upscale_running = False
         self.prefetch_running = False
+        self.running_parameter_key = None
+        with self.correction_queue_lock:
+            self.correction_queue.clear()
         self.active_output_paths.clear()
         self.last_disk_cache_prune_signature = None
         self.apply_button.setEnabled(True)

@@ -20,6 +20,7 @@ from PySide6.QtWidgets import QApplication
 import mangacrisp_app.viewer as viewer_module
 from mangacrisp_app.viewer import (
     SpreadWindow,
+    pick_next_correction_index,
     reader_click_action,
     standard_spread_index,
 )
@@ -213,10 +214,10 @@ class ViewerNavigationTests(ViewerWindowTestCase):
             return SimpleNamespace(returncode=0, output_exists=True)
 
         settings = {"scale": 2, "noise": 0, "tile": 0, "model": "models-se", "tta": False}
+        self.window.correction_queue = dict(output_paths)
+        self.window.correction_priority = [0, 1, 2]
         with patch("mangacrisp_app.viewer.run_realcugan", side_effect=fake_realcugan):
             self.window._process_pages_worker(
-                [0, 1, 2],
-                output_paths,
                 settings,
                 self.window.processing_generation,
                 self.window.current_parameter_key(),
@@ -224,6 +225,65 @@ class ViewerNavigationTests(ViewerWindowTestCase):
             )
 
         self.assertEqual(processed_indexes, [2])
+
+    def test_prefetch_worker_serves_current_spread_before_older_lookahead(self) -> None:
+        output_paths = {index: self.root / "outputs" / f"{index:04d}.png" for index in (4, 5, 6, 7)}
+        self.window.prefetch_target_indexes = {4, 5, 6, 7}
+        self.window.correction_queue = dict(output_paths)
+        self.window.correction_priority = [4, 5, 6, 7]
+        processed_indexes: list[int] = []
+
+        def fake_realcugan(source: Path, output: Path, **_settings):
+            index = self.pages.index(source)
+            processed_indexes.append(index)
+            output.parent.mkdir(parents=True, exist_ok=True)
+            Image.open(source).save(output)
+            if index == 4:
+                # The reader jumps back to pages 0-1 while the lookahead is still running.
+                with self.window.correction_queue_lock:
+                    self.window.correction_queue[0] = self.root / "outputs" / "0000.png"
+                    self.window.correction_queue[1] = self.root / "outputs" / "0001.png"
+                    self.window.correction_priority = [0, 1, 2, 3, 4, 5]
+                self.window.prefetch_target_indexes = {0, 1, 2, 3, 4, 5}
+            return SimpleNamespace(returncode=0, output_exists=True)
+
+        settings = {"scale": 2, "noise": 0, "tile": 0, "model": "models-se", "tta": False}
+        with patch("mangacrisp_app.viewer.run_realcugan", side_effect=fake_realcugan):
+            self.window._process_pages_worker(
+                settings,
+                self.window.processing_generation,
+                self.window.current_parameter_key(),
+                True,
+            )
+
+        self.assertEqual(processed_indexes, [4, 0, 1, 5])
+
+    def test_navigation_during_prefetch_queues_the_visible_spread_first(self) -> None:
+        self.window.prefetch_enabled = True
+        self.window.prefetch_count_default = 2
+        self.window.adaptive_prefetch_count = 2
+        with (
+            patch("mangacrisp_app.viewer.realcugan_executable", return_value=self.root / "realcugan"),
+            patch("mangacrisp_app.viewer.threading.Thread"),
+        ):
+            self.window.start_prefetch()
+            self.assertTrue(self.window.prefetch_running)
+            self.assertEqual(self.window.correction_priority[:2], [0, 1])
+
+            self.window.move_by(10)
+            self.window.request_prefetch()
+
+        self.assertEqual(self.window.correction_priority[:2], [10, 11])
+        self.assertIn(10, self.window.correction_queue)
+        self.assertIn(11, self.window.correction_queue)
+        self.assertIn(self.window.correction_queue[10], self.window.active_output_paths)
+
+    def test_pick_next_correction_index_follows_priority_and_targets(self) -> None:
+        self.assertEqual(pick_next_correction_index([3, 1, 2], {1, 2, 3}), 3)
+        self.assertEqual(pick_next_correction_index([3, 1, 2], {1, 2}), 1)
+        self.assertEqual(pick_next_correction_index([3, 1, 2], {1, 2, 3}, {2}), 2)
+        self.assertIsNone(pick_next_correction_index([3, 1], {2}))
+        self.assertIsNone(pick_next_correction_index([], {1}))
 
     def test_prefetch_tracks_active_outputs_before_worker_starts(self) -> None:
         self.window.prefetch_enabled = True
