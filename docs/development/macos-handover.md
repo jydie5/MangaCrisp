@@ -22,6 +22,9 @@ shared files.
   sanitized-environment smoke test.
 - The b0.4 Windows human check accepted the two-key capture controls. Windows
   capture defaults to `Alt+C` / `Alt+U`; macOS remains `Option+C` / `Option+Z`.
+- PR #44 (2026-10-15, `core/reader-bookshelf-ux`) landed the reader/bookshelf
+  UX maintenance from the Mac side, verified on macOS only. The Windows and
+  Linux checklist is in `ux-maintenance-handover.md`.
 
 Pull `main` before macOS work. Do not replace an existing macOS release asset.
 macOS updates on the unchanged product version use `macos-beta-<version>.<n>`

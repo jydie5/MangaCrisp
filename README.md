@@ -68,6 +68,13 @@ remain before the stable Windows release. Original-image reading remains
 available if enhancement is unavailable. See
 [INSTALL.windows.md](INSTALL.windows.md) for installation and limitations.
 
+> macOS is currently ahead: the reader and bookshelf UX maintenance (fullscreen
+> cursor auto-hide, overlay Bookshelf button, bookshelf multi-select and batch
+> removal, visible-spread-first correction, prefetch tuning) is in `main` and
+> verified on macOS. The Windows preview above predates it and will pick it up
+> on its next build. See
+> [docs/development/ux-maintenance-handover.md](docs/development/ux-maintenance-handover.md).
+
 ### Linux (Ubuntu) preview
 
 **[Download MangaCrisp for Linux x86_64 (Preview)](https://github.com/jydie5/MangaCrisp/releases/download/linux-preview-0.7.1b0.2/MangaCrisp-0.7.1b0-linux-x86_64.tar.gz)**
@@ -78,6 +85,9 @@ Ubuntu engine (Vulkan) and supports sequential capture on GNOME Wayland and
 X11. See [INSTALL.linux.md](INSTALL.linux.md) for required packages,
 installation, and capture permissions. Linux is new: if it works on your GPU,
 please report it, and consider [supporting AMD/Intel test hardware](https://buymeacoffee.com/jydie5).
+
+> The Linux preview above also predates the macOS-first UX maintenance in
+> `main`; see the note under the Windows preview.
 
 ## Read your first book
 
