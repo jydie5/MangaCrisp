@@ -18,6 +18,9 @@ Windows側の作業がPR #27まで先行したあと、macOSでMangaCrisp開発�
   portable build、配布監査、開発環境なしの展開スモークテストを通過しました。
 - Windows b0.4のヒューマンチェックで2キー操作を確認済みです。Windowsは
   `Alt+C`／`Alt+U`、macOSは従来どおり`Option+C`／`Option+Z`です。
+- PR #44（2026-10-15、`core/reader-bookshelf-ux`）でMac側から読書・本棚UXメンテナンスを
+  mainへ入れました。確認はmacOSのみです。Windows／Linuxの確認項目は
+  `ux-maintenance-handover.ja.md`にあります。
 
 macOS作業前にmainをpullしてください。既存のmacOS release assetは置き換えません。製品
 バージョンを変えないmacOS更新は、Windows／Linuxのpreview tagと同様に

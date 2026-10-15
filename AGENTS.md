@@ -9,6 +9,8 @@ before changing code, packaging, documentation, or release assets.
 - `docs/development/windows-handover.md` when working on Windows
 - `docs/development/macos-handover.md` when working on macOS
 - `docs/development/linux-port-plan.ja.md` when working on Linux
+- `docs/development/ux-maintenance-handover.md` when working on Windows or
+  Linux after the macOS-first UX maintenance
 - `README.md`, `ROADMAP.md`, and `THIRD_PARTY_NOTICES.md`
 
 ## Ownership boundaries

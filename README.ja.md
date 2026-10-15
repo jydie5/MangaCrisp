@@ -61,6 +61,12 @@ Intel／AMD GPUの補正証跡と、別のクリーンなWindowsアカウント�
 正式Windows版までの残項目です。補正できない場合も原画で閲覧できます。
 導入方法と制限は[INSTALL.windows.ja.md](INSTALL.windows.ja.md)を参照してください。
 
+> 現在はmacOS版が先行しています。読書・本棚のUXメンテナンス（全画面のカーソル自動非表示、
+> オーバーレイの本棚へボタン、本棚の複数選択とまとめて削除、表示中見開き優先の補正、
+> 先読み調整）は`main`に入りmacOSで確認済みです。上のWindows previewはそれより前の版で、
+> 次回ビルドで取り込まれます。詳細は
+> [docs/development/ux-maintenance-handover.ja.md](docs/development/ux-maintenance-handover.ja.md)を参照してください。
+
 ### Linux（Ubuntu）プレビュー
 
 **[Linux x86_64版（プレビュー）をダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/linux-preview-0.7.1b0.2/MangaCrisp-0.7.1b0-linux-x86_64.tar.gz)**
@@ -71,6 +77,8 @@ GNOMEのWayland／X11で連番キャプチャにも対応します。必要な�
 キャプチャの許可は[INSTALL.linux.ja.md](INSTALL.linux.ja.md)を参照してください。
 Linux版は新しい版です。お使いのGPUで動いたらぜひ報告してください。AMD／Intelの検証機材のための
 [支援](https://buymeacoffee.com/jydie5)も歓迎します。
+
+> 上のLinux previewもmacOS先行のUXメンテナンスより前の版です。Windows previewの注記を参照してください。
 
 ## 最初の一冊を読む
 
