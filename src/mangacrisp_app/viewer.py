@@ -6,7 +6,7 @@ import threading
 import time
 from argparse import ArgumentParser, Namespace
 from collections import OrderedDict, deque
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from hashlib import sha1
 from html import escape
 from math import ceil
@@ -18,6 +18,7 @@ from PIL import Image
 from mangacrisp_app.archive_utils import discover_samples
 from mangacrisp_app.branding import APP_BUNDLE_IDENTIFIER, APP_NAME, CACHE_DIR, PROJECT_URL, SUPPORT_URL
 from mangacrisp_app.cache_utils import prune_png_cache
+from mangacrisp_app.cursor_autohide import CURSOR_AUTO_HIDE_DELAY_MS, CursorAutoHideState, cursor_may_hide
 from mangacrisp_app.engine_utils import realcugan_executable, run_realcugan
 from mangacrisp_app.i18n import initialize_language, tr
 from mangacrisp_app.library import migrate_legacy_application_state
@@ -31,7 +32,7 @@ from mangacrisp_app.quality_settings import (
 
 try:
     from PySide6.QtCore import QEvent, QObject, QRunnable, QSize, QThreadPool, QTimer, Qt, Signal
-    from PySide6.QtGui import QImage, QPixmap
+    from PySide6.QtGui import QCursor, QImage, QPixmap
     from PySide6.QtWidgets import (
         QApplication,
         QCheckBox,
@@ -52,7 +53,7 @@ try:
     )
     PYSIDE_IMPORT_ERROR: ImportError | None = None
 except ImportError as exc:
-    QEvent = QObject = QRunnable = QSize = QThreadPool = QTimer = Qt = Signal = QImage = QPixmap = None
+    QEvent = QObject = QRunnable = QSize = QThreadPool = QTimer = Qt = Signal = QCursor = QImage = QPixmap = None
     QApplication = QCheckBox = QComboBox = QFormLayout = None
     QHBoxLayout = QInputDialog = QLabel = QMessageBox = QProgressBar = QPushButton = QScrollArea = QSpinBox = QVBoxLayout = QWidget = QFileDialog = None
     QMainWindow = object
@@ -70,8 +71,13 @@ def default_upscale_dir() -> Path:
 DEFAULT_UPSCALE_DIR = default_upscale_dir()
 DISPLAY_CACHE_DIR = DEFAULT_UPSCALE_DIR / "display_cache"
 DEFAULT_FORWARD_PREFETCH_COUNT = 12
-DEFAULT_PREVIOUS_PREFETCH_COUNT = 4
+DEFAULT_PREVIOUS_PREFETCH_COUNT = 6
+MIN_FORWARD_PREFETCH_COUNT = 6
 MAX_FORWARD_PREFETCH_COUNT = 24
+SLOW_READER_INTERVAL_SECONDS = 8.0
+CORRECTION_MISS_WINDOW = 10
+CORRECTION_MISS_THRESHOLD = 2
+CORRECTION_MISS_LEAD_FACTOR = 1.5
 DISPLAY_WARM_AHEAD_COUNT = 4
 DISPLAY_WARM_PREVIOUS_COUNT = 4
 DISK_RETENTION_PREVIOUS_COUNT = 12
@@ -268,6 +274,24 @@ def output_cache_source_key(source: Path) -> str:
     return sha1(identity.encode("utf-8")).hexdigest()[:16]
 
 
+def remove_enhancement_cache_for_sources(sources: Sequence[Path], cache_root: Path | None = None) -> int:
+    """Delete the per-page AI correction cache folders that belong to the given source images."""
+    interactive_root = (cache_root or DEFAULT_UPSCALE_DIR) / "interactive"
+    if not interactive_root.is_dir():
+        return 0
+    keys = {output_cache_source_key(source) for source in sources}
+    removed = 0
+    for parameter_dir in interactive_root.iterdir():
+        if not parameter_dir.is_dir():
+            continue
+        for key in keys:
+            target = parameter_dir / key
+            if target.is_dir():
+                shutil.rmtree(target, ignore_errors=True)
+                removed += 1
+    return removed
+
+
 def display_cache_path_for(display_path: Path) -> Path | None:
     try:
         stat = display_path.stat()
@@ -320,18 +344,41 @@ def adaptive_forward_prefetch_count(
     base_count: int,
     correction_seconds_per_page: float,
     maximum_count: int = MAX_FORWARD_PREFETCH_COUNT,
+    minimum_count: int = MIN_FORWARD_PREFETCH_COUNT,
+    slow_interval_seconds: float = SLOW_READER_INTERVAL_SECONDS,
+    lead_factor: float = 1.0,
 ) -> int:
+    """Pages to correct ahead of the reader.
+
+    Fast readers get more lead so corrections stay ahead of them; readers who
+    linger on a page for ``slow_interval_seconds`` or more drop below the base
+    count so the GPU idles instead of correcting pages they will not reach for
+    minutes. ``lead_factor`` lets the caller stretch the lead when corrections
+    have recently missed the visible spread.
+    """
+    base_count = max(0, base_count)
     if not intervals_per_page:
-        return min(maximum_count, max(0, base_count))
+        return min(maximum_count, base_count)
     ordered = sorted(intervals_per_page)
     median_interval = ordered[len(ordered) // 2]
     pages_per_second = 1.0 / max(0.05, median_interval)
-    lead_seconds = max(12.0, correction_seconds_per_page * 8.0)
+    lead_seconds = max(12.0, correction_seconds_per_page * 8.0) * max(1.0, lead_factor)
     target = ceil(pages_per_second * lead_seconds) + 4
-    target = max(base_count, min(maximum_count, target))
+    floor = min(base_count, minimum_count) if median_interval >= slow_interval_seconds else base_count
+    target = max(floor, min(maximum_count, target))
     if target % 2:
         target += 1
     return min(maximum_count, target)
+
+
+def correction_lead_factor(
+    recent_misses: Sequence[bool],
+    *,
+    threshold: int = CORRECTION_MISS_THRESHOLD,
+    factor: float = CORRECTION_MISS_LEAD_FACTOR,
+) -> float:
+    """Stretch the prefetch lead once the visible spread has been shown uncorrected often enough."""
+    return factor if sum(1 for missed in recent_misses if missed) >= threshold else 1.0
 
 
 def missing_processed_indexes(
@@ -347,6 +394,19 @@ def missing_processed_indexes(
         and index not in skipped
         and (processed_pages[index] is None or not processed_pages[index].is_file())
     ]
+
+
+def pick_next_correction_index(
+    priority: Sequence[int],
+    queued: Iterable[int],
+    targets: set[int] | None = None,
+) -> int | None:
+    """Choose the next page to correct: the earliest queued page in priority order that is still wanted."""
+    queued_set = set(queued)
+    for index in priority:
+        if index in queued_set and (targets is None or index in targets):
+            return index
+    return None
 
 
 class WorkerSignals(QObject):
@@ -470,11 +530,17 @@ class SpreadWindow(QMainWindow):
         self.processing_generation = 0
         self.is_closing = False
         self.prefetch_target_indexes: set[int] = set()
+        self.correction_queue: dict[int, Path] = {}
+        self.correction_priority: list[int] = []
+        self.correction_in_flight: int | None = None
+        self.correction_queue_lock = threading.Lock()
+        self.running_parameter_key: str | None = None
         self.active_output_paths: set[Path] = set()
         self.output_path_cache: dict[tuple[str, int], Path] = {}
         self.current_quality_preset = "自然"
         self.last_corrected_preset_name = "自然"
         self.navigation_intervals: deque[float] = deque(maxlen=8)
+        self.correction_misses: deque[bool] = deque(maxlen=CORRECTION_MISS_WINDOW)
         self.last_navigation_at: float | None = None
         self.correction_seconds_per_page = 1.25
         self.adaptive_prefetch_count = prefetch_count
@@ -513,6 +579,11 @@ class SpreadWindow(QMainWindow):
         self.page_state_save_timer = QTimer(self)
         self.page_state_save_timer.setSingleShot(True)
         self.page_state_save_timer.timeout.connect(self.flush_page_changed)
+        self.cursor_hidden = False
+        self.cursor_hide_timer = QTimer(self)
+        self.cursor_hide_timer.setSingleShot(True)
+        self.cursor_hide_timer.setInterval(CURSOR_AUTO_HIDE_DELAY_MS)
+        self.cursor_hide_timer.timeout.connect(self.hide_cursor_if_idle)
         self.signals = WorkerSignals()
         self.signals.upscale_page_done.connect(self.on_upscale_page_done)
         self.signals.upscale_done.connect(self.on_upscale_done)
@@ -534,6 +605,7 @@ class SpreadWindow(QMainWindow):
         root_layout.setContentsMargins(12, 12, 12, 12)
         root_layout.setSpacing(12)
         image_host = QWidget(root)
+        image_host.setMouseTracking(True)
         self.image_host = image_host
         image_host_layout = QVBoxLayout(image_host)
         image_host_layout.setContentsMargins(0, 0, 0, 0)
@@ -555,6 +627,7 @@ class SpreadWindow(QMainWindow):
             "QPushButton:pressed { background: rgba(60, 60, 60, 210); }"
         )
         self.next_book_banner.setVisible(False)
+        self.next_book_banner.setCursor(Qt.ArrowCursor)
         layout = QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
@@ -565,6 +638,8 @@ class SpreadWindow(QMainWindow):
         self.right.setObjectName("pagePane")
         self.left.setMinimumSize(320, 320)
         self.right.setMinimumSize(320, 320)
+        self.left.setMouseTracking(True)
+        self.right.setMouseTracking(True)
         layout.addWidget(self.left, 1)
         layout.addWidget(self.right, 1)
         self.left.installEventFilter(self)
@@ -593,7 +668,29 @@ class SpreadWindow(QMainWindow):
             " border-radius: 5px;"
             "}"
         )
-        reading_info_layout.addWidget(self.reading_info_label)
+        self.reading_info_bookshelf_button = QPushButton(tr("本棚へ"), self.reading_info_panel)
+        self.reading_info_bookshelf_button.setToolTip(tr("読書位置を保存して本棚へ戻ります"))
+        self.reading_info_bookshelf_button.setCursor(Qt.PointingHandCursor)
+        self.reading_info_bookshelf_button.setFocusPolicy(Qt.NoFocus)
+        self.reading_info_bookshelf_button.setStyleSheet(
+            "QPushButton {"
+            " background: rgba(255, 255, 255, 28);"
+            " border: 1px solid rgba(255, 255, 255, 70);"
+            " border-radius: 6px;"
+            " color: #ffffff;"
+            " font-size: 14px;"
+            " padding: 6px 14px;"
+            "}"
+            "QPushButton:hover { background: rgba(255, 255, 255, 60); }"
+            "QPushButton:pressed { background: rgba(255, 255, 255, 90); }"
+        )
+        self.reading_info_bookshelf_button.clicked.connect(self.return_to_bookshelf)
+        reading_info_header = QHBoxLayout()
+        reading_info_header.setContentsMargins(0, 0, 0, 0)
+        reading_info_header.setSpacing(10)
+        reading_info_header.addWidget(self.reading_info_label, 1)
+        reading_info_header.addWidget(self.reading_info_bookshelf_button, 0, Qt.AlignTop)
+        reading_info_layout.addLayout(reading_info_header)
         reading_info_layout.addWidget(self.reading_progress)
         self.reading_info_panel.setStyleSheet(
             "background: rgba(12, 12, 12, 150);"
@@ -601,6 +698,7 @@ class SpreadWindow(QMainWindow):
             "border-radius: 8px;"
         )
         self.reading_info_panel.setVisible(False)
+        self.reading_info_panel.setCursor(Qt.ArrowCursor)
         root_layout.addWidget(image_host, 1)
         self.controls_panel = self.build_controls()
         root_layout.addWidget(self.controls_panel, 0)
@@ -1216,6 +1314,7 @@ class SpreadWindow(QMainWindow):
         return self.spread_order == "rtl"
 
     def eventFilter(self, watched, event) -> bool:
+        self.track_cursor_activity(watched, event)
         if watched in {getattr(self, "left", None), getattr(self, "right", None)}:
             if event.type() == QEvent.MouseButtonDblClick and event.button() in {Qt.LeftButton, Qt.RightButton}:
                 self.suppress_next_mouse_release = True
@@ -1396,6 +1495,8 @@ class SpreadWindow(QMainWindow):
             self.record_navigation_speed(abs(self.index - previous_index))
             self.invalidate_prefetch_for_navigation()
         self.render_spread()
+        if self.index != previous_index:
+            self.record_correction_miss()
         self.notify_page_changed()
         self.update_spread_status()
         self.update_next_book_action()
@@ -1413,7 +1514,17 @@ class SpreadWindow(QMainWindow):
             self.navigation_intervals,
             base_count=self.prefetch_count_default,
             correction_seconds_per_page=self.correction_seconds_per_page,
+            lead_factor=correction_lead_factor(self.correction_misses),
         )
+
+    def record_correction_miss(self) -> None:
+        """Remember whether the spread just shown had to fall back to the original image."""
+        if not self.prefetch_enabled or bool(getattr(self, "original_check", None) and self.original_check.isChecked()):
+            return
+        visible_indexes = self.visible_page_indexes()
+        if not visible_indexes or all(self.should_skip_upscale(index) for index in visible_indexes):
+            return
+        self.correction_misses.append(bool(self.visible_missing_correction_indexes(visible_indexes)))
 
     def invalidate_prefetch_for_navigation(self) -> None:
         self.prefetch_target_indexes = set(self.visible_and_prefetch_indexes())
@@ -1443,10 +1554,92 @@ class SpreadWindow(QMainWindow):
         if self.is_fullscreen:
             self.statusBar().hide()
             fullscreen_target.showFullScreen()
+            self.restart_cursor_hide_timer()
         else:
             fullscreen_target.showNormal()
             self.statusBar().show()
+            self.show_cursor()
+            self.cursor_hide_timer.stop()
         QTimer.singleShot(0, lambda: self.render_spread(high_quality=True))
+
+    CURSOR_ACTIVITY_EVENTS = frozenset(
+        {
+            QEvent.MouseMove,
+            QEvent.MouseButtonPress,
+            QEvent.MouseButtonRelease,
+            QEvent.MouseButtonDblClick,
+            QEvent.Wheel,
+            QEvent.KeyPress,
+        }
+    ) if QEvent is not None else frozenset()
+
+    CURSOR_SHOW_EVENTS = frozenset(
+        {
+            QEvent.WindowDeactivate,
+            QEvent.FocusOut,
+            QEvent.Leave,
+        }
+    ) if QEvent is not None else frozenset()
+
+    def track_cursor_activity(self, watched, event) -> None:
+        if not self.is_fullscreen or self.is_closing or not hasattr(self, "image_host"):
+            return
+        event_type = event.type()
+        if event_type not in self.CURSOR_ACTIVITY_EVENTS and event_type not in self.CURSOR_SHOW_EVENTS:
+            return
+        if not isinstance(watched, QWidget) or watched.window() is not self.cursor_window():
+            return
+        if event_type in self.CURSOR_SHOW_EVENTS:
+            if watched is self.cursor_window() or event_type == QEvent.FocusOut:
+                self.show_cursor()
+                self.restart_cursor_hide_timer()
+            return
+        self.note_cursor_activity()
+
+    def cursor_window(self):
+        return self.window() if self.embedded else self
+
+    def cursor_auto_hide_state(self) -> CursorAutoHideState:
+        window = self.cursor_window()
+        pointer_over_overlay = False
+        if hasattr(self, "image_host") and QCursor is not None:
+            local = self.image_host.mapFromGlobal(QCursor.pos())
+            child = self.image_host.childAt(local)
+            pointer_over_overlay = child is not None and child not in {self.left, self.right}
+        return CursorAutoHideState(
+            fullscreen=self.is_fullscreen,
+            window_active=window.isActiveWindow(),
+            drag_active=self.mouse_press_button is not None,
+            modal_open=QApplication.activeModalWidget() is not None or QApplication.activePopupWidget() is not None,
+            pointer_over_overlay=pointer_over_overlay,
+            closing=self.is_closing,
+        )
+
+    def note_cursor_activity(self) -> None:
+        self.show_cursor()
+        self.restart_cursor_hide_timer()
+
+    def restart_cursor_hide_timer(self) -> None:
+        if self.is_fullscreen and not self.is_closing:
+            self.cursor_hide_timer.start()
+        else:
+            self.cursor_hide_timer.stop()
+
+    def hide_cursor_if_idle(self) -> None:
+        state = self.cursor_auto_hide_state()
+        if cursor_may_hide(state):
+            if not self.cursor_hidden:
+                self.image_host.setCursor(Qt.BlankCursor)
+                self.cursor_hidden = True
+            return
+        self.show_cursor()
+        if state.fullscreen and not state.closing:
+            self.cursor_hide_timer.start()
+
+    def show_cursor(self) -> None:
+        if self.cursor_hidden:
+            self.image_host.unsetCursor()
+            self.cursor_hidden = False
 
     def toggle_controls(self) -> None:
         self.controls_visible = not self.controls_visible
@@ -1741,6 +1934,15 @@ class SpreadWindow(QMainWindow):
             return [self.index]
         return [self.index, self.index + 1]
 
+    def return_to_bookshelf(self) -> None:
+        """Save the reading position and close the reader so the bookshelf shows again."""
+        if self.is_closing:
+            return
+        if self.is_fullscreen:
+            self.toggle_fullscreen()
+        self.flush_page_changed()
+        self.close()
+
     def toggle_reading_info(self) -> None:
         self.reading_info_visible = not self.reading_info_visible
         self.position_reading_info_overlay()
@@ -1958,12 +2160,16 @@ class SpreadWindow(QMainWindow):
         self.apply_button.setEnabled(False)
         generation = self.processing_generation
         parameter_key = self.current_parameter_key()
+        self.running_parameter_key = parameter_key
+        with self.correction_queue_lock:
+            self.correction_queue = dict(output_paths)
+            self.correction_priority = list(indexes)
         self.parameter_status.setText(tr("現在の見開きを補正中..."))
         self.update_quality_state()
         self.update_reading_info()
         threading.Thread(
             target=self._process_pages_worker,
-            args=(indexes, output_paths, settings, generation, parameter_key, False),
+            args=(settings, generation, parameter_key, False),
             daemon=True,
         ).start()
 
@@ -1989,7 +2195,31 @@ class SpreadWindow(QMainWindow):
             )
             return
         self.prefetch_target_indexes = set(self.visible_and_prefetch_indexes())
+        if self.prefetch_running:
+            self.refresh_correction_queue()
         self.prefetch_request_timer.start(PREFETCH_DEBOUNCE_MS)
+
+    def refresh_correction_queue(self) -> None:
+        """Let a running prefetch pick up the current spread first instead of finishing its old list."""
+        if self.running_parameter_key != self.current_parameter_key():
+            return
+        target_indexes = self.visible_and_prefetch_indexes()
+        self.load_cached_outputs(target_indexes)
+        additions: dict[int, Path] = {}
+        for index in target_indexes:
+            if self.should_skip_upscale(index) or self.processed_pages[index] is not None:
+                continue
+            if index == self.correction_in_flight:
+                continue
+            output_path = self.current_output_path(index)
+            if output_path.exists():
+                continue
+            additions[index] = output_path
+        with self.correction_queue_lock:
+            self.correction_priority = list(target_indexes)
+            for index, output_path in additions.items():
+                self.correction_queue.setdefault(index, output_path)
+            self.active_output_paths.update(self.correction_queue.values())
 
     def start_prefetch(self) -> None:
         if self.is_closing:
@@ -2028,6 +2258,9 @@ class SpreadWindow(QMainWindow):
         output_paths = {index: self.current_output_path(index) for index in indexes}
         self.prefetch_running = True
         self.active_output_paths = set(output_paths.values())
+        with self.correction_queue_lock:
+            self.correction_queue = dict(output_paths)
+            self.correction_priority = list(target_indexes)
         skipped_count = len(target_indexes) - len(indexes)
         suffix = tr(" / {count}ページはスキップ", count=skipped_count) if skipped_count else ""
         self.parameter_status.setText(
@@ -2037,16 +2270,26 @@ class SpreadWindow(QMainWindow):
         self.update_reading_info()
         generation = self.processing_generation
         parameter_key = self.current_parameter_key()
+        self.running_parameter_key = parameter_key
         threading.Thread(
             target=self._process_pages_worker,
-            args=(indexes, output_paths, settings, generation, parameter_key, True),
+            args=(settings, generation, parameter_key, True),
             daemon=True,
         ).start()
 
+    def take_next_correction(self, is_prefetch: bool) -> tuple[int, Path] | None:
+        with self.correction_queue_lock:
+            targets = self.prefetch_target_indexes if is_prefetch else None
+            index = pick_next_correction_index(self.correction_priority, self.correction_queue, targets)
+            if index is None:
+                self.correction_queue.clear()
+                self.correction_in_flight = None
+                return None
+            self.correction_in_flight = index
+            return index, self.correction_queue.pop(index)
+
     def _process_pages_worker(
         self,
-        indexes: list[int],
-        output_paths: dict[int, Path],
         settings: dict,
         generation: int,
         parameter_key: str,
@@ -2055,15 +2298,15 @@ class SpreadWindow(QMainWindow):
         started = time.perf_counter()
         errors: list[str] = []
         completed_output_paths: dict[int, Path] = {}
-        for index in output_paths:
-            if generation != self.processing_generation or self.is_closing:
+        while generation == self.processing_generation and not self.is_closing:
+            item = self.take_next_correction(is_prefetch)
+            if item is None:
                 break
-            if is_prefetch and index not in self.prefetch_target_indexes:
-                continue
+            index, output_path = item
             try:
                 result = run_realcugan(
                     self.pages[index],
-                    output_paths[index],
+                    output_path,
                     scale=settings["scale"],
                     noise=settings["noise"],
                     tile=settings["tile"],
@@ -2073,15 +2316,20 @@ class SpreadWindow(QMainWindow):
                 if result.returncode != 0 or not result.output_exists:
                     errors.append(f"{self.pages[index].name}: code {result.returncode}")
                 else:
-                    completed_output_paths[index] = output_paths[index]
+                    completed_output_paths[index] = output_path
                     self.signals.upscale_page_done.emit(
                         index,
-                        output_paths[index],
+                        output_path,
                         generation,
                         parameter_key,
                     )
             except Exception as exc:
                 errors.append(f"{self.pages[index].name}: {exc}")
+            finally:
+                with self.correction_queue_lock:
+                    if self.correction_in_flight == index:
+                        self.correction_in_flight = None
+                    self.correction_queue.pop(index, None)
         self.signals.upscale_done.emit(
             round((time.perf_counter() - started) * 1000),
             completed_output_paths,
@@ -2137,6 +2385,10 @@ class SpreadWindow(QMainWindow):
                 self.processed_pages[index] = output_path
         self.upscale_running = False
         self.prefetch_running = False
+        self.running_parameter_key = None
+        with self.correction_queue_lock:
+            self.correction_queue.clear()
+            self.correction_in_flight = None
         self.active_output_paths.clear()
         self.last_disk_cache_prune_signature = None
         self.apply_button.setEnabled(True)
@@ -2181,6 +2433,8 @@ class SpreadWindow(QMainWindow):
         self.display_warm_timer.stop()
         self.cache_maintenance_timer.stop()
         self.page_state_save_timer.stop()
+        self.cursor_hide_timer.stop()
+        self.show_cursor()
         self.clear_queued_display_requests()
         application = QApplication.instance()
         if application is not None:
