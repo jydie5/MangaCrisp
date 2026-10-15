@@ -18,6 +18,7 @@ from PIL import Image
 from mangacrisp_app.archive_utils import discover_samples
 from mangacrisp_app.branding import APP_BUNDLE_IDENTIFIER, APP_NAME, CACHE_DIR, PROJECT_URL, SUPPORT_URL
 from mangacrisp_app.cache_utils import prune_png_cache
+from mangacrisp_app.cursor_autohide import CURSOR_AUTO_HIDE_DELAY_MS, CursorAutoHideState, cursor_may_hide
 from mangacrisp_app.engine_utils import realcugan_executable, run_realcugan
 from mangacrisp_app.i18n import initialize_language, tr
 from mangacrisp_app.library import migrate_legacy_application_state
@@ -31,7 +32,7 @@ from mangacrisp_app.quality_settings import (
 
 try:
     from PySide6.QtCore import QEvent, QObject, QRunnable, QSize, QThreadPool, QTimer, Qt, Signal
-    from PySide6.QtGui import QImage, QPixmap
+    from PySide6.QtGui import QCursor, QImage, QPixmap
     from PySide6.QtWidgets import (
         QApplication,
         QCheckBox,
@@ -52,7 +53,7 @@ try:
     )
     PYSIDE_IMPORT_ERROR: ImportError | None = None
 except ImportError as exc:
-    QEvent = QObject = QRunnable = QSize = QThreadPool = QTimer = Qt = Signal = QImage = QPixmap = None
+    QEvent = QObject = QRunnable = QSize = QThreadPool = QTimer = Qt = Signal = QCursor = QImage = QPixmap = None
     QApplication = QCheckBox = QComboBox = QFormLayout = None
     QHBoxLayout = QInputDialog = QLabel = QMessageBox = QProgressBar = QPushButton = QScrollArea = QSpinBox = QVBoxLayout = QWidget = QFileDialog = None
     QMainWindow = object
@@ -513,6 +514,11 @@ class SpreadWindow(QMainWindow):
         self.page_state_save_timer = QTimer(self)
         self.page_state_save_timer.setSingleShot(True)
         self.page_state_save_timer.timeout.connect(self.flush_page_changed)
+        self.cursor_hidden = False
+        self.cursor_hide_timer = QTimer(self)
+        self.cursor_hide_timer.setSingleShot(True)
+        self.cursor_hide_timer.setInterval(CURSOR_AUTO_HIDE_DELAY_MS)
+        self.cursor_hide_timer.timeout.connect(self.hide_cursor_if_idle)
         self.signals = WorkerSignals()
         self.signals.upscale_page_done.connect(self.on_upscale_page_done)
         self.signals.upscale_done.connect(self.on_upscale_done)
@@ -534,6 +540,7 @@ class SpreadWindow(QMainWindow):
         root_layout.setContentsMargins(12, 12, 12, 12)
         root_layout.setSpacing(12)
         image_host = QWidget(root)
+        image_host.setMouseTracking(True)
         self.image_host = image_host
         image_host_layout = QVBoxLayout(image_host)
         image_host_layout.setContentsMargins(0, 0, 0, 0)
@@ -555,6 +562,7 @@ class SpreadWindow(QMainWindow):
             "QPushButton:pressed { background: rgba(60, 60, 60, 210); }"
         )
         self.next_book_banner.setVisible(False)
+        self.next_book_banner.setCursor(Qt.ArrowCursor)
         layout = QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
@@ -565,6 +573,8 @@ class SpreadWindow(QMainWindow):
         self.right.setObjectName("pagePane")
         self.left.setMinimumSize(320, 320)
         self.right.setMinimumSize(320, 320)
+        self.left.setMouseTracking(True)
+        self.right.setMouseTracking(True)
         layout.addWidget(self.left, 1)
         layout.addWidget(self.right, 1)
         self.left.installEventFilter(self)
@@ -601,6 +611,7 @@ class SpreadWindow(QMainWindow):
             "border-radius: 8px;"
         )
         self.reading_info_panel.setVisible(False)
+        self.reading_info_panel.setCursor(Qt.ArrowCursor)
         root_layout.addWidget(image_host, 1)
         self.controls_panel = self.build_controls()
         root_layout.addWidget(self.controls_panel, 0)
@@ -1216,6 +1227,7 @@ class SpreadWindow(QMainWindow):
         return self.spread_order == "rtl"
 
     def eventFilter(self, watched, event) -> bool:
+        self.track_cursor_activity(watched, event)
         if watched in {getattr(self, "left", None), getattr(self, "right", None)}:
             if event.type() == QEvent.MouseButtonDblClick and event.button() in {Qt.LeftButton, Qt.RightButton}:
                 self.suppress_next_mouse_release = True
@@ -1443,10 +1455,92 @@ class SpreadWindow(QMainWindow):
         if self.is_fullscreen:
             self.statusBar().hide()
             fullscreen_target.showFullScreen()
+            self.restart_cursor_hide_timer()
         else:
             fullscreen_target.showNormal()
             self.statusBar().show()
+            self.show_cursor()
+            self.cursor_hide_timer.stop()
         QTimer.singleShot(0, lambda: self.render_spread(high_quality=True))
+
+    CURSOR_ACTIVITY_EVENTS = frozenset(
+        {
+            QEvent.MouseMove,
+            QEvent.MouseButtonPress,
+            QEvent.MouseButtonRelease,
+            QEvent.MouseButtonDblClick,
+            QEvent.Wheel,
+            QEvent.KeyPress,
+        }
+    ) if QEvent is not None else frozenset()
+
+    CURSOR_SHOW_EVENTS = frozenset(
+        {
+            QEvent.WindowDeactivate,
+            QEvent.FocusOut,
+            QEvent.Leave,
+        }
+    ) if QEvent is not None else frozenset()
+
+    def track_cursor_activity(self, watched, event) -> None:
+        if not self.is_fullscreen or self.is_closing or not hasattr(self, "image_host"):
+            return
+        event_type = event.type()
+        if event_type not in self.CURSOR_ACTIVITY_EVENTS and event_type not in self.CURSOR_SHOW_EVENTS:
+            return
+        if not isinstance(watched, QWidget) or watched.window() is not self.cursor_window():
+            return
+        if event_type in self.CURSOR_SHOW_EVENTS:
+            if watched is self.cursor_window() or event_type == QEvent.FocusOut:
+                self.show_cursor()
+                self.restart_cursor_hide_timer()
+            return
+        self.note_cursor_activity()
+
+    def cursor_window(self):
+        return self.window() if self.embedded else self
+
+    def cursor_auto_hide_state(self) -> CursorAutoHideState:
+        window = self.cursor_window()
+        pointer_over_overlay = False
+        if hasattr(self, "image_host") and QCursor is not None:
+            local = self.image_host.mapFromGlobal(QCursor.pos())
+            child = self.image_host.childAt(local)
+            pointer_over_overlay = child is not None and child not in {self.left, self.right}
+        return CursorAutoHideState(
+            fullscreen=self.is_fullscreen,
+            window_active=window.isActiveWindow(),
+            drag_active=self.mouse_press_button is not None,
+            modal_open=QApplication.activeModalWidget() is not None or QApplication.activePopupWidget() is not None,
+            pointer_over_overlay=pointer_over_overlay,
+            closing=self.is_closing,
+        )
+
+    def note_cursor_activity(self) -> None:
+        self.show_cursor()
+        self.restart_cursor_hide_timer()
+
+    def restart_cursor_hide_timer(self) -> None:
+        if self.is_fullscreen and not self.is_closing:
+            self.cursor_hide_timer.start()
+        else:
+            self.cursor_hide_timer.stop()
+
+    def hide_cursor_if_idle(self) -> None:
+        state = self.cursor_auto_hide_state()
+        if cursor_may_hide(state):
+            if not self.cursor_hidden:
+                self.image_host.setCursor(Qt.BlankCursor)
+                self.cursor_hidden = True
+            return
+        self.show_cursor()
+        if state.fullscreen and not state.closing:
+            self.cursor_hide_timer.start()
+
+    def show_cursor(self) -> None:
+        if self.cursor_hidden:
+            self.image_host.unsetCursor()
+            self.cursor_hidden = False
 
     def toggle_controls(self) -> None:
         self.controls_visible = not self.controls_visible
@@ -2181,6 +2275,8 @@ class SpreadWindow(QMainWindow):
         self.display_warm_timer.stop()
         self.cache_maintenance_timer.stop()
         self.page_state_save_timer.stop()
+        self.cursor_hide_timer.stop()
+        self.show_cursor()
         self.clear_queued_display_requests()
         application = QApplication.instance()
         if application is not None:
