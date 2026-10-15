@@ -664,3 +664,67 @@ class CorrectionMissTrackingTests(ViewerWindowTestCase):
         self.window.original_check.setChecked(True)
         self.window.move_by(2)
         self.assertEqual(list(self.window.correction_misses), [])
+
+
+class CorrectedDisplayStabilityTests(ViewerWindowTestCase):
+    def wait_for_desired_pixmaps(self) -> None:
+        for _ in range(200):
+            self.application.processEvents()
+            keys = [self.window.desired_display_keys.get(id(label)) for label in (self.window.left, self.window.right)]
+            if all(key is None or key in self.window.display_pixmap_cache for key in keys) and any(keys):
+                self.window.apply_ready_spread_pixmaps()
+                return
+            time.sleep(0.01)
+        self.fail("display pixmaps were not decoded")
+
+    def test_load_cached_outputs_touches_each_file_once_per_session(self) -> None:
+        output_path = self.window.current_output_path(0)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        Image.open(self.pages[0]).save(output_path)
+        old = time.time() - 3600
+        os.utime(output_path, (old, old))
+
+        self.window.load_cached_outputs([0])
+        first_mtime = output_path.stat().st_mtime_ns
+        self.assertGreater(first_mtime, int(old * 1e9) + 1_000_000)
+
+        time.sleep(0.02)
+        self.window.load_cached_outputs([0])
+
+        self.assertEqual(output_path.stat().st_mtime_ns, first_mtime)
+        self.assertIs(self.window.processed_pages[0], output_path)
+
+    def test_display_keys_show_same_image_ignores_size_and_mtime(self) -> None:
+        shown = ("a.png", 10, 100, 640, 480, 1, 1)
+        self.assertTrue(viewer_module.display_keys_show_same_image(shown, ("a.png", 10, 200, 640, 480, 1, 1)))
+        self.assertTrue(viewer_module.display_keys_show_same_image(shown, ("a.png", 11, 200, 640, 480, 0, 1)))
+        self.assertFalse(viewer_module.display_keys_show_same_image(shown, ("b.png", 10, 100, 640, 480, 1, 1)))
+        self.assertFalse(viewer_module.display_keys_show_same_image(shown, ("a.png", 10, 100, 800, 600, 1, 1)))
+        self.assertFalse(viewer_module.display_keys_show_same_image(shown, ("a.png", 10, 100, 640, 480, 1, 0)))
+        self.assertFalse(viewer_module.display_keys_show_same_image(None, shown))
+
+    def test_rerender_after_mtime_bump_keeps_the_corrected_pixmap(self) -> None:
+        self.window.processed_pages = list(self.pages)
+        self.window.processed_pages[0] = self.root / "corrected-0.png"
+        self.window.processed_pages[1] = self.root / "corrected-1.png"
+        Image.new("L", (120, 180), 200).save(self.window.processed_pages[0])
+        Image.new("L", (120, 180), 210).save(self.window.processed_pages[1])
+        self.window.show()
+        self.window.render_spread(high_quality=True)
+        self.wait_for_desired_pixmaps()
+        before = [label.pixmap().cacheKey() for label in (self.window.left, self.window.right)]
+        corrected_keys = [self.window.desired_display_keys[id(label)] for label in (self.window.left, self.window.right)]
+        self.assertTrue(all(key is not None for key in corrected_keys))
+
+        # Simulate a mtime bump on the corrected files: the keys change, the
+        # cache misses, and the decode is still pending.
+        for label, key in zip((self.window.left, self.window.right), corrected_keys, strict=True):
+            bumped = (*key[:2], key[2] + 1, *key[3:])
+            self.window.desired_display_keys[id(label)] = bumped
+            self.window.fallback_display_keys[id(label)] = self.window.display_cache_key(
+                self.pages[self.window.index], label.size(), True, False
+            )
+        self.window.apply_ready_spread_pixmaps()
+
+        after = [label.pixmap().cacheKey() for label in (self.window.left, self.window.right)]
+        self.assertEqual(after, before)
