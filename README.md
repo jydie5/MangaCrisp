@@ -146,7 +146,7 @@ Development Preview bundles the pinned, audited Zig-built Windows engine and
 the same models. Both need no additional engine setup.
 
 MangaCrisp automatically processes the visible spread and nearby pages in the
-background. The cache revolves as you read: normally 12-24 pages ahead and four
+background. The cache revolves as you read: normally 6-24 pages ahead and six
 pages behind are retained. Original pages remain available immediately while
 enhancement catches up.
 

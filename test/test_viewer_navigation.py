@@ -584,3 +584,32 @@ class ReadingInfoBookshelfButtonTests(ViewerWindowTestCase):
 
         self.assertFalse(self.window.is_fullscreen)
         self.assertTrue(self.window.is_closing)
+
+
+class CorrectionMissTrackingTests(ViewerWindowTestCase):
+    def test_navigation_records_whether_the_spread_was_corrected(self) -> None:
+        self.window.prefetch_enabled = True
+        self.window.processed_pages = list(self.pages)
+        self.window.move_by(2)
+        self.assertEqual(list(self.window.correction_misses), [False])
+
+        self.window.processed_pages[4] = None
+        self.window.processed_pages[5] = None
+        self.window.move_by(2)
+        self.assertEqual(list(self.window.correction_misses), [False, True])
+
+    def test_misses_are_bounded_and_raise_the_lead(self) -> None:
+        self.window.prefetch_enabled = True
+        for index in range(len(self.window.processed_pages)):
+            self.window.processed_pages[index] = None
+        for _ in range(15):
+            self.window.move_by(1)
+        self.assertEqual(len(self.window.correction_misses), viewer_module.CORRECTION_MISS_WINDOW)
+        self.assertTrue(all(self.window.correction_misses))
+        self.assertEqual(viewer_module.correction_lead_factor(self.window.correction_misses), 1.5)
+
+    def test_original_compare_does_not_count_as_a_miss(self) -> None:
+        self.window.prefetch_enabled = True
+        self.window.original_check.setChecked(True)
+        self.window.move_by(2)
+        self.assertEqual(list(self.window.correction_misses), [])

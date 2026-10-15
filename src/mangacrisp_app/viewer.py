@@ -71,8 +71,13 @@ def default_upscale_dir() -> Path:
 DEFAULT_UPSCALE_DIR = default_upscale_dir()
 DISPLAY_CACHE_DIR = DEFAULT_UPSCALE_DIR / "display_cache"
 DEFAULT_FORWARD_PREFETCH_COUNT = 12
-DEFAULT_PREVIOUS_PREFETCH_COUNT = 4
+DEFAULT_PREVIOUS_PREFETCH_COUNT = 6
+MIN_FORWARD_PREFETCH_COUNT = 6
 MAX_FORWARD_PREFETCH_COUNT = 24
+SLOW_READER_INTERVAL_SECONDS = 8.0
+CORRECTION_MISS_WINDOW = 10
+CORRECTION_MISS_THRESHOLD = 2
+CORRECTION_MISS_LEAD_FACTOR = 1.5
 DISPLAY_WARM_AHEAD_COUNT = 4
 DISPLAY_WARM_PREVIOUS_COUNT = 4
 DISK_RETENTION_PREVIOUS_COUNT = 12
@@ -339,18 +344,41 @@ def adaptive_forward_prefetch_count(
     base_count: int,
     correction_seconds_per_page: float,
     maximum_count: int = MAX_FORWARD_PREFETCH_COUNT,
+    minimum_count: int = MIN_FORWARD_PREFETCH_COUNT,
+    slow_interval_seconds: float = SLOW_READER_INTERVAL_SECONDS,
+    lead_factor: float = 1.0,
 ) -> int:
+    """Pages to correct ahead of the reader.
+
+    Fast readers get more lead so corrections stay ahead of them; readers who
+    linger on a page for ``slow_interval_seconds`` or more drop below the base
+    count so the GPU idles instead of correcting pages they will not reach for
+    minutes. ``lead_factor`` lets the caller stretch the lead when corrections
+    have recently missed the visible spread.
+    """
+    base_count = max(0, base_count)
     if not intervals_per_page:
-        return min(maximum_count, max(0, base_count))
+        return min(maximum_count, base_count)
     ordered = sorted(intervals_per_page)
     median_interval = ordered[len(ordered) // 2]
     pages_per_second = 1.0 / max(0.05, median_interval)
-    lead_seconds = max(12.0, correction_seconds_per_page * 8.0)
+    lead_seconds = max(12.0, correction_seconds_per_page * 8.0) * max(1.0, lead_factor)
     target = ceil(pages_per_second * lead_seconds) + 4
-    target = max(base_count, min(maximum_count, target))
+    floor = min(base_count, minimum_count) if median_interval >= slow_interval_seconds else base_count
+    target = max(floor, min(maximum_count, target))
     if target % 2:
         target += 1
     return min(maximum_count, target)
+
+
+def correction_lead_factor(
+    recent_misses: Sequence[bool],
+    *,
+    threshold: int = CORRECTION_MISS_THRESHOLD,
+    factor: float = CORRECTION_MISS_LEAD_FACTOR,
+) -> float:
+    """Stretch the prefetch lead once the visible spread has been shown uncorrected often enough."""
+    return factor if sum(1 for missed in recent_misses if missed) >= threshold else 1.0
 
 
 def missing_processed_indexes(
@@ -511,6 +539,7 @@ class SpreadWindow(QMainWindow):
         self.current_quality_preset = "自然"
         self.last_corrected_preset_name = "自然"
         self.navigation_intervals: deque[float] = deque(maxlen=8)
+        self.correction_misses: deque[bool] = deque(maxlen=CORRECTION_MISS_WINDOW)
         self.last_navigation_at: float | None = None
         self.correction_seconds_per_page = 1.25
         self.adaptive_prefetch_count = prefetch_count
@@ -1465,6 +1494,8 @@ class SpreadWindow(QMainWindow):
             self.record_navigation_speed(abs(self.index - previous_index))
             self.invalidate_prefetch_for_navigation()
         self.render_spread()
+        if self.index != previous_index:
+            self.record_correction_miss()
         self.notify_page_changed()
         self.update_spread_status()
         self.update_next_book_action()
@@ -1482,7 +1513,17 @@ class SpreadWindow(QMainWindow):
             self.navigation_intervals,
             base_count=self.prefetch_count_default,
             correction_seconds_per_page=self.correction_seconds_per_page,
+            lead_factor=correction_lead_factor(self.correction_misses),
         )
+
+    def record_correction_miss(self) -> None:
+        """Remember whether the spread just shown had to fall back to the original image."""
+        if not self.prefetch_enabled or bool(getattr(self, "original_check", None) and self.original_check.isChecked()):
+            return
+        visible_indexes = self.visible_page_indexes()
+        if not visible_indexes or all(self.should_skip_upscale(index) for index in visible_indexes):
+            return
+        self.correction_misses.append(bool(self.visible_missing_correction_indexes(visible_indexes)))
 
     def invalidate_prefetch_for_navigation(self) -> None:
         self.prefetch_target_indexes = set(self.visible_and_prefetch_indexes())
