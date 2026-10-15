@@ -396,6 +396,18 @@ def missing_processed_indexes(
     ]
 
 
+def display_keys_show_same_image(shown: tuple | None, desired: tuple | None) -> bool:
+    """True when two display cache keys name the same file at the same size and color mode.
+
+    Keys also carry the file size and mtime so that a rewritten file is decoded
+    again; those fields are ignored here because a mere mtime bump (cache
+    access-time refresh) must not make the reader redraw the original first.
+    """
+    if shown is None or desired is None:
+        return False
+    return shown[0] == desired[0] and shown[3:5] == desired[3:5] and shown[6] == desired[6]
+
+
 def pick_next_correction_index(
     priority: Sequence[int],
     queued: Iterable[int],
@@ -536,6 +548,7 @@ class SpreadWindow(QMainWindow):
         self.correction_queue_lock = threading.Lock()
         self.running_parameter_key: str | None = None
         self.active_output_paths: set[Path] = set()
+        self.touched_output_paths: set[Path] = set()
         self.output_path_cache: dict[tuple[str, int], Path] = {}
         self.current_quality_preset = "自然"
         self.last_corrected_preset_name = "自然"
@@ -556,6 +569,7 @@ class SpreadWindow(QMainWindow):
         self.pending_display_renders: dict[tuple, int] = {}
         self.desired_display_keys: dict[int, tuple | None] = {}
         self.fallback_display_keys: dict[int, tuple | None] = {}
+        self.shown_display_keys: dict[int, tuple | None] = {}
         self.display_decode_times_ms: deque[int] = deque(maxlen=32)
         self.visible_display_pool = QThreadPool(self)
         self.visible_display_pool.setMaxThreadCount(2)
@@ -1869,22 +1883,47 @@ class SpreadWindow(QMainWindow):
         def ready(items: list[tuple[QLabel, tuple | None]]) -> bool:
             return all(key is None or key in self.display_pixmap_cache for _label, key in items)
 
+        def still_shown(label: QLabel, key: tuple | None) -> bool:
+            # The label already shows this same file at this size (only the
+            # cache key's mtime changed), so keep it instead of flashing the
+            # original while the re-decode is pending.
+            return (
+                key is not None
+                and display_keys_show_same_image(self.shown_display_keys.get(id(label)), key)
+                and not label.pixmap().isNull()
+            )
+
+        if not ready(desired) and all(
+            key is None or key in self.display_pixmap_cache or still_shown(label, key) for label, key in desired
+        ):
+            for label, key in desired:
+                if key is not None and key in self.display_pixmap_cache:
+                    self.show_display_pixmap(label, key)
+            return
+
         selected = desired if ready(desired) else fallback if ready(fallback) else None
         if selected is None:
             for label, key in desired:
                 if key is not None:
-                    label.setText("")
-                    label.setPixmap(QPixmap())
+                    self.clear_display_pixmap(label)
             return
         for label, key in selected:
             if key is None:
-                label.setText("")
-                label.setPixmap(QPixmap())
+                self.clear_display_pixmap(label)
                 continue
-            pixmap = self.display_pixmap_cache[key]
-            self.display_pixmap_cache.move_to_end(key)
-            label.setText("")
-            label.setPixmap(pixmap)
+            self.show_display_pixmap(label, key)
+
+    def show_display_pixmap(self, label: QLabel, key: tuple) -> None:
+        pixmap = self.display_pixmap_cache[key]
+        self.display_pixmap_cache.move_to_end(key)
+        label.setText("")
+        label.setPixmap(pixmap)
+        self.shown_display_keys[id(label)] = key
+
+    def clear_display_pixmap(self, label: QLabel) -> None:
+        label.setText("")
+        label.setPixmap(QPixmap())
+        self.shown_display_keys[id(label)] = None
 
     def warm_display_pixmap_cache(self, indexes: list[int]) -> None:
         if not indexes:
@@ -2056,7 +2095,12 @@ class SpreadWindow(QMainWindow):
                 continue
             output_path = self.current_output_path(index)
             if output_path not in self.active_output_paths and output_path.exists():
-                output_path.touch(exist_ok=True)
+                # Age-based pruning only needs one access-time bump per reading
+                # session; touching on every render changes the mtime that the
+                # display cache key embeds and forces a visible re-decode.
+                if output_path not in self.touched_output_paths:
+                    output_path.touch(exist_ok=True)
+                    self.touched_output_paths.add(output_path)
                 self.processed_pages[index] = output_path
 
     def current_parameter_key(self) -> str:
