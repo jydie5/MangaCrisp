@@ -93,7 +93,20 @@ Intel/AMDと別クリーンアカウントの正式版ゲートは未完了で�
 マージ後の`main`をpullしてください。次の実機確認は[Linux引継ぎ書](linux-handover.ja.md)を
 参照してください。このWindows PCではLinux Wayland/X11は未確認です。
 
-## Linuxで確認すること
+## Linux preview b0.3の合格と公開（2026-10-15）
+
+[Linux preview b0.3](https://github.com/jydie5/MangaCrisp/releases/tag/linux-preview-0.7.1b0.3)は
+共通UXと後続の修正2件を含む。main `6d9600f`からUbuntu 24.04 CIでビルドし、
+Linuxのテストは187成功、8スキップ、5サブテスト成功。
+クリーンなUbuntu 24.04／26.04でインストール、配布版起動、デモ表示、同梱RAR対応、
+CPU Vulkan補正、アンインストールが合格。GTX 1060 6GBの固定エンジン補正も合格。
+
+2026-10-15にUbuntu 26.04.1 / GNOME 50.1 / Waylandの候補版について
+「確認しました。mainにまーじ」と利用者の全体合格を受領した。細目の個別合格とは扱わない。
+AMD／Intel実GPU、実デスクトップのX11、小数倍率、他のWaylandコンポジタは未確認。
+詳細は[Linux検証記録](../testing/linux-ux-20261015-validation.ja.md)を参照。
+
+## 次回以降もLinuxで確認すること
 
 Ubuntu 24.04以降で`scripts/build_linux_app.py`を使います。
 

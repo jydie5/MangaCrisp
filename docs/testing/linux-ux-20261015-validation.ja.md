@@ -1,7 +1,7 @@
 # Linux UX preview の検証記録（2026-10-15）
 
-対象は `linux-preview-0.7.1b0.3` の候補です。製品バージョンは `0.7.1b0`。
-公開中の b0.2 とは区別し、既存リリースの成果物は上書きしません。
+対象は公開済みの[Linux preview b0.3](https://github.com/jydie5/MangaCrisp/releases/tag/linux-preview-0.7.1b0.3)です。
+製品バージョンは `0.7.1b0`。b0.2の成果物は上書きしていません。
 
 ## 来歴
 

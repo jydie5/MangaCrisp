@@ -70,7 +70,7 @@ Intel／AMD GPUの補正証跡と、別のクリーンなWindowsアカウント�
 
 ### Linux（Ubuntu）プレビュー
 
-**[Linux x86_64版（プレビュー）をダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/linux-preview-0.7.1b0.2/MangaCrisp-0.7.1b0-linux-x86_64.tar.gz)**
+**[Linux x86_64版（プレビュー0.7.1b0.3）をダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/linux-preview-0.7.1b0.3/MangaCrisp-0.7.1b0-linux-x86_64.tar.gz)**
 
 Ubuntu 24.04以降のx86_64で、ソースからの起動と、ユーザー単位のインストーラ付きの
 tar.gz版を利用できます。公式のReal-CUGAN Ubuntu版エンジン（Vulkan）を同梱し、
@@ -79,8 +79,10 @@ GNOMEのWayland／X11で連番キャプチャにも対応します。必要な�
 Linux版は新しい版です。お使いのGPUで動いたらぜひ報告してください。AMD／Intelの検証機材のための
 [支援](https://buymeacoffee.com/jydie5)も歓迎します。
 
-> 上のLinux previewも共通UXメンテナンスより前の版です。Linux実機確認は未完了です。
-> [Linux引継ぎ書](docs/development/linux-handover.ja.md)を参照してください。
+preview 0.7.1b0.3は読書・本棚UX改善、補正版のちらつき、管理コピー削除失敗の修正を含みます。
+クリーンなUbuntu 24.04／26.04での検証とGNOME Waylandのヒューマンチェックに合格しました。
+AMD／Intel実GPU、実デスクトップのX11、小数倍率は未確認です。
+詳細は[リリースノート](docs/releases/linux-preview-0.7.1b0.3.md)を参照してください。
 
 ## 最初の一冊を読む
 
@@ -92,11 +94,10 @@ Linux版は新しい版です。お使いのGPUで動いたらぜひ報告して
 
 元の圧縮ファイルは削除しません。本棚には読書用に展開したコピーを保存します。
 
-## `main`の未リリース変更（macOS先行、0.7.1b0.2以降）
+## Linux preview 0.7.1b0.3の読書・本棚UX更新
 
-UX変更はmacOSで確認し、ローカルWindows候補版も合格済みです。
-ソースには下記の共通削除エラー修正も含みます。上記ダウンロードにはまだ入っておらず、
-Linux実機確認も未完了です。
+上のLinux previewは以下の変更を含みます。macOSでの確認とローカルWindows候補版の
+確認も合格済みですが、上のmacOS／Windowsダウンロードはこの更新より前の版です。
 
 **機能**
 

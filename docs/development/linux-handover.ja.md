@@ -4,6 +4,8 @@
 
 ## Linux preview b0.3の検証（2026-10-15）
 
+[Linux preview b0.3](https://github.com/jydie5/MangaCrisp/releases/tag/linux-preview-0.7.1b0.3)を
+アーカイブと`SHA256SUMS.txt`付きで公開済み。
 main `6d9600f`のUbuntu 24.04 CI配布物
 （[run 38709826090](https://github.com/jydie5/MangaCrisp/actions/runs/38709826090)）を使用。
 アーカイブのSHA-256は`f95b123d2f252e4083409afeedaf890a750a837e25693eea9a5644503acb3408`。

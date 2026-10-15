@@ -112,7 +112,22 @@ pull the merged `main`, not copy a Windows-specific workaround into their
 packaging. See the [Linux handover](linux-handover.md) for the next native
 verification checkpoint; Linux Wayland/X11 has not been verified here.
 
-## What Linux must check
+## Linux preview b0.3 acceptance and publication (2026-10-15)
+
+[Linux preview b0.3](https://github.com/jydie5/MangaCrisp/releases/tag/linux-preview-0.7.1b0.3)
+contains the shared UX and both follow-up fixes. Its Ubuntu 24.04 CI package
+comes from main `6d9600f`; source checks pass with 187 tests, 8 skips and
+5 subtests passed. Clean Ubuntu 24.04/26.04 installation, packaged startup,
+demo reading, bundled RAR support, CPU Vulkan enhancement and uninstallation pass.
+The pinned engine also passes on a GTX 1060 6GB.
+
+The user accepted the Ubuntu 26.04.1 / GNOME 50.1 / Wayland candidate on
+2026-10-15 ("確認しました。mainにまーじ"). This records general acceptance,
+not individual checklist sign-offs. AMD/Intel real GPUs, a physical X11
+desktop session, fractional scaling and other Wayland compositors remain
+unverified. See the [Linux validation record](../testing/linux-ux-20261015-validation.ja.md).
+
+## Linux checks to repeat for later releases
 
 Use `scripts/build_linux_app.py` on Ubuntu 24.04 or newer.
 
