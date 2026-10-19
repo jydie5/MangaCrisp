@@ -8,18 +8,21 @@ from PySide6.QtCore import QEvent, Qt
 from PySide6.QtGui import QKeyEvent
 from PySide6.QtWidgets import QMessageBox
 
+from mangacrisp_app import correction_cache
 from mangacrisp_app.bookshelf import (
     BookshelfWindow,
     context_menu_target_ids,
     delete_confirmation_text,
     delete_outcome_message,
 )
-from mangacrisp_app.i18n import set_language
-from mangacrisp_app.library import LibraryPaths, LibraryService, save_library_settings
-from mangacrisp_app.viewer import (
+from mangacrisp_app.correction_cache import (
+    CorrectionDiskCache,
     output_cache_source_key,
     remove_enhancement_cache_for_sources,
 )
+from mangacrisp_app.i18n import set_language
+from mangacrisp_app.library import LibraryPaths, LibraryService, save_library_settings
+from mangacrisp_app.page_provider import PdfPageIdentityProvider
 
 
 def test_context_menu_targets_follow_selection_rules() -> None:
@@ -66,6 +69,60 @@ def test_remove_enhancement_cache_for_sources_only_touches_matching_keys(tmp_pat
     for parameter_key in ("se-n0-s2", "pro-n3-s2"):
         assert not (cache_root / "interactive" / parameter_key / output_cache_source_key(source)).exists()
         assert (cache_root / "interactive" / parameter_key / output_cache_source_key(other)).exists()
+
+
+def test_remove_pdf_enhancement_cache_uses_recorded_page_count_when_pdf_is_broken(
+    qapp, tmp_path: Path, monkeypatch
+) -> None:
+    source = tmp_path / "source.pdf"
+    cover = Image.new("RGB", (120, 180), (220, 30, 40))
+    second = Image.new("RGB", (120, 180), (20, 40, 220))
+    cover.save(source, format="PDF", save_all=True, append_images=[second])
+
+    paths = LibraryPaths.for_base_dir(tmp_path / "state")
+    save_library_settings(paths, library_dir_confirmed=True)
+    library = LibraryService.open(paths)
+    window = None
+    try:
+        registered = library.register_local_book(source)
+        library.importer.import_book(registered)
+        imported = library.books.get(registered.id)
+        assert imported is not None
+        assert imported.page_count == 2
+
+        cache_root = tmp_path / "upscale"
+        monkeypatch.setattr(correction_cache, "DEFAULT_UPSCALE_DIR", cache_root)
+        # Keep the recorded page count while making the managed source
+        # unreadable.  Identity-only cleanup must still remove its AI keys.
+        Path(imported.local_path).write_bytes(b"broken PDF")
+        pages = PdfPageIdentityProvider(Path(imported.local_path), imported.page_count)
+        cache = CorrectionDiskCache(cache_root)
+        parameter_key = "se-n0-s2"
+        cached_outputs = []
+        for index in range(len(pages)):
+            output = cache.output_path(pages, index, parameter_key, 2)
+            output.parent.mkdir(parents=True, exist_ok=True)
+            Image.new("RGB", (12, 12), (230, 20, 30)).save(output, format="PNG")
+            cached_outputs.append(output)
+
+        other = tmp_path / "other.png"
+        Image.new("L", (8, 8), 0).save(other)
+        unrelated = cache_root / "interactive" / parameter_key / output_cache_source_key(other)
+        unrelated.mkdir(parents=True)
+        (unrelated / "output.png").write_bytes(b"keep")
+
+        window = BookshelfWindow(library)
+        # The cleanup must not try to parse or render the damaged PDF.
+        with patch("mangacrisp_app.bookshelf.PdfPageList", side_effect=AssertionError("must stay lazy")):
+            window.remove_enhancement_cache(imported)
+
+        assert all(not output.exists() for output in cached_outputs)
+        assert (unrelated / "output.png").is_file()
+        assert Path(imported.local_path).is_file()
+    finally:
+        if window is not None:
+            window.close()
+        library.close()
 
 
 def _bookshelf_with_books(tmp_path: Path, count: int) -> tuple[BookshelfWindow, list[str]]:

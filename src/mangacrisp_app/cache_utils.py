@@ -12,12 +12,17 @@ def prune_png_cache(
     protected: set[Path] | None = None,
     now: float | None = None,
 ) -> int:
-    """Remove expired and least-recently-used PNG cache files."""
+    """Remove expired/LRU PNGs, preserving protected files and directory trees."""
     root = cache_root.expanduser()
     if not root.is_dir():
         return 0
 
     protected_paths = {_resolved(path) for path in protected or set()}
+
+    def is_protected(path: Path) -> bool:
+        resolved = _resolved(path)
+        return resolved in protected_paths or any(parent in protected_paths for parent in resolved.parents)
+
     entries: list[tuple[float, int, Path]] = []
     total = 0
     for path in root.rglob("*.png"):
@@ -37,7 +42,7 @@ def prune_png_cache(
 
     remaining: list[tuple[float, int, Path]] = []
     for mtime, size, path in sorted(entries):
-        if cutoff is None or mtime >= cutoff or _resolved(path) in protected_paths:
+        if cutoff is None or mtime >= cutoff or is_protected(path):
             remaining.append((mtime, size, path))
             continue
         if _remove_file(path):
@@ -47,13 +52,13 @@ def prune_png_cache(
     for _mtime, size, path in remaining:
         if total <= max(0, max_bytes):
             break
-        if _resolved(path) in protected_paths:
+        if is_protected(path):
             continue
         if _remove_file(path):
             total -= size
             removed += 1
 
-    _remove_empty_directories(root)
+    _remove_empty_directories(root, protected_paths)
     return removed
 
 
@@ -72,11 +77,14 @@ def _remove_file(path: Path) -> bool:
     return True
 
 
-def _remove_empty_directories(root: Path) -> None:
+def _remove_empty_directories(root: Path, protected: set[Path]) -> None:
     directories = [path for path in root.rglob("*") if path.is_dir()]
     for directory in sorted(
         directories, key=lambda path: len(path.parts), reverse=True
     ):
+        resolved = _resolved(directory)
+        if resolved in protected or any(parent in protected for parent in resolved.parents):
+            continue
         try:
             directory.rmdir()
         except OSError:

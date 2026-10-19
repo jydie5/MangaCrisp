@@ -5,8 +5,8 @@ import sys
 import threading
 import time
 from argparse import ArgumentParser, Namespace
-from collections import OrderedDict, deque
-from collections.abc import Callable, Iterable, Sequence
+from collections import deque
+from collections.abc import Callable, Sequence
 from hashlib import sha1
 from html import escape
 from math import ceil
@@ -16,10 +16,29 @@ from tempfile import TemporaryDirectory
 from PIL import Image
 
 from mangacrisp_app.archive_utils import discover_samples
-from mangacrisp_app.branding import APP_BUNDLE_IDENTIFIER, APP_NAME, CACHE_DIR, PROJECT_URL, SUPPORT_URL
-from mangacrisp_app.cache_utils import prune_png_cache
-from mangacrisp_app.cursor_autohide import CURSOR_AUTO_HIDE_DELAY_MS, CursorAutoHideState, cursor_may_hide
-from mangacrisp_app.engine_utils import realcugan_executable, run_realcugan
+from mangacrisp_app.branding import (
+    APP_BUNDLE_IDENTIFIER,
+    APP_NAME,
+    PROJECT_URL,
+    SUPPORT_URL,
+)
+from mangacrisp_app.correction_cache import DEFAULT_UPSCALE_DIR, CorrectionDiskCache
+from mangacrisp_app.correction_queue import CorrectionQueue
+from mangacrisp_app.cursor_autohide import (
+    CURSOR_AUTO_HIDE_DELAY_MS,
+    CursorAutoHideState,
+    cursor_may_hide,
+)
+from mangacrisp_app.display_cache import (
+    DisplayCache,
+    display_image_key,
+    display_keys_show_same_image,
+)
+from mangacrisp_app.engine_utils import (
+    PRO_SYNC_GAP,
+    realcugan_executable,
+    run_realcugan,
+)
 from mangacrisp_app.i18n import initialize_language, tr
 from mangacrisp_app.library import migrate_legacy_application_state
 from mangacrisp_app.page_provider import open_pages_for_viewer
@@ -31,7 +50,16 @@ from mangacrisp_app.quality_settings import (
 )
 
 try:
-    from PySide6.QtCore import QEvent, QObject, QRunnable, QSize, QThreadPool, QTimer, Qt, Signal
+    from PySide6.QtCore import (
+        QEvent,
+        QObject,
+        QRunnable,
+        QSize,
+        Qt,
+        QThreadPool,
+        QTimer,
+        Signal,
+    )
     from PySide6.QtGui import QCursor, QImage, QPixmap
     from PySide6.QtWidgets import (
         QApplication,
@@ -62,13 +90,6 @@ except ImportError as exc:
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 SAMPLE_DIR = ROOT_DIR / "sample"
-def default_upscale_dir() -> Path:
-    if getattr(sys, "frozen", False):
-        return CACHE_DIR / "upscale"
-    return ROOT_DIR / "test" / "output" / "upscale"
-
-
-DEFAULT_UPSCALE_DIR = default_upscale_dir()
 DISPLAY_CACHE_DIR = DEFAULT_UPSCALE_DIR / "display_cache"
 DEFAULT_FORWARD_PREFETCH_COUNT = 12
 DEFAULT_PREVIOUS_PREFETCH_COUNT = 6
@@ -80,12 +101,10 @@ CORRECTION_MISS_THRESHOLD = 2
 CORRECTION_MISS_LEAD_FACTOR = 1.5
 DISPLAY_WARM_AHEAD_COUNT = 4
 DISPLAY_WARM_PREVIOUS_COUNT = 4
-DISK_RETENTION_PREVIOUS_COUNT = 12
+DISK_PROTECTED_PREVIOUS_COUNT = 12
 PREFETCH_DEBOUNCE_MS = 90
 DISPLAY_WARM_DEBOUNCE_MS = 180
 CACHE_MAINTENANCE_DEBOUNCE_MS = 900
-AI_ENHANCEMENT_CACHE_LIMIT_BYTES = 2 * 1024 * 1024 * 1024
-AI_ENHANCEMENT_CACHE_MAX_AGE_SECONDS = 30 * 24 * 60 * 60
 PAGE_STATE_SAVE_DEBOUNCE_MS = 350
 CLICK_ZONE_EDGE_FRACTION = 0.4
 CLICK_DRAG_TOLERANCE_PX = 12
@@ -265,61 +284,17 @@ def default_spread_order(reading_direction: str) -> str:
     return "rtl" if reading_direction == "rtl" else "ltr"
 
 
-def output_cache_source_key(source: Path) -> str:
-    try:
-        stat = source.stat()
-        identity = f"{source.resolve()}:{stat.st_size}:{stat.st_mtime_ns}"
-    except OSError:
-        identity = str(source.expanduser())
-    return sha1(identity.encode("utf-8")).hexdigest()[:16]
-
-
-def remove_enhancement_cache_for_sources(sources: Sequence[Path], cache_root: Path | None = None) -> int:
-    """Delete the per-page AI correction cache folders that belong to the given source images."""
-    interactive_root = (cache_root or DEFAULT_UPSCALE_DIR) / "interactive"
-    if not interactive_root.is_dir():
-        return 0
-    keys = {output_cache_source_key(source) for source in sources}
-    removed = 0
-    for parameter_dir in interactive_root.iterdir():
-        if not parameter_dir.is_dir():
-            continue
-        for key in keys:
-            target = parameter_dir / key
-            if target.is_dir():
-                shutil.rmtree(target, ignore_errors=True)
-                removed += 1
-    return removed
-
-
 def display_cache_path_for(display_path: Path) -> Path | None:
     try:
         stat = display_path.stat()
     except OSError:
         return None
-    key = sha1(f"{display_path}:{stat.st_size}:{stat.st_mtime_ns}".encode("utf-8")).hexdigest()[:16]
+    key = sha1(f"{display_path}:{stat.st_size}:{stat.st_mtime_ns}".encode()).hexdigest()[:16]
     return DISPLAY_CACHE_DIR / f"{key}.png"
 
 
 def remove_legacy_display_cache() -> None:
     shutil.rmtree(DISPLAY_CACHE_DIR, ignore_errors=True)
-
-
-def prune_enhancement_cache(
-    cache_root: Path | None = None,
-    *,
-    max_bytes: int = AI_ENHANCEMENT_CACHE_LIMIT_BYTES,
-    max_age_seconds: int | None = AI_ENHANCEMENT_CACHE_MAX_AGE_SECONDS,
-    protected: set[Path] | None = None,
-    now: float | None = None,
-) -> int:
-    return prune_png_cache(
-        cache_root or DEFAULT_UPSCALE_DIR,
-        max_bytes=max_bytes,
-        max_age_seconds=max_age_seconds,
-        protected=protected,
-        now=now,
-    )
 
 
 def prefetch_window_indexes(
@@ -331,10 +306,8 @@ def prefetch_window_indexes(
 ) -> list[int]:
     indexes = [index for index in visible_indexes if 0 <= index < total_pages]
     start = current_index + len(indexes)
-    for index in range(start, min(total_pages, start + max(0, ahead_count))):
-        indexes.append(index)
-    for index in range(current_index - 1, max(-1, current_index - previous_count - 1), -1):
-        indexes.append(index)
+    indexes.extend(range(start, min(total_pages, start + max(0, ahead_count))))
+    indexes.extend(range(current_index - 1, max(-1, current_index - previous_count - 1), -1))
     return list(dict.fromkeys(indexes))
 
 
@@ -394,31 +367,6 @@ def missing_processed_indexes(
         and index not in skipped
         and (processed_pages[index] is None or not processed_pages[index].is_file())
     ]
-
-
-def display_keys_show_same_image(shown: tuple | None, desired: tuple | None) -> bool:
-    """True when two display cache keys name the same file at the same size and color mode.
-
-    Keys also carry the file size and mtime so that a rewritten file is decoded
-    again; those fields are ignored here because a mere mtime bump (cache
-    access-time refresh) must not make the reader redraw the original first.
-    """
-    if shown is None or desired is None:
-        return False
-    return shown[0] == desired[0] and shown[3:5] == desired[3:5] and shown[6] == desired[6]
-
-
-def pick_next_correction_index(
-    priority: Sequence[int],
-    queued: Iterable[int],
-    targets: set[int] | None = None,
-) -> int | None:
-    """Choose the next page to correct: the earliest queued page in priority order that is still wanted."""
-    queued_set = set(queued)
-    for index in priority:
-        if index in queued_set and (targets is None or index in targets):
-            return index
-    return None
 
 
 class WorkerSignals(QObject):
@@ -504,7 +452,7 @@ class SpreadWindow(QMainWindow):
         bookmark_callback: Callable[[int], None] | None = None,
         next_book_callback: Callable[[], None] | None = None,
         next_book_label: str | None = None,
-        close_callback: Callable[["SpreadWindow"], None] | None = None,
+        close_callback: Callable[[SpreadWindow], None] | None = None,
         settings_path: Path | None = None,
         embedded: bool = False,
         parent: QWidget | None = None,
@@ -512,7 +460,8 @@ class SpreadWindow(QMainWindow):
         super().__init__(parent)
         if embedded:
             self.setWindowFlags(Qt.Widget)
-        prune_enhancement_cache()
+        self.correction_cache = CorrectionDiskCache(DEFAULT_UPSCALE_DIR)
+        self.correction_cache.prune()
         self.pages = pages
         self.processed_pages = processed_pages or [None] * len(pages)
         self.reading_direction = reading_direction
@@ -542,14 +491,9 @@ class SpreadWindow(QMainWindow):
         self.processing_generation = 0
         self.is_closing = False
         self.prefetch_target_indexes: set[int] = set()
-        self.correction_queue: dict[int, Path] = {}
-        self.correction_priority: list[int] = []
-        self.correction_in_flight: int | None = None
-        self.correction_queue_lock = threading.Lock()
+        self.correction_queue = CorrectionQueue()
         self.running_parameter_key: str | None = None
         self.active_output_paths: set[Path] = set()
-        self.touched_output_paths: set[Path] = set()
-        self.output_path_cache: dict[tuple[str, int], Path] = {}
         self.current_quality_preset = "自然"
         self.last_corrected_preset_name = "自然"
         self.navigation_intervals: deque[float] = deque(maxlen=8)
@@ -564,8 +508,7 @@ class SpreadWindow(QMainWindow):
         self.mouse_press_global_position = None
         self.suppress_next_mouse_release = False
         self.image_size_cache: dict[int, tuple[int, int]] = {}
-        self.display_pixmap_cache: OrderedDict[tuple, QPixmap] = OrderedDict()
-        self.display_pixmap_cache_limit = 18
+        self.display_pixmap_cache: DisplayCache[tuple, QPixmap] = DisplayCache(capacity=18)
         self.pending_display_renders: dict[tuple, int] = {}
         self.desired_display_keys: dict[int, tuple | None] = {}
         self.fallback_display_keys: dict[int, tuple | None] = {}
@@ -589,7 +532,7 @@ class SpreadWindow(QMainWindow):
         self.display_warm_timer.timeout.connect(self.warm_nearby_display_cache)
         self.cache_maintenance_timer = QTimer(self)
         self.cache_maintenance_timer.setSingleShot(True)
-        self.cache_maintenance_timer.timeout.connect(self.prune_revolving_correction_cache)
+        self.cache_maintenance_timer.timeout.connect(self.maintain_correction_cache)
         self.page_state_save_timer = QTimer(self)
         self.page_state_save_timer.setSingleShot(True)
         self.page_state_save_timer.timeout.connect(self.flush_page_changed)
@@ -1230,10 +1173,11 @@ class SpreadWindow(QMainWindow):
 
     def on_processing_settings_changed(self) -> None:
         self.processing_generation += 1
+        self.prefetch_suspended = False
         self.processed_pages = [None] * len(self.pages)
         self.clear_queued_display_requests()
         self.display_pixmap_cache.clear()
-        self.output_path_cache.clear()
+        self.correction_cache.clear_path_memo()
         self.last_disk_cache_prune_signature = None
         if bool(getattr(self, "original_check", None) and self.original_check.isChecked()):
             self.current_quality_preset = "原画"
@@ -1510,6 +1454,9 @@ class SpreadWindow(QMainWindow):
             self.invalidate_prefetch_for_navigation()
         self.render_spread()
         if self.index != previous_index:
+            # Correction scheduling must not wait for the resize debounce:
+            # fast rendering affects display quality, not which page we need.
+            self.request_prefetch()
             self.record_correction_miss()
         self.notify_page_changed()
         self.update_spread_status()
@@ -1541,6 +1488,9 @@ class SpreadWindow(QMainWindow):
         self.correction_misses.append(bool(self.visible_missing_correction_indexes(visible_indexes)))
 
     def invalidate_prefetch_for_navigation(self) -> None:
+        # A failed batch pauses automatic retries while the reader stays put.
+        # A new navigation is an explicit opportunity to try again.
+        self.prefetch_suspended = False
         self.prefetch_target_indexes = set(self.visible_and_prefetch_indexes())
 
     def notify_page_changed(self) -> None:
@@ -1799,21 +1749,9 @@ class SpreadWindow(QMainWindow):
         high_quality: bool,
         normalize_color: bool,
     ) -> tuple | None:
-        if target.width() <= 0 or target.height() <= 0:
-            return None
-        try:
-            stat = display_path.stat()
-            return (
-                str(display_path),
-                stat.st_size,
-                stat.st_mtime_ns,
-                target.width(),
-                target.height(),
-                1 if high_quality else 0,
-                1 if normalize_color else 0,
-            )
-        except OSError:
-            return None
+        return display_image_key(
+            display_path, target.width(), target.height(), high_quality, normalize_color
+        )
 
     def request_display_pixmap(
         self,
@@ -1829,7 +1767,6 @@ class SpreadWindow(QMainWindow):
             return None, None
         cached = self.display_pixmap_cache.get(key)
         if cached is not None:
-            self.display_pixmap_cache.move_to_end(key)
             return cached, key
         priority = 1 if visible else 0
         pending_priority = self.pending_display_renders.get(key, -1)
@@ -1849,10 +1786,15 @@ class SpreadWindow(QMainWindow):
         return None, key
 
     def cache_display_pixmap(self, key: tuple, pixmap: QPixmap) -> None:
-        self.display_pixmap_cache[key] = pixmap
-        self.display_pixmap_cache.move_to_end(key)
-        while len(self.display_pixmap_cache) > self.display_pixmap_cache_limit:
-            self.display_pixmap_cache.popitem(last=False)
+        # Both corrected panes must remain ready together. Late warm/old-page
+        # decodes must not evict the first pane while its partner is pending,
+        # otherwise the spread can remain on the original indefinitely.
+        protected = {
+            candidate
+            for candidate in (*self.desired_display_keys.values(), *self.fallback_display_keys.values())
+            if candidate is not None
+        }
+        self.display_pixmap_cache.put(key, pixmap, protected=protected)
 
     def clear_queued_visible_requests(self) -> None:
         self.visible_display_pool.clear()
@@ -1915,7 +1857,6 @@ class SpreadWindow(QMainWindow):
 
     def show_display_pixmap(self, label: QLabel, key: tuple) -> None:
         pixmap = self.display_pixmap_cache[key]
-        self.display_pixmap_cache.move_to_end(key)
         label.setText("")
         label.setPixmap(pixmap)
         self.shown_display_keys[id(label)] = key
@@ -2076,7 +2017,7 @@ class SpreadWindow(QMainWindow):
         try:
             with Image.open(self.pages[index]) as image:
                 size = image.size
-        except Exception:
+        except Exception:  # noqa: BLE001 - provider failures must not break size-dependent UI.
             size = (0, 0)
         self.image_size_cache[index] = size
         return size
@@ -2093,19 +2034,19 @@ class SpreadWindow(QMainWindow):
         for index in indexes:
             if index < 0 or index >= len(self.pages):
                 continue
-            output_path = self.current_output_path(index)
-            if output_path not in self.active_output_paths and output_path.exists():
-                # Age-based pruning only needs one access-time bump per reading
-                # session; touching on every render changes the mtime that the
-                # display cache key embeds and forces a visible re-decode.
-                if output_path not in self.touched_output_paths:
-                    output_path.touch(exist_ok=True)
-                    self.touched_output_paths.add(output_path)
+            processed_path = self.processed_pages[index]
+            if processed_path is not None and not processed_path.is_file():
+                self.processed_pages[index] = None
+            output_path = self.correction_cache.cached_path(
+                self.pages, index, self.current_parameter_key(), self.scale_spin.value(),
+                active_outputs=self.active_output_paths,
+            )
+            if output_path is not None:
                 self.processed_pages[index] = output_path
 
     def current_parameter_key(self) -> str:
         model = self.model_combo.currentText()
-        model_suffix = "_syncgap1" if model == "models-pro" else ""
+        model_suffix = f"_syncgap{PRO_SYNC_GAP}" if model == "models-pro" else ""
         tta = "_tta" if self.tta_check.isChecked() else ""
         return (
             f"scale{self.scale_spin.value()}_noise{self.noise_combo.currentText()}_"
@@ -2113,22 +2054,13 @@ class SpreadWindow(QMainWindow):
         )
 
     def current_output_path(self, index: int) -> Path:
-        parameter_key = self.current_parameter_key()
-        cache_key = (parameter_key, index)
-        cached = self.output_path_cache.get(cache_key)
-        if cached is not None:
-            return cached
-        source = self.pages[index]
-        folder = DEFAULT_UPSCALE_DIR / "interactive" / parameter_key / output_cache_source_key(source)
-        output_path = folder / f"{index + 1:04d}_{source.stem}_x{self.scale_spin.value()}.png"
-        self.output_path_cache[cache_key] = output_path
-        return output_path
+        return self.correction_cache.output_path(
+            self.pages, index, self.current_parameter_key(), self.scale_spin.value()
+        )
 
-    def prune_revolving_correction_cache(self) -> None:
+    def maintain_correction_cache(self) -> None:
         if (
             not hasattr(self, "scale_spin")
-            or self.prefetch_running
-            or self.upscale_running
             or self.is_closing
         ):
             return
@@ -2138,7 +2070,7 @@ class SpreadWindow(QMainWindow):
                 len(self.pages),
                 self.visible_page_indexes(),
                 min(MAX_FORWARD_PREFETCH_COUNT, self.adaptive_prefetch_count + 4),
-                max(DISK_RETENTION_PREVIOUS_COUNT, self.previous_prefetch_count),
+                max(DISK_PROTECTED_PREVIOUS_COUNT, self.previous_prefetch_count),
             )
         )
         signature = (self.current_parameter_key(), tuple(sorted(keep)))
@@ -2146,24 +2078,17 @@ class SpreadWindow(QMainWindow):
             return
 
         for index, processed_path in enumerate(self.processed_pages):
-            if index in keep:
+            if index in keep or processed_path in self.active_output_paths:
                 continue
             if processed_path is not None:
                 self.processed_pages[index] = None
-                if processed_path != self.current_output_path(index):
-                    continue
-                display_cache_path = display_cache_path_for(processed_path)
-                try:
-                    processed_path.unlink()
-                except OSError:
-                    pass
-                if display_cache_path is not None:
-                    try:
-                        display_cache_path.unlink()
-                    except OSError:
-                        pass
+                # Release the session's working set, but keep completed PNGs
+                # for backtracking. The size/age LRU below bounds disk usage;
+                # a page-distance cutoff needlessly forced expensive repeats.
         protected = {self.current_output_path(index) for index in keep}
-        prune_enhancement_cache(protected=protected)
+        self.correction_cache.prune(
+            protected=protected, active_outputs=self.active_output_paths
+        )
         self.last_disk_cache_prune_signature = signature
 
     def current_engine_settings(self) -> dict | None:
@@ -2207,9 +2132,7 @@ class SpreadWindow(QMainWindow):
         generation = self.processing_generation
         parameter_key = self.current_parameter_key()
         self.running_parameter_key = parameter_key
-        with self.correction_queue_lock:
-            self.correction_queue = dict(output_paths)
-            self.correction_priority = list(indexes)
+        self.correction_queue.reset(output_paths, indexes)
         self.parameter_status.setText(tr("現在の見開きを補正中..."))
         self.update_quality_state()
         self.update_reading_info()
@@ -2255,17 +2178,14 @@ class SpreadWindow(QMainWindow):
         for index in target_indexes:
             if self.should_skip_upscale(index) or self.processed_pages[index] is not None:
                 continue
-            if index == self.correction_in_flight:
+            if index == self.correction_queue.in_flight:
                 continue
             output_path = self.current_output_path(index)
             if output_path.exists():
                 continue
             additions[index] = output_path
-        with self.correction_queue_lock:
-            self.correction_priority = list(target_indexes)
-            for index, output_path in additions.items():
-                self.correction_queue.setdefault(index, output_path)
-            self.active_output_paths.update(self.correction_queue.values())
+        self.correction_queue.refresh(additions, target_indexes)
+        self.active_output_paths.update(self.correction_queue.active_outputs)
 
     def start_prefetch(self) -> None:
         if self.is_closing:
@@ -2304,9 +2224,7 @@ class SpreadWindow(QMainWindow):
         output_paths = {index: self.current_output_path(index) for index in indexes}
         self.prefetch_running = True
         self.active_output_paths = set(output_paths.values())
-        with self.correction_queue_lock:
-            self.correction_queue = dict(output_paths)
-            self.correction_priority = list(target_indexes)
+        self.correction_queue.reset(output_paths, target_indexes)
         skipped_count = len(target_indexes) - len(indexes)
         suffix = tr(" / {count}ページはスキップ", count=skipped_count) if skipped_count else ""
         self.parameter_status.setText(
@@ -2324,15 +2242,8 @@ class SpreadWindow(QMainWindow):
         ).start()
 
     def take_next_correction(self, is_prefetch: bool) -> tuple[int, Path] | None:
-        with self.correction_queue_lock:
-            targets = self.prefetch_target_indexes if is_prefetch else None
-            index = pick_next_correction_index(self.correction_priority, self.correction_queue, targets)
-            if index is None:
-                self.correction_queue.clear()
-                self.correction_in_flight = None
-                return None
-            self.correction_in_flight = index
-            return index, self.correction_queue.pop(index)
+        targets = self.prefetch_target_indexes if is_prefetch else None
+        return self.correction_queue.take(targets)
 
     def _process_pages_worker(
         self,
@@ -2350,8 +2261,9 @@ class SpreadWindow(QMainWindow):
                 break
             index, output_path = item
             try:
+                source = self.pages[index]
                 result = run_realcugan(
-                    self.pages[index],
+                    source,
                     output_path,
                     scale=settings["scale"],
                     noise=settings["noise"],
@@ -2360,7 +2272,7 @@ class SpreadWindow(QMainWindow):
                     tta=settings["tta"],
                 )
                 if result.returncode != 0 or not result.output_exists:
-                    errors.append(f"{self.pages[index].name}: code {result.returncode}")
+                    errors.append(f"{source.name}: code {result.returncode}")
                 else:
                     completed_output_paths[index] = output_path
                     self.signals.upscale_page_done.emit(
@@ -2369,13 +2281,12 @@ class SpreadWindow(QMainWindow):
                         generation,
                         parameter_key,
                     )
-            except Exception as exc:
-                errors.append(f"{self.pages[index].name}: {exc}")
+            except Exception as exc:  # noqa: BLE001 - always release the job and report batch completion.
+                # A lazy provider can itself fail. Do not index it again while
+                # reporting that failure, or the worker never signals done.
+                errors.append(f"Page {index + 1}: {exc}")
             finally:
-                with self.correction_queue_lock:
-                    if self.correction_in_flight == index:
-                        self.correction_in_flight = None
-                    self.correction_queue.pop(index, None)
+                self.correction_queue.complete(index)
         self.signals.upscale_done.emit(
             round((time.perf_counter() - started) * 1000),
             completed_output_paths,
@@ -2400,6 +2311,9 @@ class SpreadWindow(QMainWindow):
             return
         if not output_path.is_file():
             return
+        self.active_output_paths.discard(output_path)
+        self.last_disk_cache_prune_signature = None
+        self.cache_maintenance_timer.start(CACHE_MAINTENANCE_DEBOUNCE_MS)
         self.processed_pages[index] = output_path
         visible_indexes = self.visible_page_indexes()
         if index in visible_indexes and not self.visible_missing_correction_indexes(visible_indexes):
@@ -2432,9 +2346,7 @@ class SpreadWindow(QMainWindow):
         self.upscale_running = False
         self.prefetch_running = False
         self.running_parameter_key = None
-        with self.correction_queue_lock:
-            self.correction_queue.clear()
-            self.correction_in_flight = None
+        self.correction_queue.clear()
         self.active_output_paths.clear()
         self.last_disk_cache_prune_signature = None
         self.apply_button.setEnabled(True)
