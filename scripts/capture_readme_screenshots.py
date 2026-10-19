@@ -17,7 +17,8 @@ from PySide6.QtWidgets import QApplication
 from mangacrisp_app.bookshelf import BookshelfWindow
 from mangacrisp_app.i18n import set_language
 from mangacrisp_app.library import LibraryPaths, LibraryService, save_library_settings
-from mangacrisp_app.viewer import SpreadWindow
+from mangacrisp_app.shortcut_help import ShortcutHelpDialog
+from mangacrisp_app.viewer import SpreadWindow, viewer_shortcuts_text
 
 
 def process_events(app: QApplication, seconds: float) -> None:
@@ -37,7 +38,9 @@ def capture(demo_dir: Path, output_dir: Path, language: str = "en") -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     with TemporaryDirectory(prefix="mangacrisp-readme-") as temporary_directory:
-        paths = LibraryPaths.for_base_dir(Path(temporary_directory))
+        # Resolve macOS's /var -> /private/var alias before importing. Cover
+        # paths must follow the final import directory after its atomic rename.
+        paths = LibraryPaths.for_base_dir(Path(temporary_directory).resolve())
         save_library_settings(paths, library_dir_confirmed=True)
         library = LibraryService.open(paths)
         try:
@@ -54,13 +57,19 @@ def capture(demo_dir: Path, output_dir: Path, language: str = "en") -> None:
             )
             bookshelf.show()
             process_events(app, 0.8)
+            bookshelf.list_widget.setCurrentRow(0)
+            process_events(app, 0.2)
             if not bookshelf.grab().save(str(output_dir / "bookshelf.png")):
                 raise RuntimeError("failed to save bookshelf screenshot")
             bookshelf.hide()
 
             books = sorted(library.books.list_books(), key=lambda item: item.title)
             selected = books[-1]
-            pages = sorted(Path(selected.local_path).glob("*"))
+            pages = sorted(
+                path
+                for path in Path(selected.local_path).glob("*")
+                if path.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp"}
+            )
             reader = SpreadWindow(
                 pages=pages,
                 title=selected.title,
@@ -77,16 +86,34 @@ def capture(demo_dir: Path, output_dir: Path, language: str = "en") -> None:
             process_events(app, 1.5)
             if not reader.grab().save(str(output_dir / "reader.png")):
                 raise RuntimeError("failed to save reader screenshot")
+            reader.toggle_controls()
+            process_events(app, 0.3)
+            reader.toggle_reading_info()
+            process_events(app, 0.4)
+            if not reader.grab().save(str(output_dir / "reader-controls.png")):
+                raise RuntimeError("failed to save reading-controls screenshot")
+            reader.dismiss_reading_overlay()
+            help_dialog = ShortcutHelpDialog(reader, viewer_shortcuts_text("ltr"))
+            help_dialog.show()
+            process_events(app, 0.3)
+            if not help_dialog.card.grab().save(str(output_dir / "shortcut-help.png")):
+                raise RuntimeError("failed to save shortcut-help screenshot")
+            help_dialog.close()
             reader.close()
+            bookshelf.close()
             process_events(app, 0.2)
         finally:
             library.close()
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Capture README screenshots with free demo books.")
+    parser = argparse.ArgumentParser(
+        description="Capture README screenshots with free demo books."
+    )
     parser.add_argument("--demo-dir", type=Path, default=REPOSITORY_ROOT / "demo")
-    parser.add_argument("--output-dir", type=Path, default=REPOSITORY_ROOT / "docs" / "images")
+    parser.add_argument(
+        "--output-dir", type=Path, default=REPOSITORY_ROOT / "docs" / "images"
+    )
     parser.add_argument("--language", choices=("en", "ja"), default="en")
     args = parser.parse_args()
     capture(args.demo_dir.resolve(), args.output_dir.resolve(), args.language)

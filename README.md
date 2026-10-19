@@ -15,12 +15,23 @@ MangaCrisp began as RAIV for mac, an independent implementation inspired by
 [nalltama/RAIV](https://github.com/nalltama/RAIV). It is not an official release
 of the original RAIV project and now follows its own product direction.
 
-![MangaCrisp bookshelf with freely licensed sample comics](docs/images/bookshelf.png)
+![Refreshed bookshelf containing only freely licensed demo comics](docs/images/bookshelf.png)
 
-![MangaCrisp two-page reader with the settings panel open](docs/images/reader.png)
+![On-demand translucent reading controls with shortcut badges](docs/images/reader-controls.png)
 
-The screenshots use *Pepper&Carrot* by David Revoy under
-[CC BY 4.0](demo/ATTRIBUTION.md). No commercial manga pages are included.
+<details>
+<summary>Reading settings and shortcut help</summary>
+
+![Quality cards and layout buttons in Reading Settings](docs/images/reader.png)
+
+![Shortcut help with Escape and outside-click dismissal](docs/images/shortcut-help.png)
+
+</details>
+
+Screenshots show the shared UI on macOS using an isolated demo bookshelf.
+Artwork is *Pepper&Carrot* by David Revoy under
+[CC BY 4.0, with attribution](demo/ATTRIBUTION.md).
+See the [capture procedure and image provenance](docs/images/README.md).
 
 ## Help keep MangaCrisp moving
 
@@ -70,9 +81,9 @@ available if enhancement is unavailable. See
 [INSTALL.windows.md](INSTALL.windows.md) for installation and limitations.
 
 > The source now includes the UI/UX and correction/cache fixes released in
-> macOS Beta 0.7.1b0.3. This Windows download predates them. Native Windows
-> acceptance of the new controls and help is pending; previous candidate
-> checks do not certify the new UI. See the
+> macOS Beta 0.7.1b0.3. This Windows download predates them. The user confirmed the current UI on a real Windows machine on
+> 2026-10-20. A new preview package is being prepared; the download above
+> remains the older build until publication. See the
 > [developer handover](docs/development/windows-handover.md).
 
 ### Linux (Ubuntu) preview

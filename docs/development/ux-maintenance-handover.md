@@ -3,15 +3,20 @@
 [日本語](ux-maintenance-handover.ja.md)
 
 PR #53 (correction/cache) and PR #54 (reader/bookshelf UI) are merged into
-`main`, and Apple Silicon beta `macos-beta-0.7.1b0.3` is published. The UI
-checkpoint is `97dc06f`, with portable font-metric tests at `ed7fa11`. This
-supersedes the earlier PR #44 handover.
+`main`; the UI release line is `35f2936`, and the current main handover is
+`d7bbf50`. Apple Silicon beta `macos-beta-0.7.1b0.3` is published. The UI
+implementation checkpoint is `97dc06f`, with portable font-metric tests at
+`ed7fa11`. This supersedes the earlier PR #44 handover.
 
 The shared automated suite passed 274 tests, with 8 skips and 12 subtests.
 macOS, Windows, and Ubuntu CI passed. Native macOS UI checks, distribution
-audit, extracted startup, and color-PDF smoke checks passed separately.
-Windows/Linux native acceptance of this new UI is still pending; CI does not
-replace it. Published Windows b0.4 and Linux b0.3 artifacts remain unchanged.
+audit, extracted startup, and color-PDF smoke checks passed separately. On
+2026-10-20, the user reported that this current UI worked on a real Linux
+machine and confirmed it on Windows. This is a general native success report,
+not evidence for each OS/session, GPU/driver, scaling, package-smoke, or
+checklist item; those detailed gates remain open where evidence is absent.
+Published Windows b0.4 and Linux b0.3 artifacts remain unchanged until new
+previews are actually published.
 The macOS beta uses the existing ad-hoc signed `scripts/package_standalone.py`
 workflow and is not Apple notarized.
 
@@ -141,8 +146,8 @@ Use `scripts/build_linux_app.py` on Ubuntu 24.04 or newer.
 
 The Windows preview b0.4 and Linux preview b0.3 acceptance records remain in
 their historical release documents. They are useful prior-platform evidence,
-but do not close the native acceptance gate for this final reader-controls
-candidate.
+but do not replace the 2026-10-20 general report or close the detailed native
+evidence gate for this final reader-controls candidate.
 
 ## Rollback and conflict boundaries
 

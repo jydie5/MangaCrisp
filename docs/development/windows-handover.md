@@ -295,7 +295,8 @@ changes were made. Continue with [the Linux handover](linux-handover.md).
 
 ## Current reader UI and correction-cache handover (2026-10-20)
 
-The current PR #53/#54 candidate line is based on `32d569e`, `1c1a8a6`,
+The current PR #53/#54 release line is UI merge `35f2936` on current `main`
+`d7bbf50`; its implementation checkpoints are `32d569e`, `1c1a8a6`,
 `5320092`, `8fd3c81`, and `97dc06f`. The final reader has no persistent bottom
 toolbar. A center click opens the translucent controls pane over the reader;
 navigation, one-page movement, original/enhanced comparison, settings, layout,
@@ -322,13 +323,19 @@ the corrected spread from flashing back to the original while late work arrives;
 old pages may be evicted after navigation. The macOS verification run for this
 candidate records **274 passed, 8 skipped, 12 subtests**.
 
-Native Windows acceptance of this final UI and cache line is still pending. On
-Windows, rebase from current `main`, run `uv run pytest -q`, build the portable
-package on Windows, and check the center-pane controls, help dismissal and
-focus behavior on the packaged reader together with a cold/warm pro correction
-run and cache cleanup. Record the native results before updating release notes
-or assets. Preserve the published Windows `0.7.1b0.4` release and its download
-assets; this candidate does not replace or relabel that release.
+On 2026-10-20, the user confirmed this current UI on Windows and reported that
+it worked on a real Linux machine. Record this as general native success only:
+the report does not provide Windows package-smoke, GPU/driver, clean-account,
+or individual checklist evidence. Keep those detailed gates explicit below.
+The published Windows `0.7.1b0.4` release and its download assets remain
+unchanged until a new Windows preview is actually published; this report does
+not replace or relabel that release.
+
+For the remaining Windows evidence, rebase from current `main`, run
+`uv run pytest -q`, build the portable package on Windows, and check the
+center-pane controls, help dismissal and focus behavior on the packaged reader
+together with a cold/warm pro correction run and cache cleanup. Record those
+results before updating release notes or assets.
 
 ## Technology decision
 
