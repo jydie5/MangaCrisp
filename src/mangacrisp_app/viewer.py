@@ -62,14 +62,18 @@ try:
     )
     from PySide6.QtGui import QCursor, QImage, QPixmap
     from PySide6.QtWidgets import (
+        QAbstractButton,
+        QAbstractSpinBox,
         QApplication,
         QCheckBox,
         QComboBox,
         QFileDialog,
         QFormLayout,
+        QGridLayout,
         QHBoxLayout,
         QInputDialog,
         QLabel,
+        QLineEdit,
         QMainWindow,
         QMessageBox,
         QProgressBar,
@@ -79,6 +83,14 @@ try:
         QVBoxLayout,
         QWidget,
     )
+
+    from mangacrisp_app.reader_widgets import (
+        READER_STYLE_SHEET,
+        ChoiceButton,
+        OverlayPane,
+        ShortcutButton,
+    )
+
     PYSIDE_IMPORT_ERROR: ImportError | None = None
 except ImportError as exc:
     QEvent = QObject = QRunnable = QSize = QThreadPool = QTimer = Qt = Signal = QCursor = QImage = QPixmap = None
@@ -195,9 +207,9 @@ def viewer_shortcuts_text(reading_direction: str) -> str:
             tr("B: しおり追加"),
             tr("画面左右クリック: 次へ/前へ（読書方向に連動）"),
             tr("Shift+画面左右クリック: 1ページ進む/戻す"),
-            tr("画面中央クリック: ページ情報を表示/非表示"),
+            tr("画面中央クリック: 操作ペインを表示/非表示"),
             tr("右クリック: 前へ"),
-            tr("Esc: 全画面解除 / 本棚へ戻る"),
+            tr("Esc: 操作ペインを閉じる / 全画面解除 / 本棚へ戻る"),
             tr("H / ?: このヘルプを表示"),
         ]
     )
@@ -554,12 +566,18 @@ class SpreadWindow(QMainWindow):
             "QWidget#controls { background: #181818; border-left: 1px solid #333333; } "
             "QPushButton, QComboBox, QSpinBox { min-height: 30px; font-size: 14px; } "
             "QCheckBox { min-height: 28px; } "
-            "QStatusBar { font-size: 12px; }"
+            "QStatusBar { font-size: 12px; }" + READER_STYLE_SHEET
         )
 
         root = QWidget(self)
-        root_layout = QHBoxLayout(root)
-        root_layout.setContentsMargins(12, 12, 12, 12)
+        root.setObjectName("readerRoot")
+        outer_layout = QVBoxLayout(root)
+        outer_layout.setContentsMargins(12, 12, 12, 8)
+        outer_layout.setSpacing(8)
+        root_layout = QHBoxLayout()
+        outer_layout.addLayout(root_layout, 1)
+        self.reader_action_buttons = {}
+        root_layout.setContentsMargins(0, 0, 0, 0)
         root_layout.setSpacing(12)
         image_host = QWidget(root)
         image_host.setMouseTracking(True)
@@ -602,63 +620,12 @@ class SpreadWindow(QMainWindow):
         self.left.installEventFilter(self)
         self.right.installEventFilter(self)
         image_host_layout.addLayout(layout, 1)
-        self.reading_info_panel = QWidget(image_host)
-        reading_info_layout = QVBoxLayout(self.reading_info_panel)
-        reading_info_layout.setContentsMargins(10, 8, 10, 8)
-        reading_info_layout.setSpacing(6)
-        self.reading_info_label = QLabel("", self.reading_info_panel)
-        self.reading_info_label.setWordWrap(True)
-        self.reading_info_label.setStyleSheet("font-size: 15px; color: #ffffff; background: transparent;")
-        self.reading_progress = QProgressBar(self.reading_info_panel)
-        self.reading_progress.setTextVisible(True)
-        self.reading_progress.setStyleSheet(
-            "QProgressBar {"
-            " background: rgba(255, 255, 255, 36);"
-            " border: 1px solid rgba(255, 255, 255, 58);"
-            " border-radius: 5px;"
-            " color: rgba(255, 255, 255, 210);"
-            " text-align: center;"
-            " height: 10px;"
-            "}"
-            "QProgressBar::chunk {"
-            " background: rgba(255, 255, 255, 178);"
-            " border-radius: 5px;"
-            "}"
-        )
-        self.reading_info_bookshelf_button = QPushButton(tr("本棚へ"), self.reading_info_panel)
-        self.reading_info_bookshelf_button.setToolTip(tr("読書位置を保存して本棚へ戻ります"))
-        self.reading_info_bookshelf_button.setCursor(Qt.PointingHandCursor)
-        self.reading_info_bookshelf_button.setFocusPolicy(Qt.NoFocus)
-        self.reading_info_bookshelf_button.setStyleSheet(
-            "QPushButton {"
-            " background: rgba(255, 255, 255, 28);"
-            " border: 1px solid rgba(255, 255, 255, 70);"
-            " border-radius: 6px;"
-            " color: #ffffff;"
-            " font-size: 14px;"
-            " padding: 6px 14px;"
-            "}"
-            "QPushButton:hover { background: rgba(255, 255, 255, 60); }"
-            "QPushButton:pressed { background: rgba(255, 255, 255, 90); }"
-        )
-        self.reading_info_bookshelf_button.clicked.connect(self.return_to_bookshelf)
-        reading_info_header = QHBoxLayout()
-        reading_info_header.setContentsMargins(0, 0, 0, 0)
-        reading_info_header.setSpacing(10)
-        reading_info_header.addWidget(self.reading_info_label, 1)
-        reading_info_header.addWidget(self.reading_info_bookshelf_button, 0, Qt.AlignTop)
-        reading_info_layout.addLayout(reading_info_header)
-        reading_info_layout.addWidget(self.reading_progress)
-        self.reading_info_panel.setStyleSheet(
-            "background: rgba(12, 12, 12, 150);"
-            "border: 1px solid rgba(255, 255, 255, 42);"
-            "border-radius: 8px;"
-        )
-        self.reading_info_panel.setVisible(False)
-        self.reading_info_panel.setCursor(Qt.ArrowCursor)
+        self.build_reading_overlay(image_host)
         root_layout.addWidget(image_host, 1)
         self.controls_panel = self.build_controls()
         root_layout.addWidget(self.controls_panel, 0)
+        self.action_bar = self.build_action_bar(root)
+        outer_layout.addWidget(self.action_bar)
         self.setCentralWidget(root)
         QApplication.instance().installEventFilter(self)
 
@@ -671,11 +638,11 @@ class SpreadWindow(QMainWindow):
         scroll = QScrollArea(self)
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        scroll.setFixedWidth(370)
+        scroll.setFixedWidth(350)
         scroll.setStyleSheet("QScrollArea { border: 0; background: #181818; }")
         controls = QWidget(scroll)
         controls.setObjectName("controls")
-        controls.setMinimumWidth(350)
+        controls.setMinimumWidth(330)
         layout = QVBoxLayout(controls)
         layout.setContentsMargins(14, 14, 14, 14)
         layout.setSpacing(12)
@@ -684,26 +651,23 @@ class SpreadWindow(QMainWindow):
         title = QLabel(tr("読書設定"), controls)
         title.setStyleSheet("font-weight: bold; font-size: 18px;")
         header.addWidget(title, 1)
-        help_button = QPushButton("?", controls)
-        help_button.setFixedWidth(34)
-        help_button.setToolTip(tr("ショートカットを表示"))
-        help_button.clicked.connect(self.show_shortcuts_help)
+        help_button = QPushButton("×  P", controls)
+        help_button.setFixedWidth(62)
+        help_button.setToolTip(tr("読書設定を閉じる"))
+        help_button.clicked.connect(self.toggle_controls)
         header.addWidget(help_button)
         layout.addLayout(header)
 
-        mode_row = QHBoxLayout()
-        mode_label = QLabel(tr("設定モード"), controls)
-        mode_row.addWidget(mode_label)
         self.settings_mode_combo = QComboBox(controls)
         self.settings_mode_combo.addItem(tr("かんたん"), "simple")
         self.settings_mode_combo.addItem(tr("マニュアル"), "manual")
         self.settings_mode_combo.currentIndexChanged.connect(self.on_settings_mode_changed)
-        mode_row.addWidget(self.settings_mode_combo, 1)
-        layout.addLayout(mode_row)
+        self.settings_mode_combo.hide()
 
         self.quality_state_card = QWidget(controls)
+        self.quality_state_card.setObjectName("qualityState")
         self.quality_state_card.setStyleSheet(
-            "background: #202020; border: 1px solid #3a3a3a; border-radius: 6px;"
+            "QWidget#qualityState { background: #202a34; border: 1px solid #354351; border-radius: 8px; }"
         )
         state_layout = QVBoxLayout(self.quality_state_card)
         state_layout.setContentsMargins(10, 8, 10, 8)
@@ -737,9 +701,8 @@ class SpreadWindow(QMainWindow):
         layout.addWidget(self.quality_state_card)
 
         back_button = QPushButton(tr("本棚へ戻る"), controls)
-        back_button.clicked.connect(self.close)
+        back_button.clicked.connect(self.return_to_bookshelf)
         layout.addWidget(back_button)
-        layout.addWidget(self.help_label(tr("読書画面を閉じて本棚に戻ります。")))
 
         self.next_book_button = QPushButton(tr("次の巻へ"), controls)
         self.next_book_button.setToolTip(tr("読了後に本棚順の次の巻を開きます"))
@@ -750,24 +713,31 @@ class SpreadWindow(QMainWindow):
         self.update_next_book_action()
 
         self.simple_panel = QWidget(controls)
+        self.simple_panel.setObjectName("simplePanel")
+        self.simple_panel.setStyleSheet("QWidget#simplePanel { background: transparent; }")
         simple_layout = QVBoxLayout(self.simple_panel)
         simple_layout.setContentsMargins(0, 0, 0, 0)
         simple_layout.setSpacing(8)
         preset_title = QLabel(tr("画質モード"), self.simple_panel)
         preset_title.setStyleSheet("font-weight: bold; font-size: 15px; margin-top: 4px;")
         simple_layout.addWidget(preset_title)
-        for preset in PRESETS:
-            button = QPushButton(display_preset_name(preset["name"]), self.simple_panel)
-            button.clicked.connect(lambda _checked=False, item=preset: self.apply_preset(item))
-            simple_layout.addWidget(button)
-            simple_layout.addWidget(self.help_label(tr(preset["description"])))
+        preset_grid = QGridLayout()
+        preset_grid.setSpacing(8)
+        self.preset_buttons = {}
+        subtitles = ["補正しない", "線とトーンを自然に", "汚れ・ノイズを軽減", "細部までくっきり"]
+        for index, preset in enumerate(PRESETS):
+            button = ChoiceButton(display_preset_name(preset["name"]), tr(subtitles[index]), self.simple_panel)
+            button.clicked.connect(lambda _checked=False, item=preset: self.select_quality_preset(item))
+            self.preset_buttons[preset["name"]] = button
+            preset_grid.addWidget(button, index // 2, index % 2)
+        simple_layout.addLayout(preset_grid)
         self.preset_status = QLabel(
             tr("選択中: {name}", name=display_preset_name("自然")),
             self.simple_panel,
         )
         self.preset_status.setWordWrap(True)
         self.preset_status.setStyleSheet("color: #dddddd; font-size: 13px;")
-        simple_layout.addWidget(self.preset_status)
+        self.preset_status.hide()
         layout.addWidget(self.simple_panel)
 
         layout_title = QLabel(tr("表示レイアウト"), controls)
@@ -777,22 +747,29 @@ class SpreadWindow(QMainWindow):
         self.page_layout_combo.addItem(tr("見開き（2画像）"), "spread")
         self.page_layout_combo.addItem(tr("単ページ（1画像）"), "single")
         self.page_layout_combo.currentIndexChanged.connect(self.on_page_layout_changed)
-        layout.addWidget(self.page_layout_combo)
+        self.page_layout_combo.hide()
+        layout_row = QHBoxLayout()
+        self.layout_buttons = {}
+        for mode, title in (("spread", "見開き"), ("single", "単ページ")):
+            button = QPushButton(tr(title) + "  V", controls)
+            button.setCheckable(True)
+            button.clicked.connect(lambda _checked=False, value=mode: self.select_page_layout(value))
+            self.layout_buttons[mode] = button
+            layout_row.addWidget(button)
+        layout.addLayout(layout_row)
         layout.addWidget(self.help_label(tr("見開きを含む1枚の画像は、単ページで中央に大きく表示します。")))
 
         spread_title = QLabel(tr("見開き調整"), controls)
         spread_title.setStyleSheet("font-weight: bold; font-size: 15px; margin-top: 8px;")
         layout.addWidget(spread_title)
         spread_buttons = QHBoxLayout()
-        self.shift_back_button = QPushButton("-1", controls)
-        self.shift_back_button.clicked.connect(lambda: self.move_by(-1))
+        self.shift_back_button = self.make_reader_action("back_one", controls)
         spread_buttons.addWidget(self.shift_back_button)
-        self.shift_forward_button = QPushButton("+1", controls)
-        self.shift_forward_button.clicked.connect(lambda: self.move_by(1))
+        self.shift_forward_button = self.make_reader_action("forward_one", controls)
         spread_buttons.addWidget(self.shift_forward_button)
         self.swap_button = QPushButton(tr("左右入替"), controls)
         self.swap_button.clicked.connect(self.swap_spread_order)
-        spread_buttons.addWidget(self.swap_button)
+        layout.addWidget(self.swap_button)
         layout.addLayout(spread_buttons)
         self.reset_spread_button = QPushButton(tr("標準見開きに戻す"), controls)
         self.reset_spread_button.clicked.connect(self.reset_spread_alignment)
@@ -803,7 +780,15 @@ class SpreadWindow(QMainWindow):
         layout.addWidget(self.spread_status)
         self.update_spread_status()
 
+        self.advanced_toggle = QPushButton(tr("詳細設定"), controls)
+        self.advanced_toggle.setCheckable(True)
+        self.advanced_toggle.clicked.connect(
+            lambda checked: self.apply_settings_mode("manual" if checked else "simple", persist=True)
+        )
+        layout.addWidget(self.advanced_toggle)
         self.advanced_panel = QWidget(controls)
+        self.advanced_panel.setObjectName("advancedPanel")
+        self.advanced_panel.setStyleSheet("QWidget#advancedPanel { background: transparent; }")
         advanced_layout = QVBoxLayout(self.advanced_panel)
         advanced_layout.setContentsMargins(0, 0, 0, 0)
         advanced_layout.setSpacing(8)
@@ -876,8 +861,8 @@ class SpreadWindow(QMainWindow):
 
         self.original_check = QCheckBox(tr("原画を表示（OFFで補正版）"), controls)
         self.original_check.stateChanged.connect(lambda _state: self.on_original_compare_changed())
-        layout.addWidget(self.original_check)
-        layout.addWidget(self.help_label(tr("チェックで原画、解除で補正版へ即時に切り替えて見比べます。")))
+        self.original_check.hide()
+        layout.addWidget(self.make_reader_action("original", controls))
 
         self.parameter_status = QLabel(tr("待機中"), controls)
         self.parameter_status.setWordWrap(True)
@@ -893,6 +878,144 @@ class SpreadWindow(QMainWindow):
         scroll.setWidget(controls)
         return scroll
 
+    def select_quality_preset(self, preset: dict) -> None:
+        if preset["name"] != self.current_quality_preset:
+            self.apply_preset(preset)
+        self.update_reader_action_states()
+
+    def select_page_layout(self, mode: str) -> None:
+        self.set_page_layout(mode)
+        self.update_reader_action_states()
+
+    def make_reader_action(self, action: str, parent: QWidget, *, compact: bool = False) -> ShortcutButton:
+        next_key, previous_key = ("←", "→") if self.is_right_bound() else ("→", "←")
+        actions = {
+            "previous": ("前へ", previous_key, lambda: self.move_by(-self.page_turn_step())),
+            "next": ("次へ", next_key, lambda: self.move_by(self.page_turn_step())),
+            "back_one": ("−1", "Shift+" + previous_key, lambda: self.move_by(-1)),
+            "forward_one": ("＋1", "Shift+" + next_key, lambda: self.move_by(1)),
+            "settings": ("設定", "P", self.toggle_controls),
+            "original": ("原画と比較", "O", lambda: self.original_check.toggle()),
+            "fullscreen": ("全画面", "F", self.toggle_fullscreen),
+            "layout": ("見開き", "V", self.toggle_page_layout),
+            "help": ("操作一覧", "H", self.show_shortcuts_help),
+            "bookmark": ("しおり", "B", self.add_bookmark),
+        }
+        title, shortcut, callback = actions[action]
+        button = ShortcutButton(tr(title), shortcut, parent, compact=compact)
+        button.setCheckable(action in {"settings", "original", "fullscreen", "layout"})
+        button.clicked.connect(callback)
+        self.reader_action_buttons.setdefault(action, []).append(button)
+        return button
+
+    def build_action_bar(self, parent: QWidget) -> QWidget:
+        bar = QWidget(parent)
+        bar.setObjectName("actionBar")
+        layout = QVBoxLayout(bar)
+        layout.setContentsMargins(8, 6, 8, 6)
+        layout.setSpacing(5)
+        self.action_bar_grid = QGridLayout()
+        self.action_bar_grid.setSpacing(6)
+        navigation = ("next", "previous", "forward_one", "back_one") if self.is_right_bound() else ("previous", "next", "back_one", "forward_one")
+        self.action_bar_buttons = [
+            self.make_reader_action(action, bar, compact=True)
+            for action in (*navigation, "settings", "original", "fullscreen", "help")
+        ]
+        self.action_bar_columns = 0
+        layout.addLayout(self.action_bar_grid)
+        hint = QLabel(tr("中央クリックで操作を表示") + "  ·  V " + tr("見開き") + " / " + tr("単ページ"), bar)
+        hint.setAlignment(Qt.AlignCenter)
+        hint.setStyleSheet("font-size: 11px; color: #aeb8c2; background: transparent;")
+        layout.addWidget(hint)
+        self.reflow_action_bar()
+        return bar
+
+    def reflow_action_bar(self) -> None:
+        if not hasattr(self, "action_bar_buttons"):
+            return
+        required_width = sum(button.minimumSizeHint().width() for button in self.action_bar_buttons) + 90
+        columns = 8 if self.width() >= required_width else 4
+        if columns == self.action_bar_columns:
+            return
+        self.action_bar_columns = columns
+        for column in range(8):
+            self.action_bar_grid.setColumnStretch(column, 0)
+        for index, button in enumerate(self.action_bar_buttons):
+            self.action_bar_grid.addWidget(button, index // columns, index % columns)
+        for column in range(columns):
+            self.action_bar_grid.setColumnStretch(column, 1)
+
+    def build_reading_overlay(self, parent: QWidget) -> None:
+        self.reading_info_panel = OverlayPane(parent)
+        self.reading_info_panel.dismissed.connect(self.dismiss_reading_overlay)
+        layout = QVBoxLayout(self.reading_info_panel)
+        layout.setContentsMargins(20, 18, 20, 18)
+        layout.setSpacing(12)
+        header = QHBoxLayout()
+        title = QLabel(tr("読書コントロール"), self.reading_info_panel)
+        title.setStyleSheet("font-size: 19px; font-weight: bold; background: transparent;")
+        header.addWidget(title, 1)
+        close = QPushButton("×", self.reading_info_panel)
+        close.setAccessibleName(tr("閉じる"))
+        close.setFixedWidth(44)
+        close.clicked.connect(self.dismiss_reading_overlay)
+        header.addWidget(close)
+        layout.addLayout(header)
+        self.reading_info_label = QLabel(self.reading_info_panel)
+        self.reading_info_label.setWordWrap(True)
+        layout.addWidget(self.reading_info_label)
+        self.reading_progress = QProgressBar(self.reading_info_panel)
+        self.reading_progress.setFixedHeight(18)
+        layout.addWidget(self.reading_progress)
+        grid = QGridLayout()
+        grid.setSpacing(8)
+        navigation = ("next", "previous", "forward_one", "back_one") if self.is_right_bound() else ("previous", "next", "back_one", "forward_one")
+        actions = (*navigation, "original", "settings", "fullscreen", "layout", "help")
+        for index, action in enumerate(actions):
+            grid.addWidget(self.make_reader_action(action, self.reading_info_panel), index // 2, index % 2)
+        if self.bookmark_callback is not None:
+            grid.addWidget(self.make_reader_action("bookmark", self.reading_info_panel), 4, 1)
+        layout.addLayout(grid)
+        self.reading_info_bookshelf_button = QPushButton(tr("本棚へ戻る"), self.reading_info_panel)
+        self.reading_info_bookshelf_button.clicked.connect(self.return_to_bookshelf)
+        layout.addWidget(self.reading_info_bookshelf_button)
+        hint = QLabel(tr("ペインの外をクリックして閉じる"), self.reading_info_panel)
+        hint.setAlignment(Qt.AlignCenter)
+        hint.setStyleSheet("color: #aeb8c2; background: transparent; font-size: 12px;")
+        layout.addWidget(hint)
+        self.reading_info_panel.hide()
+        self.reading_info_panel.setCursor(Qt.ArrowCursor)
+
+    def dismiss_reading_overlay(self) -> None:
+        self.reading_info_visible = False
+        self.reading_info_panel.hide()
+        self.setFocus(Qt.OtherFocusReason)
+
+    def update_reader_action_states(self) -> None:
+        if not hasattr(self, "original_check"):
+            return
+        states = {
+            "settings": self.controls_visible,
+            "original": self.original_check.isChecked(),
+            "fullscreen": self.is_fullscreen,
+            "layout": self.page_layout_mode == "spread",
+        }
+        for action, buttons in self.reader_action_buttons.items():
+            for button in buttons:
+                if action in states:
+                    button.setChecked(states[action])
+                if action == "original":
+                    button.set_title(tr("補正版に戻る" if states[action] else "原画と比較"))
+                elif action == "fullscreen":
+                    button.set_title(tr("全画面を解除" if states[action] else "全画面"))
+                elif action == "layout":
+                    button.set_title(tr("見開き" if states[action] else "単ページ"))
+        for name, button in getattr(self, "preset_buttons", {}).items():
+            button.setChecked(name == self.current_quality_preset)
+        for mode, button in getattr(self, "layout_buttons", {}).items():
+            button.setChecked(mode == self.page_layout_mode)
+        self.reflow_action_bar()
+
     def on_settings_mode_changed(self) -> None:
         mode = self.settings_mode_combo.currentData()
         self.apply_settings_mode(str(mode or "simple"), persist=True)
@@ -905,7 +1028,8 @@ class SpreadWindow(QMainWindow):
             self.settings_mode_combo.setCurrentIndex(index)
             self.settings_mode_combo.blockSignals(False)
         is_manual = self.settings_ui_mode == "manual"
-        self.simple_panel.setVisible(not is_manual)
+        self.simple_panel.setVisible(True)
+        self.advanced_toggle.setChecked(is_manual)
         self.advanced_panel.setVisible(is_manual)
         self.apply_button.setVisible(is_manual)
         self.apply_help.setVisible(is_manual)
@@ -1265,6 +1389,8 @@ class SpreadWindow(QMainWindow):
             )
         )
 
+        self.update_reader_action_states()
+
     def is_right_bound(self) -> bool:
         return self.reading_direction == "rtl"
 
@@ -1278,6 +1404,7 @@ class SpreadWindow(QMainWindow):
                 self.suppress_next_mouse_release = True
                 return True
             if event.type() == QEvent.MouseButtonPress and event.button() in {Qt.LeftButton, Qt.RightButton}:
+                self.setFocus(Qt.MouseFocusReason)
                 self.mouse_press_button = event.button()
                 self.mouse_press_global_position = event.globalPosition()
                 return True
@@ -1307,17 +1434,35 @@ class SpreadWindow(QMainWindow):
                 )
                 self.handle_reader_click(action, bool(event.modifiers() & Qt.ShiftModifier))
                 return True
-        if event.type() == QEvent.KeyPress and not should_handle_global_shortcut(QApplication.activeModalWidget()):
-            return False
-        if event.type() == QEvent.KeyPress and self.handle_navigation_event(event):
+        if event.type() == QEvent.KeyPress and self.reader_may_handle_key(event, watched) and self.handle_navigation_event(event):
             return True
         return super().eventFilter(watched, event)
+
+    def reader_may_handle_key(self, event, watched=None) -> bool:
+        if not self.isVisible() or not should_handle_global_shortcut(QApplication.activeModalWidget()):
+            return False
+        if QApplication.activePopupWidget() is not None:
+            return False
+        target = watched if isinstance(watched, QWidget) else QApplication.focusWidget()
+        if target is not None and target is not self and not self.isAncestorOf(target):
+            return False
+        if event.key() == Qt.Key_Escape:
+            return True
+        focus = QApplication.focusWidget()
+        if isinstance(focus, (QLineEdit, QAbstractSpinBox, QComboBox)):
+            return False
+        if isinstance(focus, QAbstractButton) and event.key() in {Qt.Key_Space, Qt.Key_Return, Qt.Key_Enter}:
+            return False
+        return not bool(event.modifiers() & (Qt.ControlModifier | Qt.MetaModifier | Qt.AltModifier))
 
     def clear_mouse_press(self) -> None:
         self.mouse_press_button = None
         self.mouse_press_global_position = None
 
     def handle_reader_click(self, action: str | None, one_page: bool = False) -> bool:
+        if self.reading_info_visible:
+            self.dismiss_reading_overlay()
+            return True
         if action == "info":
             self.toggle_reading_info()
             return True
@@ -1331,6 +1476,7 @@ class SpreadWindow(QMainWindow):
 
     def resizeEvent(self, event) -> None:
         super().resizeEvent(event)
+        self.reflow_action_bar()
         self.position_reading_info_overlay()
         self.position_next_book_overlay()
         self.clear_queued_display_requests()
@@ -1343,7 +1489,7 @@ class SpreadWindow(QMainWindow):
         self.render_spread(high_quality=True)
 
     def keyPressEvent(self, event) -> None:
-        if self.handle_navigation_event(event):
+        if self.reader_may_handle_key(event) and self.handle_navigation_event(event):
             return
         super().keyPressEvent(event)
 
@@ -1391,7 +1537,9 @@ class SpreadWindow(QMainWindow):
             self.show_shortcuts_help()
             return True
         elif key == Qt.Key_Escape:
-            if self.is_fullscreen:
+            if self.reading_info_visible:
+                self.dismiss_reading_overlay()
+            elif self.is_fullscreen:
                 self.toggle_fullscreen()
             else:
                 self.close()
@@ -1524,6 +1672,7 @@ class SpreadWindow(QMainWindow):
             self.statusBar().show()
             self.show_cursor()
             self.cursor_hide_timer.stop()
+        self.update_reader_action_states()
         QTimer.singleShot(0, lambda: self.render_spread(high_quality=True))
 
     CURSOR_ACTIVITY_EVENTS = frozenset(
@@ -1606,6 +1755,7 @@ class SpreadWindow(QMainWindow):
             self.cursor_hidden = False
 
     def toggle_controls(self) -> None:
+        self.dismiss_reading_overlay()
         self.controls_visible = not self.controls_visible
         self.controls_panel.setVisible(self.controls_visible)
         self.render_spread()
@@ -1933,11 +2083,12 @@ class SpreadWindow(QMainWindow):
     def position_reading_info_overlay(self) -> None:
         if not hasattr(self, "reading_info_panel") or not hasattr(self, "image_host"):
             return
-        margin = 18
-        height = 118
-        width = max(240, self.image_host.width() - margin * 2)
-        y = max(margin, self.image_host.height() - height - margin)
-        self.reading_info_panel.setGeometry(margin, y, width, height)
+        margin = 12
+        width = min(580, max(320, self.image_host.width() - margin * 2))
+        height = self.reading_info_panel.sizeHint().height()
+        x = max(0, (self.image_host.width() - width) // 2)
+        y = max(0, (self.image_host.height() - height) // 2)
+        self.reading_info_panel.setGeometry(x, y, width, height)
         if self.reading_info_panel.isVisible():
             self.reading_info_panel.raise_()
 
@@ -1961,8 +2112,8 @@ class SpreadWindow(QMainWindow):
         page_text = page_progress_text(visible_indexes, len(self.pages))
         file_text = visible_file_names(self.pages, visible_indexes)
         quality_text = f"{self.current_quality_mode()} / {self.correction_state_text(visible_indexes)}"
-        shortcut_text = compact_shortcuts_text(self.reading_direction)
-        self.reading_info_label.setText(f"{page_text}    {quality_text}\n{file_text}\n{shortcut_text}")
+        self.reading_info_label.setText(f"{page_text}    {quality_text}")
+        self.reading_info_label.setToolTip(file_text)
         self.reading_progress.setRange(0, max(1, len(self.pages)))
         value = visible_indexes[-1] + 1 if visible_indexes else 0
         self.reading_progress.setValue(value)

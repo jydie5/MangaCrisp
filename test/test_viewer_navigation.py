@@ -222,6 +222,17 @@ class ViewerNavigationTests(ViewerWindowTestCase):
             Qt.NoModifier,
             QPoint(20, self.window.left.height() // 2),
         )
+        self.assertEqual(self.window.index, 5)
+        self.assertFalse(self.window.reading_info_visible)
+
+        # The first outside click dismisses the information overlay.  A
+        # second click is needed to issue the requested navigation action.
+        QTest.mouseClick(
+            self.window.left,
+            Qt.RightButton,
+            Qt.NoModifier,
+            QPoint(20, self.window.left.height() // 2),
+        )
         self.assertEqual(self.window.index, 3)
 
     def test_prefetch_worker_skips_pages_outside_latest_target(self) -> None:
