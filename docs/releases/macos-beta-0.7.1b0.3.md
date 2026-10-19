@@ -35,6 +35,17 @@ reliable when moving forward and backward. The product version remains `0.7.1b0`
 - Includes the earlier fixes for corrected-display flashing and managed-copy
   removal errors.
 
+## UI gallery
+
+![Clean demo bookshelf](../images/bookshelf.png)
+
+![Center-click reading controls](../images/reader-controls.png)
+
+Screenshots show the shared UI on macOS with only David Revoy's *Pepper&Carrot*
+under CC BY 4.0. See [attribution](../../demo/ATTRIBUTION.md),
+[Japanese screenshots](../../README.ja.md), and the
+[reproducible capture procedure](../images/README.md).
+
 ## Validation and platform handover
 
 - Apple Silicon source suite: **274 passed, 8 skipped, 12 subtests passed**.
@@ -46,11 +57,10 @@ reliable when moving forward and backward. The product version remains `0.7.1b0`
   ad-hoc signature, packaged startup, and an extracted color-PDF smoke test.
 - The capture acceptance test was not repeated for this release; capture
   platform adapters are unchanged by these UI/correction PRs.
-- Windows and Linux packages are unchanged. Developers should start with the
-  [shared handover](../development/ux-maintenance-handover.md), then the
-  [Windows](../development/windows-handover.md) or
-  [Linux](../development/linux-handover.md) checklist. Native acceptance of this
-  new UI is still required on those platforms; earlier previews do not certify it.
+- On 2026-10-20 the user reported successful native operation of the current
+  UI on Windows and Linux. This is general UI acceptance; individual GPU,
+  session, scaling, and checklist results were not supplied. See the
+  [shared handover](../development/ux-maintenance-handover.md).
 
 ## Install or roll back
 
@@ -104,10 +114,10 @@ Apple Siliconで自動テスト**274件通過、8件スキップ、12 subtests�
 配布物はエンジン・モデル・ライセンス・ad-hoc署名・起動・展開後のカラーPDF表示を検証します。
 キャプチャの受入試験は今回繰り返していません。これらのPRはOS別キャプチャ処理を変更していません。
 
-Windows／Linuxの配布物は従来版のままです。
-[共通引き継ぎ](../development/ux-maintenance-handover.ja.md)、
-[Windows](../development/windows-handover.md)、[Linux](../development/linux-handover.ja.md)
-に、新UIの実機確認項目を残しています。過去のプレビュー検証は新UIの合格証跡には含めません。
+2026-10-20に、利用者から現行UIがWindows／Linuxの実機で動作したとの報告を受領しました。
+全体的な操作確認として記録し、GPU・セッション・倍率・各項目の個別結果は未報告として区別しています。
+詳細は[共通引き継ぎ](../development/ux-maintenance-handover.ja.md)、
+[Windows](../development/windows-handover.md)、[Linux](../development/linux-handover.ja.md)を参照してください。
 
 ### 更新・戻し方
 

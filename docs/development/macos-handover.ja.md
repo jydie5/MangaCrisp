@@ -12,10 +12,15 @@ Apple Silicon向け`macos-beta-0.7.1b0.3`を、PR #53/#54を統合した`main`�
 本棚・読書設定・中央操作パネル・H/?ヘルプのUI/UX更新と、補正・キャッシュの修正を含みます。
 自動テスト274成功・8スキップ・12サブテスト成功。配布監査、ad-hoc署名、展開後の起動と
 カラーPDF表示も確認しました。Developer ID署名・notarizationは未実施です。
-Windows b0.4／Linux b0.3の配布物は変更していません。新UIの各OS実機確認は
-[共通引き継ぎ](ux-maintenance-handover.ja.md)を参照してください。
+現行のクロスプラットフォームpreviewは、`d7bbf50`の`main`から作成した
+[`windows-preview-0.7.1b0.5`](../releases/windows-preview-0.7.1b0.5.md)と
+[`linux-preview-0.7.1b0.4`](../releases/linux-preview-0.7.1b0.4.md)です。いずれもDevelopment Previewで、
+正式版ではありません。以前のWindows b0.4／Linux b0.3は履歴・ロールバック用の成果物として変更せず残します。
+2026-10-20の一般的なネイティブ成功報告とOSごとの残りの証跡は
+[共通引き継ぎ](ux-maintenance-handover.ja.md)に記録しています。
 [リリース文書](../releases/macos-beta-0.7.1b0.3.md)と
-[UIの戻し方](reader-controls-checkpoint.md)も残しています。
+[UIの戻し方](reader-controls-checkpoint.md)も残しています。リリース文書はクリーンなdemoギャラリーと
+[撮影手順](../images/README.md)を参照します。
 
 ## 過去のチェックポイント（2026-08-15以降）
 
@@ -24,7 +29,8 @@ Windows b0.4／Linux b0.3の配布物は変更していません。新UIの各OS
 - 前回のmacOS配布版はApple Silicon向け`macos-beta-0.7.1b0.2`（2026-10-01、PR #42時点の
   mainからビルド）です。`v0.7.1-beta`を置き換え、Linux preview `0.7.1b0.2`と同じ
   共通ソースです。
-- Windows配布版はDevelopment Preview `windows-preview-0.7.1b0.4`です。
+- この過去のチェックポイント時点のWindows配布版はDevelopment Preview
+  `windows-preview-0.7.1b0.4`でした。上書きせずロールバック用に残します。
 - PR #27は全ソーステスト（`99 passed, 3 skipped`）、macOS source/package CI、Windowsの
   portable build、配布監査、開発環境なしの展開スモークテストを通過しました。
 - Windows b0.4のヒューマンチェックで2キー操作を確認済みです。Windowsは

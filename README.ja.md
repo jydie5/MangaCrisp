@@ -62,37 +62,29 @@ MangaCrispは個人で開発している、MIT Licenseの無料ソフトウェ�
 
 ### Windows開発プレビュー
 
-**[Windows 10/11 x64 Development Previewをダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.1b0.4/MangaCrisp-0.7.1b0-windows-x64-portable-preview.zip)**
+**[Windows 10/11 x64 Preview 0.7.1b0.5をダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.1b0.5/MangaCrisp-0.7.1b0-windows-x64-portable-preview.zip)**
+
+新しい本棚、画質カード、中央操作パネル、ショートカット一覧、補正・キャッシュ修正を収録しています。
+現行UIはWindows実機で動作確認済みです。WindowsのネイティブCIでビルド・配布監査し、
+展開後に開発ツールへ依存せず起動することを検証しています。
 
 未署名のポータブルZIPで、Python、uv、CUDA、インストーラーは不要です。
-監査済みのZig版Real-CUGANを同梱し、NVIDIA GPUで操作と補正を確認しています。
-0.7.1ではWindowsの手動連番キャプチャとグローバル撮影／取消キー、単ページ表示を追加しました。
-Intel／AMD GPUの補正証跡と、別のクリーンなWindowsアカウントでの検証は
-正式Windows版までの残項目です。補正できない場合も原画で閲覧できます。
-導入方法と制限は[INSTALL.windows.ja.md](INSTALL.windows.ja.md)を参照してください。
-
-> ソースにはmacOS Beta 0.7.1b0.3のUI/UX・補正・キャッシュ修正が入っています。
-> 上のWindows配布版はそれより前の版です。2026-10-20に現行UIのWindows実機確認を受領しました。
-> 新しいプレビューを準備中で、公開までは上の旧配布版を案内しています。
-> [開発者向け引き継ぎ](docs/development/windows-handover.md)を参照してください。
+固定したZig版Real-CUGANと7-Zipを同梱します。Intel/AMD実GPUのエンジン一致証跡と
+別クリーンアカウントの検証は正式版までの残項目です。
+[リリースノート](docs/releases/windows-preview-0.7.1b0.5.md)と
+[Windows導入手順](INSTALL.windows.ja.md)を参照してください。
 
 ### Linux（Ubuntu）プレビュー
 
-**[Linux x86_64版（プレビュー0.7.1b0.3）をダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/linux-preview-0.7.1b0.3/MangaCrisp-0.7.1b0-linux-x86_64.tar.gz)**
+**[Linux x86_64 Preview 0.7.1b0.4をダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/linux-preview-0.7.1b0.4/MangaCrisp-0.7.1b0-linux-x86_64.tar.gz)**
 
-Ubuntu 24.04以降のx86_64で、ソースからの起動と、ユーザー単位のインストーラ付きの
-tar.gz版を利用できます。公式のReal-CUGAN Ubuntu版エンジン（Vulkan）を同梱し、
-GNOMEのWayland／X11で連番キャプチャにも対応します。必要なパッケージ、導入方法、
-キャプチャの許可は[INSTALL.linux.ja.md](INSTALL.linux.ja.md)を参照してください。
-Linux版は新しい版です。お使いのGPUで動いたらぜひ報告してください。AMD／Intelの検証機材のための
-[支援](https://buymeacoffee.com/jydie5)も歓迎します。
+Ubuntu 24.04以降のx86_64向けです。UbuntuのネイティブCIで作成し、新UI/UXと補正・キャッシュの
+修正を収録しています。ユーザー単位のインストーラと公式Real-CUGAN Vulkanエンジンを同梱し、
+Python、uv、CUDAは不要です。現行UIはLinux実機で動作確認済みです。
 
-preview 0.7.1b0.3は読書・本棚UX改善、補正版のちらつき、管理コピー削除失敗の修正を含みます。
-クリーンなUbuntu 24.04／26.04での検証とGNOME Waylandのヒューマンチェックに合格しました。
-AMD／Intel実GPU、実デスクトップのX11、小数倍率は未確認です。
-詳細は[リリースノート](docs/releases/linux-preview-0.7.1b0.3.md)を参照してください。
-macOS Beta 0.7.1b0.3の新UI・ヘルプ・補正キャッシュ修正は、このLinux配布物には含まれません。
-実機確認項目は[Linux引き継ぎ](docs/development/linux-handover.ja.md)に記録しています。
+previewとして公開しており、検証済みの環境とGPU・セッション別の残項目は各文書に記録しています。
+[リリースノート](docs/releases/linux-preview-0.7.1b0.4.md)、
+[Linux導入手順](INSTALL.linux.ja.md)、[開発者向け引き継ぎ](docs/development/linux-handover.ja.md)を参照してください。
 
 ## 最初の一冊を読む
 
@@ -104,10 +96,10 @@ macOS Beta 0.7.1b0.3の新UI・ヘルプ・補正キャッシュ修正は、こ�
 
 元の圧縮ファイルは削除しません。本棚には読書用に展開したコピーを保存します。
 
-## Linux preview 0.7.1b0.3の読書・本棚UX更新
+## 先行した読書・本棚UX改善
 
-上のLinux previewとmacOS Beta 0.7.1b0.3は以下の変更を含みます。以前のローカルWindows候補版でも
-確認済みですが、上のWindows配布版はこの更新より前の版です。
+各OSの現在の配布版には、上記の新しい操作パネル・ヘルプ・補正キャッシュ修正に加えて、
+以下の先行した改善も含まれます。
 
 **機能**
 

@@ -6,12 +6,18 @@ PR #53（補正・キャッシュ）とPR #54（本棚・読書UI）を`main`へ
 `35f2936`、現在のmain引き継ぎは`d7bbf50`です。Apple Silicon向け`macos-beta-0.7.1b0.3`も公開済みです。
 UI実装チェックポイントは`97dc06f`、フォント差に対応したテストは`ed7fa11`です。PR #44の旧UX引き継ぎを更新しています。
 
+現行のクロスプラットフォームpreviewは、`d7bbf50`の`main`から作成したLinux
+[`linux-preview-0.7.1b0.4`](../releases/linux-preview-0.7.1b0.4.md)とWindows
+[`windows-preview-0.7.1b0.5`](../releases/windows-preview-0.7.1b0.5.md)です。以前のWindows b0.4／Linux b0.3は
+履歴・ロールバック用の成果物として残し、上書きしていません。リリース文書はクリーンなdemoギャラリーと
+[撮影手順](../images/README.md)を参照します。
+
 共通自動テストは274成功・8スキップ・12サブテスト成功。macOS／Windows／UbuntuのCIが通過しました。
 macOSでは実機UI確認、配布監査、展開後の起動とカラーPDF表示も確認済みです。2026-10-20に利用者から、
 この現行UIが実Linux機で動作し、Windowsでも確認済みとの報告を受けました。これは現行UIの一般的な
 ネイティブ成功報告であり、各OS／セッション、GPU／ドライバ、倍率、配布版スモーク、個別チェック項目の
-証跡を示すものではありません。証跡がない詳細ゲートは保留として残します。公開済みWindows b0.4／Linux b0.3は、
-新しいpreviewが実際に公開されるまで旧配布物のままです。
+証跡を示すものではありません。この報告は新preview公開より前の一般的な成功報告なので、証跡がない詳細ゲートは
+保留として残します。
 macOSは既存の`scripts/package_standalone.py`で作成したad-hoc署名ベータで、Apple公証は未実施です。
 
 ## 最終候補の共通読書・本棚挙動

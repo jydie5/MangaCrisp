@@ -4,20 +4,29 @@
 
 ## Current shared source checkpoint: PR #53/#54 (35f2936, main d7bbf50, 2026-10-20)
 
-Use this checkpoint for the next Linux native verification. The current shared
+Use this checkpoint for the current Linux preview and follow-up native verification. The current shared
 source includes the reader, bookshelf, correction and cache work from PR #53/#54.
 The UI release line is [35f2936](https://github.com/jydie5/MangaCrisp/commit/35f2936),
-and current `main` is [d7bbf50](https://github.com/jydie5/MangaCrisp/commit/d7bbf50).
-The published Linux artifact remains preview b0.3. That artifact predates the
-current reader controls, shortcut-help modal, and correction/cache lifecycle,
-so its desktop result is not acceptance evidence for this source.
+and the package source checkpoint is [d7bbf50](https://github.com/jydie5/MangaCrisp/commit/d7bbf50).
+The current Linux Development Preview is
+[linux-preview-0.7.1b0.4](../releases/linux-preview-0.7.1b0.4.md), built from
+`main` at `d7bbf50`. Its native CI run is
+[39335510308](https://github.com/jydie5/MangaCrisp/actions/runs/39335510308),
+and its archive SHA-256 is
+`5b48794d7b75b6edd9be34c7aeea09eaecb7a5319fe0f41ddcc874c08d503ed7`.
+The earlier b0.3 artifact predates the current reader controls,
+shortcut-help modal, and correction/cache lifecycle; it remains available as
+historical rollback material and was not overwritten.
+The release note uses the clean demo gallery and
+[capture procedure](../images/README.md).
 
 Native macOS UI checks passed. The automated macOS source suite recorded
-**274 passed, 8 skipped and 12 subtests passed**. On 2026-10-20, the user
-reported that this current UI worked on a real Linux machine. This is a
-general native success report; it does not provide Linux session, GPU/driver,
-scaling, package-smoke, or per-checklist evidence. Those granular Linux gates
-remain pending where evidence is absent. See the [shared UX handover](ux-maintenance-handover.md)
+**274 passed, 8 skipped and 12 subtests passed**. The b0.4 source and packaged
+startup checks are recorded in its release notes. The previous 2026-10-20 user
+report that this current UI worked on a real Linux machine is a general native
+success report; it does not provide Linux session, GPU/driver, scaling,
+package-smoke, or per-checklist evidence. Those granular Linux gates remain
+pending where evidence is absent. See the [shared UX handover](ux-maintenance-handover.md)
 for cross-platform context; this document is the Linux gate and environment record.
 
 Current behavior to verify on Linux:
@@ -49,7 +58,7 @@ Correction and cache behavior to verify:
   not deleted. A prefetch completion must not flash corrected → original →
   corrected.
 
-### Current Linux checks still pending
+### Remaining Linux environment checks
 
 Run these on X11 and Wayland separately, including fractional scaling, and
 record Ubuntu/desktop/Qt versions, GPU/driver, commit and build identifier:
@@ -68,10 +77,10 @@ record Ubuntu/desktop/Qt versions, GPU/driver, commit and build identifier:
 5. Run the full suite and native package smoke test; record Linux skips and
    subtests separately from the accepted macOS result.
 
-The current-source checks above remain unreported as individual evidence despite
-the general native success report. A headless run or the old b0.3 Wayland
-result cannot establish X11/Wayland layout, modal alpha, focus, correction
-navigation or cache behavior.
+The preview's CI checks do not supply the environment-specific evidence above.
+Those checks remain unreported despite the previous general native success
+report. A headless run or the old b0.3 Wayland result cannot establish
+X11/Wayland layout, modal alpha, focus, correction navigation or cache behavior.
 
 ## Historical Linux preview b0.3 validation checkpoint (2026-10-15)
 
@@ -90,8 +99,10 @@ with an isolated demo-only library. The user accepted the candidate on 2026-10-1
 checklist sign-offs were not reported. AMD/Intel real GPUs,
 a physical X11 session, and fractional scaling are not validated by this run.
 This historical result does not validate the current PR #53/#54 source. The
-2026-10-20 general success report does not alter the published artifact; keep
-b0.3 as the existing Linux release until a new preview is actually published.
+current b0.4 preview supersedes b0.3 as the downloadable Linux preview, while
+b0.3 remains available as an unchanged historical rollback artifact. The
+2026-10-20 general success report is retained separately from these package
+records.
 See the [validation record](../testing/linux-ux-20261015-validation.ja.md) and
 [b0.3 release notes](../releases/linux-preview-0.7.1b0.3.md).
 
@@ -189,13 +200,14 @@ branch in shared `viewer.py`. The Linux capture adapters and portal flow were
 not modified by this update. Headless CI/container checks do not establish
 Wayland/X11 cursor, capture or real-GPU acceptance.
 
-## Release notes and stopping point
+## Current preview and stopping point
 
-After native checks, stop for a Linux human check and record the result here
-before requesting a new Linux preview release. No stable-release readiness is
-implied by the Windows acceptance. Keep unresolved GPU/session gaps explicit.
+The b0.4 preview is published from verified `main`; no stable-release
+readiness is implied. Keep unresolved GPU/session gaps explicit and record any
+future environment-specific evidence here before requesting another preview.
 
-The next preview notes should contain these five features and two fixes:
+The b0.4 package also retains these earlier improvements (see the historical
+b0.3 release notes for their original validation):
 
 - Fullscreen cursor auto-hide.
 - Bookshelf button on the reading-information overlay.
@@ -206,5 +218,6 @@ The next preview notes should contain these five features and two fixes:
 - Fix: report managed-copy deletion failures and retain failed book entries.
 
 Use the Japanese wording in the [companion handover](linux-handover.ja.md).
-Publish a new Linux tag from verified `main`, attach checksums and update the
-README download link only after its new artifact is available.
+For a future Linux preview, publish a new tag from verified `main`, attach
+checksums and update the README download link only after its new artifact is
+available.
