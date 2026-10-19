@@ -2,184 +2,164 @@
 
 [日本語](ux-maintenance-handover.ja.md)
 
-The macOS side moved shared reader and bookshelf behavior forward in PR #44
-(`core/reader-bookshelf-ux`) and the follow-up fix PR #47
-(`core/fix-corrected-flash`), both merged 2026-10-15. This document tells the
-Windows and Linux maintainers what changed in shared code, what was verified
-only on macOS, and what each platform needs to check before its next preview
-build. Start every Windows or Linux task from the current `origin/main`.
+This handover supersedes the macOS-first UX work from PR #44
+(`core/reader-bookshelf-ux`). The correction and cache baseline was merged by
+PR #53 at `78c2cc6`; the reader-controls candidate is PR #54, based on the
+`97dc06f` UI checkpoint and currently targeting `main` for CI. The behavior
+below is the candidate baseline for the next native checks. It is not a claim
+that the next package or tag has been published.
 
-## What changed in shared code
+The shared automated test record is **274 passed, 8 skipped, and 12 subtests
+passed**. Native macOS verification is recorded separately; native Windows
+and Linux acceptance of this final reader-controls candidate is still pending.
+The already published Windows b0.4 and
+Linux b0.3 artifacts remain the older preview artifacts; do not describe them
+as containing this candidate. The next macOS candidate tag is expected to be
+`macos-beta-0.7.1b0.3`, using the existing ad-hoc signed
+`scripts/package_standalone.py` workflow when it is released.
 
-All changes live in `src/mangacrisp_app/` and are OS-independent. No
-`platform/`, `packaging/`, or OS-specific script was touched.
+## Final shared reader and bookshelf behavior
 
-| Area | Files | Behavior |
-|---|---|---|
-| Fullscreen cursor auto-hide | `cursor_autohide.py` (new), `viewer.py` | Cursor hides over the image area after 2 s without input while fullscreen; any mouse move, click, wheel or key shows it and restarts the timer. Never hides over the reading-info overlay, the next-book banner, during a drag, with a modal or popup open, when the window is inactive, when leaving fullscreen, or on close. |
-| Bookshelf button on the reading-info overlay | `viewer.py`, `i18n.py` | Center click opens the overlay; its **Bookshelf** button leaves fullscreen, flushes the reading position and closes the reader. It is never treated as a page turn. The settings-panel button and `Esc` are unchanged. |
-| Bookshelf multi-select and right-click | `bookshelf.py`, `i18n.py` | `QListWidget.ExtendedSelection` (Qt supplies Ctrl/Shift on Windows and Linux, Command/Shift on macOS). Right-click menu: *Read* / *Remove from bookshelf*. Right-clicking an unselected book selects only that book; inside the selection keeps it. |
-| Shared delete flow | `bookshelf.py`, `viewer.py` | Delete/Backspace, the bottom button and the menu all call `BookshelfWindow.delete_books()`: one confirmation with the count and first three titles, then per-book removal of the managed copy, reading position, bookmarks, PDF render cache and per-page AI correction cache (`remove_enhancement_cache_for_sources`). Source archives are kept. Failures are reported together; successes stay removed. |
-| Correction priority queue | `viewer.py` | The Real-CUGAN worker takes pages from `correction_queue` in `correction_priority` order (visible → forward → previous). Navigation while a worker runs calls `refresh_correction_queue()`, which re-prioritises and adds the newly visible pages. The in-flight page (`correction_in_flight`) is never re-queued. |
-| Corrected display stability (PR #47) | `viewer.py` | `load_cached_outputs` touches each correction file only once per reader session (`touched_output_paths`); the display cache key embeds the file mtime, so touching on every render forced a re-decode and a visible corrected → original → corrected flash when a prefetch batch finished. `apply_ready_spread_pixmaps` also keeps the pixmap already shown when the pending key names the same file at the same size (`display_keys_show_same_image`). |
-| Prefetch tuning | `viewer.py` | `DEFAULT_PREVIOUS_PREFETCH_COUNT` 4 → 6. Forward window is 12–24 normally, drops to `MIN_FORWARD_PREFETCH_COUNT` (6) when the median page-turn interval is ≥ `SLOW_READER_INTERVAL_SECONDS` (8 s), and the lead is multiplied by `CORRECTION_MISS_LEAD_FACTOR` (1.5) when the visible spread was shown uncorrected ≥ `CORRECTION_MISS_THRESHOLD` (2) times in the last `CORRECTION_MISS_WINDOW` (10) turns. |
+All behavior is in shared `src/mangacrisp_app/` code. No platform-specific
+reader implementation is required.
 
-New or changed tests: `test/test_cursor_autohide.py`, `test/test_bookshelf_delete.py`,
-`test/test_prefetch_policy.py`, and additions to `test/test_viewer_navigation.py`.
-The shared suite is `183 passed, 8 skipped` on macOS.
+- The reader has **no persistent bottom toolbar**. The settings sidebar is
+  toggled with `P`; hiding it does not create another toolbar.
+- A click in the center reading zone opens the translucent **Reading Controls**
+  pane. It exposes previous/next spread, one-page back/forward, Original /
+  Enhanced comparison, settings, fullscreen, layout, help, and (when enabled)
+  bookmark and bookshelf actions. The pane is hidden until the center gesture.
+- A click outside the pane in the page area dismisses it and consumes that
+  click, so it cannot also turn the page. Blank left clicks inside the pane
+  dismiss it; clicks on controls remain control clicks.
+- `H` or `?` opens the modal shortcut-help pane. `Esc` closes that help pane;
+  a matching outside press/release also closes it. The modal consumes the
+  dismissal click, so the page or bookshelf underneath does not receive it.
+- In the reader, `Esc` closes the controls pane first, then exits fullscreen,
+  then returns to the bookshelf. Closing help with `Esc` or its backdrop does
+  not exit fullscreen or change the page. The reading controls pane remains
+  available while fullscreen is active, including for embedded readers.
+- Reader shortcuts are accepted only for a visible reader with no modal or
+  popup open and with the event target inside that reader. Arrow keys and
+  editing remain with line edits, spin boxes, and combo boxes; `Esc` remains a
+  reader-level escape from those fields. Space/Return on a focused button
+  activates that button without turning a page. Ctrl/Command/Alt combinations
+  are left to the focused control or the operating system.
+- The existing bookshelf behavior remains shared: multi-selection, the
+  Read/Remove context menu, one confirmation for batch removal, and source
+  archive preservation. Failed managed-copy removal keeps the failed book
+  registered and reports it while successful removals proceed.
+- Fullscreen cursor auto-hide remains shared: it hides over the image after
+  two seconds without input, returns on input or focus recovery, and stays
+  visible over controls, overlays, popups, dialogs, drags, and inactive or
+  closing windows.
 
-## Verified on macOS only
+The reader-controls UI checkpoints are:
 
-The following were checked by hand on an Apple Silicon Mac with
-`dist/MangaCrisp.app` built by `scripts/build_macos_app.py --bundle-engine`
-and the `demo/` Pepper&Carrot volumes:
+| Checkpoint | Scope |
+|---|---|
+| `5320092` | First visible reader controls and translucent center pane |
+| `8fd3c81` | On-demand controls, no persistent bottom toolbar, bookshelf refresh |
+| `97dc06f` | Shortcut-help modal, `Esc`, backdrop dismissal, and focus handling |
 
-- cursor hide after 2 s in fullscreen and restore on mouse, key, overlay hover,
-  settings panel, drag, app switch and fullscreen exit
-- overlay **Bookshelf** button from windowed and fullscreen reading
-- Command/Shift multi-select, right-click on selected and unselected books,
-  Delete-key and button removal, single confirmation, source ZIPs untouched
-- corrected spread appears within about one engine run after a page turn, also
-  after toggling `O` several times
-- forward prefetch count falling to 6 while lingering, returning to 12+ when
-  turning pages quickly
-- no corrected → original → corrected flash when the prefetch batch finishes a
-  few seconds after a page turn (PR #47)
+## Correction and cache baseline
 
-## What Windows must check
+PR #53 (`78c2cc6`, with the implementation checkpoint at `1c1a8a6`) is part of
+the same candidate and must stay with the reader controls.
 
-Use the portable build from `scripts/build_windows_app.py` and
-`scripts/package_windows_portable.py` on Windows; do not cross-build.
+- `models-pro` always invokes Real-CUGAN with accurate tile synchronization
+  `-c 1`. Its parameter key includes `_syncgap1`, for example
+  `scale3_noise3_tile0_models-pro_syncgap1`; old unsuffixed pro results are
+  not treated as the same setting.
+- Real-CUGAN writes to a temporary PNG inside the output directory. A result
+  is published with an atomic replace only after a zero exit status, expected
+  dimensions, PNG verification, and a second `load()` succeed. Failed,
+  interrupted, corrupt, or wrongly sized output leaves an existing valid cache
+  file untouched and does not expose a partial file as a cache hit.
+- `CorrectionDiskCache` owns correction paths and session touch state. Normal
+  image paths retain the legacy path/size/mtime-derived key. Lazy providers
+  use `cache_source_identity(index)` without materializing a page. PDF page
+  identity includes the PDF source key, DPI, and page index, so reopening or
+  touching a rendered PNG does not churn the AI cache identity; an actual PDF
+  source change intentionally produces a new identity.
+- AI correction PNGs are bounded to **2 GiB** and **30 days** by the shared
+  pruning utility. Active output files, their parent directories, and staging
+  descendants are protected. Reader maintenance releases `processed_pages`
+  references outside the protected navigation window while retaining completed
+  disk results for bounded LRU/age cleanup, so ordinary backtracking does not
+  force an immediate re-run.
+- A cached output is touched at most once per reader session and never
+  recreated by a cache lookup. Deleting a book removes its per-source
+  correction folders; provider-backed deletion enumerates identities without
+  rendering pages. PDF render PNGs use the same 2 GiB/30-day bounded-cache
+  policy and the provider keeps a bounded recent-page working set.
+- The visible display cache keeps the desired and fallback panes protected
+  while asynchronous decodes complete. A late warm decode cannot evict a
+  visible partner and cause a corrected-to-original flash.
 
-1. **Cursor auto-hide**: `Qt.BlankCursor` on the image host. Confirm the cursor
-   hides in fullscreen (`F`) and returns on move/key. Confirm it does not hide
-   over the reading-info overlay, the next-book banner or the settings panel,
-   and that it returns on `Alt+Tab` away and back.
-2. **Selection modifiers**: Ctrl+click and Shift+click on the bookshelf grid.
-   The help text already says "Command/Ctrl". No code change expected.
-3. **Right-click menu**: `customContextMenuRequested` on the list. Confirm the
-   menu appears at the pointer and that right-clicking an unselected cover
-   selects only that cover.
-4. **Removal**: delete two books at once, confirm one dialog, and confirm the
-   managed folders under the library directory disappear while the source
-   archives remain. Removing a book whose managed folder is open in Explorer
-   should report that book as failed and keep the others removed.
-5. **Correction cache removal**: after reading a book with enhancement, remove
-   it and check `%LOCALAPPDATA%` / app-support `upscale/interactive/<key>/`
-   no longer has that book's page folders.
-6. **Prefetch**: open a book, turn pages at about one per second, then linger
-   10 s and turn again; the settings panel status should show the prefetch
-   count dropping to 6 and rising back.
-7. **No flash**: with enhancement on, turn one page and keep still for ten
-   seconds; the corrected spread must not blink to the original when the
-   status changes to "prefetch complete".
-8. Run the shared suite and the Windows-specific tests:
-   `uv run pytest -q`.
+## Bounded native acceptance checklist
 
-Capture (`platform/capture_windows.py`), `Alt+C` / `Alt+U` and the taskbar
-controller behavior are unaffected.
+Start from the current `main`, use redistributable demo material, and keep
+platform packaging in its platform-specific files. Do not cross-build.
 
-## Windows accepted local candidate checkpoint (2026-10-15)
+### Windows
 
-Windows caught up through PR #48 (`b892536`) on `origin/main`, including the
-PR #47 corrected-display fix. The candidate build identifier is
-`0.7.1b0+win.ux.20261015.2`; the shared product version is still `0.7.1b0`.
-The published Windows b0.4 download and release assets have not been changed.
+Use `scripts/build_windows_app.py` and
+`scripts/package_windows_portable.py` on Windows.
 
-- The Windows source suite passes: **186 passed, 9 skipped, 5 subtests passed**.
-- Packaged GUI checks with an isolated Pepper&Carrot-only library cover color
-  original/enhanced display, idle fullscreen cursor hiding, the overlay
-  Bookshelf button, Shift range selection, right-click retaining two selected
-  books, and the single removal dialog followed by cancellation.
-- A real Windows open-file lock exposed an existing importer problem:
-  `delete_managed_storage()` suppressed removal errors, allowing the database
-  entry to disappear although managed files remained. The shared
-  `core/managed-removal-errors` fix propagates storage errors before deleting
-  the database entry and tolerates already-missing storage. Its Windows
-  regression verifies that the failed book remains registered, another book
-  is removed successfully, and both source ZIPs remain unchanged.
-- Failed recursive deletion can leave a partially removed managed copy. The
-  source archive remains available for retry/re-import; deletion is not atomic.
+1. Open a demo book. Confirm center click opens controls, outside page click
+   dismisses without turning a page, `H`/`?` opens help, and help `Esc` or
+   backdrop dismissal leaves fullscreen and page position unchanged.
+2. Confirm there is no persistent bottom toolbar; `P` only toggles the
+   settings sidebar. Check arrows in a manual spin box/combo do not turn pages,
+   while `Esc` closes the reader controls from those fields.
+3. In fullscreen, confirm the controls pane remains usable and the cursor
+   hides/restores as documented. Check both standalone and embedded reader
+   paths if the package exposes both.
+4. Use `models-pro` and inspect the command/result key for `_syncgap1`. Confirm
+   a failed or malformed engine result does not replace an existing PNG, and
+   that the corrected spread does not flash back to the original after
+   prefetch completion.
+5. Remove one enhanced book and a multi-selected group. Confirm one dialog,
+   source archives retained, managed copies and per-page correction caches
+   removed, and a locked managed copy remains registered while other removals
+   succeed.
+6. Run `uv run pytest -q` plus the Windows package smoke checks. Record the
+   result and any GPU or clean-account limitation here before publishing a
+   Windows candidate.
 
-The user accepted the Windows candidate on 2026-10-15 ("問題なさそうです").
-This is general human acceptance, not a claim that every detailed checklist
-item was individually reported. Intel/AMD and separate clean-account evidence
-remain stable-release gates. No Windows/Linux source implementation of the
-shared UX was duplicated, and capture adapters/hotkeys are unchanged.
-
-The managed-removal fix is a shared `core/` change. Other platforms should
-pull the merged `main`, not copy a Windows-specific workaround into their
-packaging. See the [Linux handover](linux-handover.md) for the next native
-verification checkpoint; Linux Wayland/X11 has not been verified here.
-
-## Linux preview b0.3 acceptance and publication (2026-10-15)
-
-[Linux preview b0.3](https://github.com/jydie5/MangaCrisp/releases/tag/linux-preview-0.7.1b0.3)
-contains the shared UX and both follow-up fixes. Its Ubuntu 24.04 CI package
-comes from main `6d9600f`; source checks pass with 187 tests, 8 skips and
-5 subtests passed. Clean Ubuntu 24.04/26.04 installation, packaged startup,
-demo reading, bundled RAR support, CPU Vulkan enhancement and uninstallation pass.
-The pinned engine also passes on a GTX 1060 6GB.
-
-The user accepted the Ubuntu 26.04.1 / GNOME 50.1 / Wayland candidate on
-2026-10-15 ("確認しました。mainにまーじ"). This records general acceptance,
-not individual checklist sign-offs. AMD/Intel real GPUs, a physical X11
-desktop session, fractional scaling and other Wayland compositors remain
-unverified. See the [Linux validation record](../testing/linux-ux-20261015-validation.ja.md).
-
-## Linux checks to repeat for later releases
+### Linux
 
 Use `scripts/build_linux_app.py` on Ubuntu 24.04 or newer.
 
-1. **Cursor auto-hide on Wayland and X11**: `Qt.BlankCursor` relies on the
-   compositor honoring a blank cursor. Check GNOME Wayland and X11 separately.
-   If a compositor keeps drawing the cursor, note it in this document rather
-   than adding a platform branch in `viewer.py`; a Linux-only workaround
-   belongs in `platform/linux.py`.
-2. **Fullscreen exit restores the cursor** when leaving with `F`, `Esc`, or the
-   overlay Bookshelf button, and when the window loses focus.
-3. **Selection modifiers**: Ctrl+click and Shift+click on the bookshelf grid.
-4. **Right-click menu** positioning under Wayland (popup placement is
-   compositor-driven; the menu should still open at the pointer).
-5. **Removal and cache cleanup** as for Windows, using
-   `~/.local/share` / app-support `upscale/interactive/<key>/`.
-6. **Prefetch** and **No flash** as for Windows.
-7. Run `uv run pytest -q` including the Linux capture tests.
+1. Repeat the reader, help, focus, fullscreen, `models-pro`, atomic-output,
+   no-flash, and removal checks above.
+2. Check cursor auto-hide separately on GNOME Wayland and X11. Check right
+   click menu placement, Ctrl/Shift selection, and the portal/capture flow.
+3. Confirm cache paths and cleanup under the Linux app-support directory and
+   verify that active correction outputs and staging descendants survive prune.
+4. Run `uv run pytest -q` including Linux capture tests. Record compositor,
+   GPU, and scaling limitations rather than adding a Linux branch to the
+   shared reader.
 
-Capture (`platform/capture_linux.py`) and the GNOME portal flow are
-unaffected.
+The Windows preview b0.4 and Linux preview b0.3 acceptance records remain in
+their historical release documents. They are useful prior-platform evidence,
+but do not close the native acceptance gate for this final reader-controls
+candidate.
 
-## Shared files touched and how to avoid conflicts
+## Rollback and conflict boundaries
 
-| File | What changed | Conflict advice |
-|---|---|---|
-| `src/mangacrisp_app/viewer.py` | cursor timer and event tracking, overlay button, `return_to_bookshelf`, correction queue, prefetch constants and policy functions, `remove_enhancement_cache_for_sources`, `touched_output_paths` in `load_cached_outputs`, `apply_ready_spread_pixmaps` / `show_display_pixmap` / `clear_display_pixmap` | Rebase onto `main` before touching `eventFilter`, `toggle_fullscreen`, `closeEvent`, `request_prefetch`, `start_prefetch`, `_process_pages_worker`, `on_upscale_done`, `load_cached_outputs`, or `apply_ready_spread_pixmaps`. The worker signature changed to `(settings, generation, parameter_key, is_prefetch)`. |
-| `src/mangacrisp_app/bookshelf.py` | selection mode, context menu, `delete_books`, `selected_book_ids`, `remove_enhancement_cache`, helper functions above the class | `delete_selected_book` now delegates to `delete_books`; keep new removal paths going through it. |
-| `src/mangacrisp_app/i18n.py` | new English strings for the overlay button, removal messages and bookshelf help | Append new strings; do not reorder the dictionary. |
-| `test/test_viewer_navigation.py` | split into `ViewerWindowTestCase` base + test classes | Subclass `ViewerWindowTestCase` for new reader window tests. |
-
-## Release notes for the next previews
-
-When the Windows or Linux preview is next rebuilt from `main`, its release
-document should list, in both languages:
-
-- fullscreen cursor auto-hide
-- Bookshelf button on the reading-info overlay
-- bookshelf multi-select, right-click menu and batch removal
-- visible-spread-first correction queue and the 6-page backward window
-- the slower-reader prefetch reduction
-- fix: the corrected spread no longer flashes to the original a few seconds
-  after a page turn
-- fix: managed-copy removal errors keep the failed book registered and report
-  the error instead of silently removing its database entry
-
-Update platform download paragraphs only after publishing a verified native
-build containing these fixes. Do not imply that an old download contains them.
-
-## Open questions for the other platforms
-
-- Whether `Qt.BlankCursor` is honored on every supported Linux compositor.
-- Whether Windows needs the cursor restored explicitly when a UAC or system
-  dialog steals focus (the `WindowDeactivate` path should cover it).
-- Whether Intel/AMD GPUs need a different `CORRECTION_MISS_LEAD_FACTOR`; the
-  constants are in `viewer.py` and covered by `test/test_prefetch_policy.py`.
+- Keep PR #53 / `1c1a8a6` (merged as `78c2cc6`) when investigating or rolling
+  back reader UX. To remove only the reader-controls layer, revert the UI
+  checkpoints in reverse order: `97dc06f`, `8fd3c81`, then `5320092`. This
+  changes source and UI only; it does not delete user books, settings, or
+  caches.
+- Rebase onto the current `main` before editing `viewer.py`, `bookshelf.py`,
+  `page_provider.py`, `cache_utils.py`, or the correction modules. Preserve
+  both the shared correction/cache fixes and platform packaging changes.
+- Keep OS-specific capture, packaging, signing, and release work in
+  `platform/` or `packaging/`. Do not copy a Windows or Linux workaround into
+  the shared reader. See the [cross-platform workflow](cross-platform-workflow.md),
+  [Windows handover](windows-handover.md), and [Linux handover](linux-handover.md).
+- Update a platform download paragraph only after a native package containing
+  this candidate passes its checklist and is actually published.

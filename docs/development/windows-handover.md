@@ -293,6 +293,43 @@ Source and documents are updated on GitHub, not the existing release ZIPs.
 Linux Wayland/X11 is not verified from this Windows PC, and no Linux adapter
 changes were made. Continue with [the Linux handover](linux-handover.md).
 
+## Current reader UI and correction-cache handover (2026-10-20)
+
+The current PR #53/#54 candidate line is based on `32d569e`, `1c1a8a6`,
+`5320092`, `8fd3c81`, and `97dc06f`. The final reader has no persistent bottom
+toolbar. A center click opens the translucent controls pane over the reader;
+navigation, one-page movement, original/enhanced comparison, settings, layout,
+fullscreen, bookshelf, and help remain available there. The shared details and
+earlier platform checks are in the [reader/bookshelf UX handover](ux-maintenance-handover.md).
+
+`H` (or `?`) opens `ShortcutHelpDialog`, a modal with a window-sized translucent
+backdrop and centered help card. A left/right click outside the card dismisses
+only on the matching release; a blank click inside the card does not dismiss it.
+`Esc` closes the help dialog and is consumed by it, so it must not page-turn,
+exit fullscreen, or close the reader. Focused spinboxes, combo boxes and their
+popups retain arrow-key handling, and Space/Return on a focused button activates
+that button without invoking reader navigation.
+
+The pro enhancement path now uses synchronization gap 1 and versions its disk
+key with `syncgap1` (for example,
+`scale3_noise3_tile0_models-pro_syncgap1`, with `_tta` appended when enabled).
+Legacy pro directories without this suffix are intentionally isolated from the
+corrected path. The correction/cache lifecycle also uses stable PDF and ZIP
+page identities, touches completed outputs once per reader session, prioritizes
+visible work, rejects stale generations, and keeps the current desired/fallback
+display keys protected within the bounded 18-entry display cache. This prevents
+the corrected spread from flashing back to the original while late work arrives;
+old pages may be evicted after navigation. The macOS verification run for this
+candidate records **274 passed, 8 skipped, 12 subtests**.
+
+Native Windows acceptance of this final UI and cache line is still pending. On
+Windows, rebase from current `main`, run `uv run pytest -q`, build the portable
+package on Windows, and check the center-pane controls, help dismissal and
+focus behavior on the packaged reader together with a cold/warm pro correction
+run and cache cleanup. Record the native results before updating release notes
+or assets. Preserve the published Windows `0.7.1b0.4` release and its download
+assets; this candidate does not replace or relabel that release.
+
 ## Technology decision
 
 Continue with PySide6 and the existing Python code for the first Windows

@@ -229,7 +229,14 @@ These are the defaults for right-bound manga.
 | `P` | Show or hide Reading Settings |
 | `O` | Toggle Original / Enhanced |
 | `H` / `?` | Show keyboard help and project links |
-| `Esc` | Leave full screen or return to the bookshelf |
+| `Esc` | Close the controls panel, exit full screen, or return to the bookshelf |
+
+Click the center of the page to open the translucent controls panel. It shows
+navigation buttons and shortcut badges for `P` (settings), `O` (original comparison),
+`F` (full screen), `V` (layout), and `Shift` + arrow keys (one-page movement).
+There is no persistent controls bar; keyboard shortcuts remain available while reading.
+The `H` help panel uses the same design and closes with `Esc`, its Close button,
+or a click outside the panel. Dismissing it does not turn a page.
 
 ## Mouse controls
 
@@ -241,9 +248,14 @@ windowed and full-screen reading.
 | Click the forward-side 40% | Next spread |
 | Click the backward-side 40% | Previous spread |
 | `Shift` + side click | Move one page forward or backward |
-| Click the center 20% | Show or hide reading information |
+| Click the center 20% | Show or hide the translucent reading controls panel; click outside it to close |
 | Right-click | Previous spread |
-| **Bookshelf** button on the reading information overlay | Save the position and return to the bookshelf |
+| **Bookshelf** button in the reading controls panel | Save the position and return to the bookshelf |
+
+Click the center to show or hide the translucent reading controls panel. It includes
+previous/next navigation, one-page movement, original/enhanced comparison,
+settings, full screen, bookshelf, and help. Click outside the panel to close
+it.
 
 For right-bound manga, the left side advances and the right side goes back.
 Left-bound comics use the opposite mapping. Dragging does not turn a page.
