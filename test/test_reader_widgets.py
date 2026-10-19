@@ -19,7 +19,6 @@ from mangacrisp_app.reader_widgets import (
 def test_reader_style_sheet_is_scoped_to_reader_widgets() -> None:
     assert "QWidget#readerRoot" in READER_STYLE_SHEET
     assert "#controls" in READER_STYLE_SHEET
-    assert "#actionBar" in READER_STYLE_SHEET
     assert "#simplePanel" in READER_STYLE_SHEET
     assert "#readingControlsOverlay" in READER_STYLE_SHEET
     assert "QWidget {" not in READER_STYLE_SHEET

@@ -23,11 +23,15 @@ from test_viewer_navigation import ViewerWindowTestCase
 
 
 class ReaderControlsTests(ViewerWindowTestCase):
-    """Regression coverage for the reader's persistent controls and overlay."""
+    """Regression coverage for the reader's center-click controls overlay."""
 
-    def _action(self, name: str) -> ShortcutButton:
+    def _action(self, name: str, *, overlay: bool = False) -> ShortcutButton:
         actions = self.window.reader_action_buttons[name]
         self.assertTrue(actions, f"reader action {name!r} has no buttons")
+        if overlay:
+            panel = self.window.reading_info_panel
+            actions = [button for button in actions if panel.isAncestorOf(button)]
+            self.assertTrue(actions, f"reader action {name!r} is missing from the overlay")
         button = actions[0]
         self.assertIsInstance(button, ShortcutButton)
         return button
@@ -37,7 +41,7 @@ class ReaderControlsTests(ViewerWindowTestCase):
         self.application.processEvents()
 
     def test_reader_controls_have_stable_action_and_choice_groups(self) -> None:
-        self.assertIsInstance(self.window.action_bar, QWidget)
+        self.assertFalse(hasattr(self.window, "action_bar"))
 
         expected_actions = {
             "previous",
@@ -70,13 +74,30 @@ class ReaderControlsTests(ViewerWindowTestCase):
             self.window.reading_info_panel.isVisible(), self.window.reading_info_visible
         )
 
+        overlay_actions = {
+            name: self._action(name, overlay=True)
+            for name in expected_actions
+        }
+        self.assertTrue(all(not button.isVisible() for button in overlay_actions.values()))
+
+    def test_controls_are_visible_only_after_center_overlay_opens(self) -> None:
+        self._show_reader()
+        self.assertFalse(self.window.reading_info_panel.isVisible())
+        next_button = self._action("next", overlay=True)
+        self.assertFalse(next_button.isVisible())
+
+        self.window.toggle_reading_info()
+        self.application.processEvents()
+        self.assertTrue(self.window.reading_info_panel.isVisible())
+        self.assertTrue(next_button.isVisible())
+
     def test_center_click_opens_overlay_and_blank_click_dismisses_without_navigation(self) -> None:
         self._show_reader()
         self.window.index = 4
 
         # The last part of the left pane is in the reader's central 20% click
-        # zone.  Keep the click away from the persistent action bar and page
-        # edges so this exercises the overlay gesture itself.
+        # zone. Keep the click away from page edges so this exercises the
+        # center overlay gesture itself.
         QTest.mouseClick(
             self.window.left,
             Qt.MouseButton.LeftButton,
@@ -106,50 +127,49 @@ class ReaderControlsTests(ViewerWindowTestCase):
         self.application.processEvents()
         self.assertTrue(self.window.reading_info_visible)
 
-        self._action("next").click()
+        self._action("next", overlay=True).click()
         self.assertEqual(self.window.index, 6)
-        self._action("previous").click()
+        self._action("previous", overlay=True).click()
         self.assertEqual(self.window.index, 4)
-        self._action("forward_one").click()
+        self._action("forward_one", overlay=True).click()
         self.assertEqual(self.window.index, 5)
-        self._action("back_one").click()
+        self._action("back_one", overlay=True).click()
         self.assertEqual(self.window.index, 4)
 
-    def test_p_hides_sidebar_but_keeps_persistent_action_bar_visible(self) -> None:
+    def test_p_toggles_sidebar_without_a_bottom_toolbar(self) -> None:
         self._show_reader()
         self.assertTrue(self.window.controls_visible)
         self.assertTrue(self.window.controls_panel.isVisible())
-        self.assertTrue(self.window.action_bar.isVisible())
+        self.assertFalse(hasattr(self.window, "action_bar"))
 
         self.assertTrue(self.window.handle_navigation_key(Qt.Key.Key_P))
         self.application.processEvents()
         self.assertFalse(self.window.controls_visible)
         self.assertFalse(self.window.controls_panel.isVisible())
-        self.assertTrue(self.window.action_bar.isVisible())
+        self.assertFalse(hasattr(self.window, "action_bar"))
 
-        # P is a toggle, so the reader can restore the sidebar without
-        # reconstructing the action bar.
+        # P is a toggle, so the reader can restore the sidebar.
         self.assertTrue(self.window.handle_navigation_key(Qt.Key.Key_P))
         self.assertTrue(self.window.controls_visible)
         self.assertTrue(self.window.controls_panel.isVisible())
-        self.assertTrue(self.window.action_bar.isVisible())
 
-    def test_fullscreen_keeps_persistent_action_bar_visible(self) -> None:
+    def test_fullscreen_keeps_center_overlay_available(self) -> None:
         self._show_reader()
         self.assertFalse(self.window.is_fullscreen)
-        self.assertTrue(self.window.action_bar.isVisible())
+        self.window.toggle_reading_info()
+        self.application.processEvents()
+        self.assertTrue(self.window.reading_info_panel.isVisible())
 
         self.window.toggle_fullscreen()
         self.application.processEvents()
         self.assertTrue(self.window.is_fullscreen)
-        self.assertTrue(self.window.action_bar.isVisible())
+        self.assertTrue(self.window.reading_info_panel.isVisible())
 
         self.window.toggle_fullscreen()
         self.application.processEvents()
         self.assertFalse(self.window.is_fullscreen)
-        self.assertTrue(self.window.action_bar.isVisible())
 
-    def test_embedded_fullscreen_keeps_action_bar_visible_in_parent_window(self) -> None:
+    def test_embedded_fullscreen_keeps_center_overlay_available(self) -> None:
         host = QWidget()
         host.resize(1000, 760)
         embedded = self.window.__class__(
@@ -167,15 +187,18 @@ class ReaderControlsTests(ViewerWindowTestCase):
             embedded.show()
             self.application.processEvents()
 
+            embedded.toggle_reading_info()
+            self.application.processEvents()
+            self.assertTrue(embedded.reading_info_panel.isVisible())
+
             embedded.toggle_fullscreen()
             self.application.processEvents()
             self.assertTrue(embedded.is_fullscreen)
-            self.assertTrue(embedded.action_bar.isVisible())
+            self.assertTrue(embedded.reading_info_panel.isVisible())
 
             embedded.toggle_fullscreen()
             self.application.processEvents()
             self.assertFalse(embedded.is_fullscreen)
-            self.assertTrue(embedded.action_bar.isVisible())
         finally:
             embedded.close()
             embedded.deleteLater()
@@ -185,7 +208,9 @@ class ReaderControlsTests(ViewerWindowTestCase):
 
     def test_o_and_v_keep_action_button_checked_state_in_sync(self) -> None:
         self._show_reader()
-        original_button = self._action("original")
+        self.window.toggle_reading_info()
+        self.application.processEvents()
+        original_button = self._action("original", overlay=True)
         self.assertTrue(original_button.isCheckable())
         self.assertFalse(original_button.isChecked())
         self.assertFalse(self.window.original_check.isChecked())
@@ -210,6 +235,24 @@ class ReaderControlsTests(ViewerWindowTestCase):
         self.assertEqual(self.window.page_layout_mode, "spread")
         self.assertTrue(self.window.layout_buttons["spread"].isChecked())
         self.assertFalse(self.window.layout_buttons["single"].isChecked())
+
+    def test_native_shortcuts_work_without_a_bottom_toolbar(self) -> None:
+        self._show_reader()
+        self.window.setFocus(Qt.FocusReason.OtherFocusReason)
+        self.window.index = 4
+        self.assertFalse(hasattr(self.window, "action_bar"))
+
+        QTest.keyClick(self.window, Qt.Key.Key_O)
+        self.application.processEvents()
+        self.assertTrue(self.window.original_check.isChecked())
+
+        QTest.keyClick(self.window, Qt.Key.Key_V)
+        self.application.processEvents()
+        self.assertEqual(self.window.page_layout_mode, "single")
+
+        QTest.keyClick(self.window, Qt.Key.Key_P)
+        self.application.processEvents()
+        self.assertFalse(self.window.controls_visible)
 
     def test_spinbox_and_combo_popup_arrows_do_not_turn_pages(self) -> None:
         self._show_reader()
@@ -258,7 +301,9 @@ class ReaderControlsTests(ViewerWindowTestCase):
         self._show_reader()
         self.window.index = 4
         self.assertTrue(self.window.controls_visible)
-        settings_button = self._action("settings")
+        self.window.toggle_reading_info()
+        self.application.processEvents()
+        settings_button = self._action("settings", overlay=True)
         settings_button.setFocus()
         self.application.processEvents()
 
@@ -268,7 +313,7 @@ class ReaderControlsTests(ViewerWindowTestCase):
         self.assertEqual(self.window.index, 4)
         self.assertFalse(self.window.controls_visible)
         self.assertFalse(self.window.controls_panel.isVisible())
-        self.assertTrue(self.window.action_bar.isVisible())
+        self.assertFalse(hasattr(self.window, "action_bar"))
 
 
     def test_escape_from_manual_input_closes_overlay_before_reader(self) -> None:

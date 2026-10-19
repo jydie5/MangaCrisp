@@ -231,10 +231,10 @@ These are the defaults for right-bound manga.
 | `H` / `?` | Show keyboard help and project links |
 | `Esc` | Close the controls panel, exit full screen, or return to the bookshelf |
 
-The reader keeps a shortcut bar at the bottom with `P` (settings), `O`
-(compare with the original), `F` (full screen), `V` (spread/single page), and
-`Shift` + arrow keys (move one page). These controls are available throughout
-reading.
+Click the center of the page to open the translucent controls panel. It shows
+navigation buttons and shortcut badges for `P` (settings), `O` (original comparison),
+`F` (full screen), `V` (layout), and `Shift` + arrow keys (one-page movement).
+There is no persistent controls bar; keyboard shortcuts remain available while reading.
 
 ## Mouse controls
 

@@ -23,11 +23,6 @@ QWidget#readerRoot QWidget#controls {
     background: #171d26;
     border-left: 1px solid #303946;
 }
-QWidget#readerRoot QWidget#actionBar {
-    background: rgba(22, 28, 36, 238);
-    border: 1px solid #303946;
-    border-radius: 12px;
-}
 QWidget#readerRoot QWidget#simplePanel,
 QWidget#readerRoot QWidget#simple_panel {
     background: transparent;

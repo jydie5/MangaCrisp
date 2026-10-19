@@ -624,12 +624,9 @@ class SpreadWindow(QMainWindow):
         root_layout.addWidget(image_host, 1)
         self.controls_panel = self.build_controls()
         root_layout.addWidget(self.controls_panel, 0)
-        self.action_bar = self.build_action_bar(root)
-        outer_layout.addWidget(self.action_bar)
         self.setCentralWidget(root)
         QApplication.instance().installEventFilter(self)
 
-        self.statusBar().showMessage(self.help_text())
         self.resize(1400, 900)
         self.position_reading_info_overlay()
         self.render_spread()
@@ -908,43 +905,6 @@ class SpreadWindow(QMainWindow):
         self.reader_action_buttons.setdefault(action, []).append(button)
         return button
 
-    def build_action_bar(self, parent: QWidget) -> QWidget:
-        bar = QWidget(parent)
-        bar.setObjectName("actionBar")
-        layout = QVBoxLayout(bar)
-        layout.setContentsMargins(8, 6, 8, 6)
-        layout.setSpacing(5)
-        self.action_bar_grid = QGridLayout()
-        self.action_bar_grid.setSpacing(6)
-        navigation = ("next", "previous", "forward_one", "back_one") if self.is_right_bound() else ("previous", "next", "back_one", "forward_one")
-        self.action_bar_buttons = [
-            self.make_reader_action(action, bar, compact=True)
-            for action in (*navigation, "settings", "original", "fullscreen", "help")
-        ]
-        self.action_bar_columns = 0
-        layout.addLayout(self.action_bar_grid)
-        hint = QLabel(tr("中央クリックで操作を表示") + "  ·  V " + tr("見開き") + " / " + tr("単ページ"), bar)
-        hint.setAlignment(Qt.AlignCenter)
-        hint.setStyleSheet("font-size: 11px; color: #aeb8c2; background: transparent;")
-        layout.addWidget(hint)
-        self.reflow_action_bar()
-        return bar
-
-    def reflow_action_bar(self) -> None:
-        if not hasattr(self, "action_bar_buttons"):
-            return
-        required_width = sum(button.minimumSizeHint().width() for button in self.action_bar_buttons) + 90
-        columns = 8 if self.width() >= required_width else 4
-        if columns == self.action_bar_columns:
-            return
-        self.action_bar_columns = columns
-        for column in range(8):
-            self.action_bar_grid.setColumnStretch(column, 0)
-        for index, button in enumerate(self.action_bar_buttons):
-            self.action_bar_grid.addWidget(button, index // columns, index % columns)
-        for column in range(columns):
-            self.action_bar_grid.setColumnStretch(column, 1)
-
     def build_reading_overlay(self, parent: QWidget) -> None:
         self.reading_info_panel = OverlayPane(parent)
         self.reading_info_panel.dismissed.connect(self.dismiss_reading_overlay)
@@ -1014,7 +974,6 @@ class SpreadWindow(QMainWindow):
             button.setChecked(name == self.current_quality_preset)
         for mode, button in getattr(self, "layout_buttons", {}).items():
             button.setChecked(mode == self.page_layout_mode)
-        self.reflow_action_bar()
 
     def on_settings_mode_changed(self) -> None:
         mode = self.settings_mode_combo.currentData()
@@ -1476,7 +1435,6 @@ class SpreadWindow(QMainWindow):
 
     def resizeEvent(self, event) -> None:
         super().resizeEvent(event)
-        self.reflow_action_bar()
         self.position_reading_info_overlay()
         self.position_next_book_overlay()
         self.clear_queued_display_requests()
@@ -1653,7 +1611,7 @@ class SpreadWindow(QMainWindow):
     def add_bookmark(self) -> None:
         if self.bookmark_callback is not None:
             self.bookmark_callback(self.index)
-            self.statusBar().showMessage(f"Bookmark added at p.{self.index + 1}    {self.help_text()}")
+            self.statusBar().showMessage(f"Bookmark added at p.{self.index + 1}")
 
     def show_shortcuts_help(self) -> None:
         show_help_dialog(self, viewer_shortcuts_text(self.reading_direction))
@@ -1819,7 +1777,7 @@ class SpreadWindow(QMainWindow):
         processed_count = sum(1 for path in self.processed_pages if path is not None)
         file_text = visible_file_names(self.pages, visible_indexes)
         self.statusBar().showMessage(
-            f"{page_text}    {file_text}    processed {processed_count}/{len(self.pages)}    {self.help_text()}"
+            f"{page_text}    {file_text}    processed {processed_count}/{len(self.pages)}"
         )
         self.update_quality_state()
         self.update_reading_info()

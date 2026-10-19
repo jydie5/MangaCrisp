@@ -239,6 +239,162 @@ def dropped_local_paths(mime_data) -> list[Path]:
 DELETE_CONFIRMATION_TITLE_PREVIEW = 3
 
 
+BOOKSHELF_STYLE_SHEET = """
+QWidget#bookshelfRoot {
+    background: #0e1622;
+    color: #eef5f3;
+}
+QWidget#bookshelfRoot QLabel#headerTitle {
+    color: #f3faf8;
+    font-size: 28px;
+    font-weight: 700;
+}
+QWidget#bookshelfRoot QLabel#headerSubtitle {
+    color: #aeb8c2;
+    font-size: 14px;
+}
+QWidget#bookshelfRoot QLabel#languageLabel,
+QWidget#bookshelfRoot QLabel#libraryLocation,
+QWidget#bookshelfRoot QLabel#statusLabel {
+    color: #aeb8c2;
+}
+QWidget#bookshelfRoot QWidget#librarySummaryCard,
+QWidget#bookshelfRoot QWidget#libraryInfoCard,
+QWidget#bookshelfRoot QWidget#actionBar {
+    background: #151f2e;
+    border: 1px solid #26364a;
+    border-radius: 14px;
+}
+QWidget#bookshelfRoot QLabel#libraryCount {
+    color: #66d9c4;
+    font-size: 16px;
+    font-weight: 700;
+}
+QWidget#bookshelfRoot QListWidget#bookGrid {
+    background: #0b1320;
+    border: 1px solid #26364a;
+    border-radius: 14px;
+    padding: 10px;
+    outline: 0;
+}
+QWidget#bookshelfRoot QListWidget#bookGrid::item {
+    background: #151f2e;
+    border: 1px solid #26364a;
+    border-radius: 12px;
+    color: #eef5f3;
+    margin: 6px;
+    padding: 10px;
+}
+QWidget#bookshelfRoot QListWidget#bookGrid::item:hover {
+    background: #1c2b3d;
+    border-color: #436074;
+}
+QWidget#bookshelfRoot QListWidget#bookGrid::item:selected {
+    background: #183d3b;
+    border: 2px solid #66d9c4;
+    color: #f3faf8;
+}
+QWidget#bookshelfRoot QPushButton,
+QWidget#bookshelfRoot QToolButton {
+    background: #1d293a;
+    border: 1px solid #3b4d62;
+    border-radius: 9px;
+    color: #eef5f3;
+    font-size: 14px;
+    font-weight: 600;
+    min-height: 38px;
+    padding: 0 14px;
+}
+QWidget#bookshelfRoot QPushButton:hover,
+QWidget#bookshelfRoot QToolButton:hover {
+    border-color: #66d9c4;
+}
+QWidget#bookshelfRoot QPushButton:pressed,
+QWidget#bookshelfRoot QToolButton:pressed {
+    background: #183d3b;
+    color: #66d9c4;
+}
+QWidget#bookshelfRoot QPushButton:focus,
+QWidget#bookshelfRoot QToolButton:focus {
+    border: 2px solid #66d9c4;
+}
+QWidget#bookshelfRoot QPushButton#primaryButton {
+    background: #66d9c4;
+    border-color: #66d9c4;
+    color: #0b1820;
+    font-weight: 700;
+    min-width: 112px;
+}
+QWidget#bookshelfRoot QPushButton#primaryButton:hover {
+    background: #8ae8d5;
+    border-color: #8ae8d5;
+}
+QWidget#bookshelfRoot QPushButton#dangerButton {
+    background: #242a36;
+    border-color: #5a4350;
+    color: #ffb8b0;
+}
+QWidget#bookshelfRoot QPushButton#dangerButton:hover {
+    border-color: #ff8d87;
+}
+QWidget#bookshelfRoot QPushButton:disabled,
+QWidget#bookshelfRoot QPushButton#primaryButton:disabled,
+QWidget#bookshelfRoot QPushButton#dangerButton:disabled {
+    background: #1a2431;
+    border-color: #2b394a;
+    color: #697888;
+}
+QWidget#bookshelfRoot QMenu {
+    background: #151f2e;
+    color: #eef5f3;
+    border: 1px solid #3b4d62;
+    padding: 6px;
+}
+QWidget#bookshelfRoot QMenu::item { padding: 6px 14px; }
+QWidget#bookshelfRoot QMenu::item:selected { background: #183d3b; color: #66d9c4; }
+QWidget#bookshelfRoot QPushButton#iconButton,
+QWidget#bookshelfRoot QToolButton#iconButton {
+    min-width: 40px;
+    max-width: 40px;
+    padding: 6px;
+}
+QWidget#bookshelfRoot QComboBox#languageSelector {
+    background: #151f2e;
+    border: 1px solid #3b4d62;
+    border-radius: 8px;
+    color: #eef5f3;
+    min-height: 34px;
+    min-width: 118px;
+    padding: 0 10px;
+}
+QWidget#bookshelfRoot QComboBox#languageSelector:focus {
+    border: 2px solid #66d9c4;
+}
+QWidget#bookshelfRoot QComboBox#languageSelector QAbstractItemView {
+    background: #151f2e;
+    border: 1px solid #3b4d62;
+    color: #eef5f3;
+    selection-background-color: #183d3b;
+    selection-color: #66d9c4;
+}
+QWidget#bookshelfRoot QScrollBar:vertical {
+    background: #0e1622;
+    width: 10px;
+    margin: 0;
+}
+QWidget#bookshelfRoot QScrollBar::handle:vertical {
+    background: #3b4d62;
+    border-radius: 5px;
+    min-height: 28px;
+}
+QWidget#bookshelfRoot QScrollBar::add-line:vertical,
+QWidget#bookshelfRoot QScrollBar::sub-line:vertical { height: 0; }
+QWidget#bookshelfRoot QScrollBar::handle:vertical:hover {
+    background: #66d9c4;
+}
+"""
+
+
 def context_menu_target_ids(clicked_id: str | None, selected_ids: list[str]) -> list[str]:
     """Books a right-click acts on: the selection when the clicked book is in it, otherwise just that book."""
     if clicked_id is None:
@@ -303,34 +459,57 @@ class BookshelfWindow(QMainWindow):
         self.setMinimumSize(900, 620)
         self.resize(1180, 760)
         self.setAcceptDrops(True)
-        self.setStyleSheet(
-            "QMainWindow, QWidget { background: #151515; color: #eeeeee; font-size: 16px; } "
-            "QListWidget { background: #101010; border: 1px solid #333333; font-size: 13px; } "
-            "QListWidget::item { padding: 8px; } "
-            "QListWidget::item:selected { background: #26384f; color: #ffffff; border: 1px solid #6c93c2; } "
-            "QPushButton { min-height: 34px; font-size: 16px; padding: 6px 12px; } "
-            "QLabel#subtitle { color: #bbbbbb; font-size: 14px; }"
-        )
 
         self.stack = QStackedWidget(self)
         root = QWidget(self.stack)
+        root.setObjectName("bookshelfRoot")
+        root.setAttribute(Qt.WA_StyledBackground, True)
+        root.setStyleSheet(BOOKSHELF_STYLE_SHEET)
         self.bookshelf_page = root
         layout = QVBoxLayout(root)
-        layout.setContentsMargins(18, 18, 18, 18)
-        layout.setSpacing(12)
+        layout.setContentsMargins(24, 22, 24, 18)
+        layout.setSpacing(14)
 
         header_row = QHBoxLayout()
-        header = QLabel(f"{APP_NAME} Bookshelf", root)
-        header.setStyleSheet("font-size: 24px; font-weight: bold;")
-        header_row.addWidget(header, 1)
+        header_row.setSpacing(12)
+        header_block = QWidget(root)
+        header_block.setObjectName("headerBlock")
+        header_block_layout = QVBoxLayout(header_block)
+        header_block_layout.setContentsMargins(0, 0, 0, 0)
+        header_block_layout.setSpacing(3)
+        header = QLabel(APP_NAME, header_block)
+        header.setObjectName("headerTitle")
+        header_block_layout.addWidget(header)
+        header_subtitle = QLabel(
+            tr("ローカルのPDF、画像フォルダ、単画像、zip/cbz/rar/cbr/7z/cb7 を本棚へ登録します。"),
+            header_block,
+        )
+        header_subtitle.setObjectName("headerSubtitle")
+        header_subtitle.setWordWrap(True)
+        header_block_layout.addWidget(header_subtitle)
+        header_row.addWidget(header_block, 1)
+
+        summary_card = QWidget(root)
+        summary_card.setObjectName("librarySummaryCard")
+        summary_card.setMinimumWidth(178)
+        summary_layout = QVBoxLayout(summary_card)
+        summary_layout.setContentsMargins(10, 8, 10, 8)
+        summary_layout.setSpacing(0)
+        self.library_count_label = QLabel("", summary_card)
+        self.library_count_label.setObjectName("libraryCount")
+        self.library_count_label.setAlignment(Qt.AlignCenter)
+        self.library_count_label.setWordWrap(False)
+        summary_layout.addWidget(self.library_count_label)
+        header_row.addWidget(summary_card)
+
         help_button = QPushButton("?", root)
-        help_button.setFixedWidth(36)
+        help_button.setObjectName("iconButton")
         help_button.setToolTip(tr("ショートカットを表示"))
         help_button.clicked.connect(self.show_shortcuts_help)
         header_row.addWidget(help_button)
         more_button = QToolButton(root)
+        more_button.setObjectName("iconButton")
         more_button.setText("…")
-        more_button.setFixedWidth(36)
         more_button.setToolTip(tr("その他の操作"))
         more_button.setPopupMode(QToolButton.InstantPopup)
         more_menu = QMenu(more_button)
@@ -343,9 +522,10 @@ class BookshelfWindow(QMainWindow):
         more_button.setMenu(more_menu)
         header_row.addWidget(more_button)
         language_label = QLabel(tr("言語"), root)
-        language_label.setObjectName("subtitle")
+        language_label.setObjectName("languageLabel")
         header_row.addWidget(language_label)
         self.language_combo = QComboBox(root)
+        self.language_combo.setObjectName("languageSelector")
         self.language_combo.addItem(tr("システム設定"), "auto")
         self.language_combo.addItem(tr("英語"), "en")
         self.language_combo.addItem(tr("日本語"), "ja")
@@ -356,16 +536,23 @@ class BookshelfWindow(QMainWindow):
         header_row.addWidget(self.language_combo)
         layout.addLayout(header_row)
 
-        subtitle = QLabel(tr("ローカルのPDF、画像フォルダ、単画像、zip/cbz/rar/cbr/7z/cb7 を本棚へ登録します。"), root)
-        subtitle.setObjectName("subtitle")
-        layout.addWidget(subtitle)
-
-        self.library_location_label = QLabel("", root)
-        self.library_location_label.setObjectName("subtitle")
+        info_card = QWidget(root)
+        info_card.setObjectName("libraryInfoCard")
+        info_layout = QHBoxLayout(info_card)
+        info_layout.setContentsMargins(14, 8, 10, 8)
+        info_layout.setSpacing(12)
+        self.library_location_label = QLabel("", info_card)
+        self.library_location_label.setObjectName("libraryLocation")
         self.library_location_label.setWordWrap(True)
-        layout.addWidget(self.library_location_label)
+        info_layout.addWidget(self.library_location_label, 1)
+        self.open_library_button = QPushButton(tr("保存先を開く"), info_card)
+        self.open_library_button.setObjectName("secondaryButton")
+        self.open_library_button.clicked.connect(self.open_library_folder)
+        info_layout.addWidget(self.open_library_button)
+        layout.addWidget(info_card)
 
         self.list_widget = QListWidget(root)
+        self.list_widget.setObjectName("bookGrid")
         self.list_widget.setViewMode(QListWidget.IconMode)
         self.list_widget.setMovement(QListWidget.Static)
         self.list_widget.setResizeMode(QListWidget.Adjust)
@@ -377,6 +564,7 @@ class BookshelfWindow(QMainWindow):
         self.list_widget.setSelectionMode(QListWidget.ExtendedSelection)
         self.list_widget.setContextMenuPolicy(Qt.CustomContextMenu)
         self.list_widget.customContextMenuRequested.connect(self.show_book_context_menu)
+        self.list_widget.itemSelectionChanged.connect(self.update_action_states)
         self.list_widget.setAcceptDrops(True)
         self.list_widget.viewport().setAcceptDrops(True)
         self.list_widget.installEventFilter(self)
@@ -384,37 +572,44 @@ class BookshelfWindow(QMainWindow):
         self.list_widget.itemDoubleClicked.connect(lambda _item: self.open_selected_book())
         layout.addWidget(self.list_widget, 1)
 
-        buttons = QHBoxLayout()
+        action_bar = QWidget(root)
+        action_bar.setObjectName("actionBar")
+        buttons = QHBoxLayout(action_bar)
+        buttons.setContentsMargins(10, 8, 10, 8)
+        buttons.setSpacing(8)
         self.add_file_button = QPushButton(tr("ファイルを追加"), root)
+        self.add_file_button.setObjectName("secondaryButton")
         self.add_file_button.clicked.connect(self.add_file)
         buttons.addWidget(self.add_file_button)
 
         self.add_folder_button = QPushButton(tr("フォルダを追加"), root)
+        self.add_folder_button.setObjectName("secondaryButton")
         self.add_folder_button.clicked.connect(self.add_folder)
         buttons.addWidget(self.add_folder_button)
 
         self.capture_button = QPushButton(tr("画面を連番キャプチャ"), root)
+        self.capture_button.setObjectName("secondaryButton")
         self.capture_button.setToolTip(tr("固定範囲をPNGで連番保存し、CBZまたはZIPにまとめます。"))
         self.capture_button.clicked.connect(self.open_capture_window)
         self.capture_button.setVisible(sys.platform in {"darwin", "win32"} or sys.platform.startswith("linux"))
         buttons.addWidget(self.capture_button)
 
-        self.open_button = QPushButton(tr("読む"), root)
-        self.open_button.clicked.connect(self.open_selected_book)
-        buttons.addWidget(self.open_button)
+        buttons.addStretch(1)
 
         self.delete_button = QPushButton(tr("本棚から削除"), root)
+        self.delete_button.setObjectName("dangerButton")
         self.delete_button.clicked.connect(self.delete_selected_book)
         buttons.addWidget(self.delete_button)
 
-        self.open_library_button = QPushButton(tr("保存先を開く"), root)
-        self.open_library_button.clicked.connect(self.open_library_folder)
-        buttons.addWidget(self.open_library_button)
-        buttons.addStretch(1)
-        layout.addLayout(buttons)
+        self.open_button = QPushButton(tr("読む"), root)
+        self.open_button.setObjectName("primaryButton")
+        self.open_button.clicked.connect(self.open_selected_book)
+        buttons.addWidget(self.open_button)
+        layout.addWidget(action_bar)
 
         self.status_label = QLabel("", root)
-        self.status_label.setObjectName("subtitle")
+        self.status_label.setObjectName("statusLabel")
+        self.status_label.setWordWrap(True)
         layout.addWidget(self.status_label)
 
         self.stack.addWidget(self.bookshelf_page)
@@ -436,7 +631,15 @@ class BookshelfWindow(QMainWindow):
             item.setData(Qt.UserRole, book.id)
             self.list_widget.addItem(item)
         self.library_location_label.setText(library_location_label(self.library.paths))
-        self.status_label.setText(tr("{count}冊 / タイトル昇順", count=len(books)))
+        self.library_count_label.setText(tr("{count}冊 / タイトル昇順", count=len(books)))
+        self.status_label.clear()
+        self.update_action_states()
+
+    def update_action_states(self) -> None:
+        """Keep the primary and destructive actions clear when nothing is selected."""
+        has_selection = bool(self.selected_book_ids())
+        self.open_button.setEnabled(has_selection)
+        self.delete_button.setEnabled(has_selection)
 
     def confirm_library_location_if_needed(self) -> None:
         if is_library_dir_confirmed(self.library.paths):
