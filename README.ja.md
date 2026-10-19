@@ -33,11 +33,11 @@ MangaCrispは個人で開発している、MIT Licenseの無料ソフトウェ�
 
 一般ユーザーにPython、uv、ターミナル操作は不要です。
 
-### [MangaCrisp macOS版（Apple Silicon）Beta 0.7.1b0.2をダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/macos-beta-0.7.1b0.2/MangaCrisp-v0.7.1b0.2-macos-apple-silicon-standalone.zip)
+### [MangaCrisp macOS版（Apple Silicon）Beta 0.7.1b0.3をダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/macos-beta-0.7.1b0.3/MangaCrisp-v0.7.1b0.3-macos-apple-silicon-standalone.zip)
 
-現在の最新のmacOS版です。Linux版Preview 0.7.1b0.2と同じ共通ソースからビルドしており、
-`v0.7.1-beta`にキャッシュ上限、中断した取り込みの復旧、RAR／CBR展開の外部ツール切り替えを
-加えています。詳細は[リリース文書](docs/releases/macos-beta-0.7.1b0.2.md)を参照してください。
+本棚・読書設定・ヘルプを刷新したmacOSベータです。中央クリックで半透明の操作パネルと
+ショートカットを表示できます。高画質補正の偽色と、前後移動時の補正・キャッシュも改善しました。
+詳細は[リリース文書](docs/releases/macos-beta-0.7.1b0.3.md)を参照してください。
 
 1. 上のリンクからstandalone ZIPをダウンロードします。
 2. ZIPをダブルクリックして展開します。
@@ -48,7 +48,7 @@ MangaCrispは個人で開発している、MIT Licenseの無料ソフトウェ�
 過去版とSHA-256チェックサムは
 [Releasesページ](https://github.com/jydie5/MangaCrisp/releases)で確認できます。
 
-> 現在のβ版は署名・Apple notarization未実施です。初回の通常ダブルクリックはmacOSに止められることがあります。
+> 現在のβ版はad-hoc署名済みですが、Apple Developer ID署名・notarizationは未実施です。初回の通常ダブルクリックはmacOSに止められることがあります。
 
 ### Windows開発プレビュー
 
@@ -61,12 +61,10 @@ Intel／AMD GPUの補正証跡と、別のクリーンなWindowsアカウント�
 正式Windows版までの残項目です。補正できない場合も原画で閲覧できます。
 導入方法と制限は[INSTALL.windows.ja.md](INSTALL.windows.ja.md)を参照してください。
 
-> 読書・本棚のUXメンテナンス（全画面のカーソル自動非表示、
-> オーバーレイの本棚へボタン、本棚の複数選択とまとめて削除、表示中見開き優先の補正、
-> 先読み調整）は`main`に入り、macOSの確認とローカルWindows候補版のヒューマンチェックは合格済みです。
-> ただし上のWindowsダウンロードはそれより前の版です。今回のソース・文書更新では
-> 新しいZIPは公開していません。詳細は
-> [docs/development/ux-maintenance-handover.ja.md](docs/development/ux-maintenance-handover.ja.md)を参照してください。
+> ソースにはmacOS Beta 0.7.1b0.3のUI/UX・補正・キャッシュ修正が入っています。
+> 上のWindows配布版はそれより前の版です。新しい操作パネル・ヘルプのWindows実機確認は
+> 未実施で、以前の候補版の確認とは区別しています。
+> [開発者向け引き継ぎ](docs/development/windows-handover.md)を参照してください。
 
 ### Linux（Ubuntu）プレビュー
 
@@ -83,6 +81,8 @@ preview 0.7.1b0.3は読書・本棚UX改善、補正版のちらつき、管理�
 クリーンなUbuntu 24.04／26.04での検証とGNOME Waylandのヒューマンチェックに合格しました。
 AMD／Intel実GPU、実デスクトップのX11、小数倍率は未確認です。
 詳細は[リリースノート](docs/releases/linux-preview-0.7.1b0.3.md)を参照してください。
+macOS Beta 0.7.1b0.3の新UI・ヘルプ・補正キャッシュ修正は、このLinux配布物には含まれません。
+実機確認項目は[Linux引き継ぎ](docs/development/linux-handover.ja.md)に記録しています。
 
 ## 最初の一冊を読む
 
@@ -96,8 +96,8 @@ AMD／Intel実GPU、実デスクトップのX11、小数倍率は未確認です
 
 ## Linux preview 0.7.1b0.3の読書・本棚UX更新
 
-上のLinux previewは以下の変更を含みます。macOSでの確認とローカルWindows候補版の
-確認も合格済みですが、上のmacOS／Windowsダウンロードはこの更新より前の版です。
+上のLinux previewとmacOS Beta 0.7.1b0.3は以下の変更を含みます。以前のローカルWindows候補版でも
+確認済みですが、上のWindows配布版はこの更新より前の版です。
 
 **機能**
 

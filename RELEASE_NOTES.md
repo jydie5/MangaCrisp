@@ -1,3 +1,20 @@
+# MangaCrisp for macOS — Beta 0.7.1b0.3
+
+UI/UX features and minor bug fixes: refreshed bookshelf and settings, on-demand
+translucent controls with shortcut badges, modern H/? help with Escape/outside
+click dismissal, and reliable correction/cache reuse during navigation.
+High-quality correction now prevents false colors using accurate synchronization.
+
+本棚・読書設定を刷新し、中央クリックの操作パネルとショートカット表示を追加しました。
+H/?のヘルプはEsc・外側クリックでも閉じられます。高画質補正の偽色、前後移動時の
+補正とキャッシュを改善しました。下部の常時操作バーはありません。
+
+This is an Apple Silicon beta, ad-hoc signed without Apple notarization.
+Windows/Linux packages remain unchanged; native checks are handed over to their developers.
+Apple Silicon向けベータです。Windows／Linuxの配布物は据え置き、実機確認項目を引き継いでいます。
+
+[Full release notes / 詳細](docs/releases/macos-beta-0.7.1b0.3.md)
+
 # MangaCrisp for macOS — Beta 0.7.1b0.2
 
 This macOS update is built from the same shared source as the Linux preview

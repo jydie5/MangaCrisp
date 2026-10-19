@@ -2,21 +2,18 @@
 
 [日本語](ux-maintenance-handover.ja.md)
 
-This handover supersedes the macOS-first UX work from PR #44
-(`core/reader-bookshelf-ux`). The correction and cache baseline was merged by
-PR #53 at `78c2cc6`; the reader-controls candidate is PR #54, based on the
-`97dc06f` UI checkpoint and currently targeting `main` for CI. The behavior
-below is the candidate baseline for the next native checks. It is not a claim
-that the next package or tag has been published.
+PR #53 (correction/cache) and PR #54 (reader/bookshelf UI) are merged into
+`main`, and Apple Silicon beta `macos-beta-0.7.1b0.3` is published. The UI
+checkpoint is `97dc06f`, with portable font-metric tests at `ed7fa11`. This
+supersedes the earlier PR #44 handover.
 
-The shared automated test record is **274 passed, 8 skipped, and 12 subtests
-passed**. Native macOS verification is recorded separately; native Windows
-and Linux acceptance of this final reader-controls candidate is still pending.
-The already published Windows b0.4 and
-Linux b0.3 artifacts remain the older preview artifacts; do not describe them
-as containing this candidate. The next macOS candidate tag is expected to be
-`macos-beta-0.7.1b0.3`, using the existing ad-hoc signed
-`scripts/package_standalone.py` workflow when it is released.
+The shared automated suite passed 274 tests, with 8 skips and 12 subtests.
+macOS, Windows, and Ubuntu CI passed. Native macOS UI checks, distribution
+audit, extracted startup, and color-PDF smoke checks passed separately.
+Windows/Linux native acceptance of this new UI is still pending; CI does not
+replace it. Published Windows b0.4 and Linux b0.3 artifacts remain unchanged.
+The macOS beta uses the existing ad-hoc signed `scripts/package_standalone.py`
+workflow and is not Apple notarized.
 
 ## Final shared reader and bookshelf behavior
 
@@ -151,7 +148,7 @@ candidate.
 
 - Keep PR #53 / `1c1a8a6` (merged as `78c2cc6`) when investigating or rolling
   back reader UX. To remove only the reader-controls layer, revert the UI
-  checkpoints in reverse order: `97dc06f`, `8fd3c81`, then `5320092`. This
+  checkpoints in reverse order: `ed7fa11`, `97dc06f`, `8fd3c81`, then `5320092`. This
   changes source and UI only; it does not delete user books, settings, or
   caches.
 - Rebase onto the current `main` before editing `viewer.py`, `bookshelf.py`,

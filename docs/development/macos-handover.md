@@ -7,12 +7,24 @@ the Windows work merged through PR #27. The receiving Mac must continue from
 the current `origin/main`; it must not restore an older macOS checkout over the
 shared files.
 
-## Current checkpoint (2026-08-15)
+## Current published checkpoint (2026-10-20)
+
+Apple Silicon beta `macos-beta-0.7.1b0.3` is published from `main` after PRs
+#53/#54. It includes the bookshelf/settings/center-controls/help redesign and
+correction/cache fixes. The automated suite passed 274 tests with 8 skips and
+12 subtests; distribution audit, ad-hoc signature, extracted startup, and color
+PDF smoke checks passed. Developer ID signing and notarization remain pending.
+Windows b0.4 and Linux b0.3 artifacts are unchanged. Native verification of the
+new UI on those platforms is tracked in the [shared handover](ux-maintenance-handover.md).
+See the [release notes](../releases/macos-beta-0.7.1b0.3.md) and
+[UI rollback checkpoints](reader-controls-checkpoint.md).
+
+## Historical checkpoint (2026-08-15 onward)
 
 - The minimum shared checkpoint is commit `9f463c0` (PR #27). This handover
   itself will make `main` a later descendant, so always use the current remote
   head rather than checking out that commit directly.
-- The current macOS package is the `macos-beta-0.7.1b0.2` Apple Silicon
+- The previous macOS package was the `macos-beta-0.7.1b0.2` Apple Silicon
   prerelease (2026-10-01), built from `main` at PR #42. It supersedes
   `v0.7.1-beta` and matches the shared source of Linux preview `0.7.1b0.2`.
 - The current Windows package is Development Preview
