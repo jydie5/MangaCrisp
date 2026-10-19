@@ -6,12 +6,22 @@
   <img src="assets/mangacrisp-app-icon.png" width="160" alt="MangaCrisp アプリアイコン">
 </p>
 
-![自由ライセンス作品を使用したMangaCrispの本棚](docs/images/bookshelf.png)
+![再配布可能なデモ作品だけを登録した新しい本棚](docs/images/ja/bookshelf.png)
 
-![設定パネルを表示したMangaCrispの見開きビューワ](docs/images/reader.png)
+![中央クリックで開く半透明の読書操作パネル](docs/images/ja/reader-controls.png)
 
-スクリーンショットと`demo`の画像はDavid Revoy氏の*Pepper&Carrot*を
-[CC BY 4.0](demo/ATTRIBUTION.md)に基づいて使用しています。商業漫画の画像は含みません。
+<details>
+<summary>読書設定とショートカット一覧の画面</summary>
+
+![画質カードとレイアウトボタンを備えた読書設定](docs/images/ja/reader.png)
+
+![Escとパネル外クリックで閉じられるショートカット一覧](docs/images/ja/shortcut-help.png)
+
+</details>
+
+画像はmacOS上の共通UIを、デモ専用の一時本棚で撮影しています。作品はDavid Revoyの
+*Pepper&Carrot*（[CC BY 4.0・クレジット](demo/ATTRIBUTION.md)）のみです。
+[撮影手順と素材の説明](docs/images/README.md)。
 
 MangaCrispは、macOS／Windows／Linux向けの無料・オープンソース漫画／コミックビューアです。PDF、CBZ、CBR、ZIP、RAR、7z、画像フォルダを読み込み、本棚、右綴じ見開き表示、Real-CUGANによるAI補正を利用できます。
 
@@ -62,8 +72,8 @@ Intel／AMD GPUの補正証跡と、別のクリーンなWindowsアカウント�
 導入方法と制限は[INSTALL.windows.ja.md](INSTALL.windows.ja.md)を参照してください。
 
 > ソースにはmacOS Beta 0.7.1b0.3のUI/UX・補正・キャッシュ修正が入っています。
-> 上のWindows配布版はそれより前の版です。新しい操作パネル・ヘルプのWindows実機確認は
-> 未実施で、以前の候補版の確認とは区別しています。
+> 上のWindows配布版はそれより前の版です。2026-10-20に現行UIのWindows実機確認を受領しました。
+> 新しいプレビューを準備中で、公開までは上の旧配布版を案内しています。
 > [開発者向け引き継ぎ](docs/development/windows-handover.md)を参照してください。
 
 ### Linux（Ubuntu）プレビュー

@@ -2,19 +2,23 @@
 
 [日本語](linux-handover.ja.md)
 
-## Current shared source checkpoint: PR #53/#54 (97dc06f, 2026-10-20)
+## Current shared source checkpoint: PR #53/#54 (35f2936, main d7bbf50, 2026-10-20)
 
 Use this checkpoint for the next Linux native verification. The current shared
-source includes the reader, bookshelf, correction and cache work from PR #53/#54
-through latest commit [97dc06f](https://github.com/jydie5/MangaCrisp/commit/97dc06f).
+source includes the reader, bookshelf, correction and cache work from PR #53/#54.
+The UI release line is [35f2936](https://github.com/jydie5/MangaCrisp/commit/35f2936),
+and current `main` is [d7bbf50](https://github.com/jydie5/MangaCrisp/commit/d7bbf50).
 The published Linux artifact remains preview b0.3. That artifact predates the
 current reader controls, shortcut-help modal, and correction/cache lifecycle,
 so its desktop result is not acceptance evidence for this source.
 
 Native macOS UI checks passed. The automated macOS source suite recorded
-**274 passed, 8 skipped and 12 subtests passed**. Linux native verification of the current source is still
-pending. See the [shared UX handover](ux-maintenance-handover.md) for
-cross-platform context; this document is the Linux gate and environment record.
+**274 passed, 8 skipped and 12 subtests passed**. On 2026-10-20, the user
+reported that this current UI worked on a real Linux machine. This is a
+general native success report; it does not provide Linux session, GPU/driver,
+scaling, package-smoke, or per-checklist evidence. Those granular Linux gates
+remain pending where evidence is absent. See the [shared UX handover](ux-maintenance-handover.md)
+for cross-platform context; this document is the Linux gate and environment record.
 
 Current behavior to verify on Linux:
 
@@ -64,9 +68,10 @@ record Ubuntu/desktop/Qt versions, GPU/driver, commit and build identifier:
 5. Run the full suite and native package smoke test; record Linux skips and
    subtests separately from the accepted macOS result.
 
-The current-source checks above are pending; a headless run or the old b0.3
-Wayland result cannot establish X11/Wayland layout, modal alpha, focus,
-correction navigation or cache behavior.
+The current-source checks above remain unreported as individual evidence despite
+the general native success report. A headless run or the old b0.3 Wayland
+result cannot establish X11/Wayland layout, modal alpha, focus, correction
+navigation or cache behavior.
 
 ## Historical Linux preview b0.3 validation checkpoint (2026-10-15)
 
@@ -84,8 +89,9 @@ with an isolated demo-only library. The user accepted the candidate on 2026-10-1
 ("確認しました。mainにまーじ"). This is general desktop acceptance; individual
 checklist sign-offs were not reported. AMD/Intel real GPUs,
 a physical X11 session, and fractional scaling are not validated by this run.
-This historical result does not validate the current PR #53/#54 source; keep
-b0.3 as the existing Linux release until the current checks above are complete.
+This historical result does not validate the current PR #53/#54 source. The
+2026-10-20 general success report does not alter the published artifact; keep
+b0.3 as the existing Linux release until a new preview is actually published.
 See the [validation record](../testing/linux-ux-20261015-validation.ja.md) and
 [b0.3 release notes](../releases/linux-preview-0.7.1b0.3.md).
 
