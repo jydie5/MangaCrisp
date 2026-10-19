@@ -2,18 +2,15 @@
 
 [English](ux-maintenance-handover.md)
 
-この文書は、旧UXのPR #44（`core/reader-bookshelf-ux`）から先の候補を記録します。
-補正・キャッシュ基盤はPR #53として`78c2cc6`で`main`へマージ済みです。読書操作の候補は
-PR #54で、UIチェックポイントは`97dc06f`、現在`main`を対象にCI確認中です。
-以下は次の実機確認に使う候補の基準であり、次のパッケージやタグが公開済みという意味では
-ありません。
+PR #53（補正・キャッシュ）とPR #54（本棚・読書UI）を`main`へ統合し、
+Apple Silicon向け`macos-beta-0.7.1b0.3`を公開しました。UIチェックポイントは`97dc06f`、
+フォント差に対応したテストは`ed7fa11`です。PR #44の旧UX引き継ぎを更新しています。
 
-共通自動テストの記録は**274 passed、8 skipped、12 subtests passed**です。macOSの
-ネイティブ検証は別記録であり、この最終的な読書操作候補についてWindows／Linuxの
-ネイティブ合格はまだ未完了です。公開済みの
-Windows b0.4とLinux b0.3は旧previewの成果物であり、この候補の挙動を含むとは記載しません。
-次のmacOS候補タグは`macos-beta-0.7.1b0.3`を予定しています。公開時は既存の
-`scripts/package_standalone.py`によるad-hoc署名ワークフローを使います。
+共通自動テストは274成功・8スキップ・12サブテスト成功。macOS／Windows／UbuntuのCIが通過しました。
+macOSでは実機UI確認、配布監査、展開後の起動とカラーPDF表示も確認済みです。
+Windows／Linuxの新UIの実機受入は未実施で、CIとは区別します。
+公開済みWindows b0.4／Linux b0.3は旧配布物のままです。
+macOSは既存の`scripts/package_standalone.py`で作成したad-hoc署名ベータで、Apple公証は未実施です。
 
 ## 最終候補の共通読書・本棚挙動
 
@@ -108,7 +105,7 @@ Windows b0.4とLinux b0.3の合格記録は、それぞれの過去のrelease文
 ## ロールバックと競合境界
 
 - PR #53／`1c1a8a6`（`78c2cc6`としてマージ済み）を残したまま、読書UIだけを調査・ロールバックします。
-  UIチェックポイントを新しい順に`97dc06f`、`8fd3c81`、`5320092`の順でrevertすれば、補正・キャッシュ修正を維持したまま
+  UIチェックポイントを新しい順に`ed7fa11`、`97dc06f`、`8fd3c81`、`5320092`の順でrevertすれば、補正・キャッシュ修正を維持したまま
   読書UIだけを戻せます。これはソースとUIだけを変え、利用者の本、設定、キャッシュを削除しません。
 - `viewer.py`、`bookshelf.py`、`page_provider.py`、`cache_utils.py`、補正モジュールを編集する前に最新`main`へrebaseします。
   共通の補正／キャッシュ修正と各OSのpackaging変更を両方残してください。

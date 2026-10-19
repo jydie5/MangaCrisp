@@ -98,9 +98,9 @@ the corrected-display flash fix from PR #47, and the shared
 This records general Windows acceptance, not individual checklist sign-offs.
 Linux desktop acceptance is still required; this Windows PC cannot verify it.
 
-This update publishes source and handover documents, not a new downloadable
-release. The existing Linux preview `linux-preview-0.7.1b0.2` and Windows b0.4
-downloads predate these changes. Do not relabel or overwrite those assets.
+That Windows handover updated source and documents only. Linux b0.3 was
+subsequently published with those earlier UX fixes, as recorded above; it still
+predates PR #53/#54. Windows b0.4 remains unchanged. Do not relabel old assets.
 
 ## Start from merged main
 

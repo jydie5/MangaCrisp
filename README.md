@@ -39,18 +39,19 @@ Trust only funding links published in this repository.
 
 The standalone build does not require Python, uv, or Terminal.
 
-### [Download MangaCrisp for macOS (Apple Silicon) — Beta 0.7.1b0.2](https://github.com/jydie5/MangaCrisp/releases/download/macos-beta-0.7.1b0.2/MangaCrisp-v0.7.1b0.2-macos-apple-silicon-standalone.zip)
+### [Download MangaCrisp for macOS (Apple Silicon) — Beta 0.7.1b0.3](https://github.com/jydie5/MangaCrisp/releases/download/macos-beta-0.7.1b0.3/MangaCrisp-v0.7.1b0.3-macos-apple-silicon-standalone.zip)
 
-This is the current macOS build. It is built from the same shared source as
-the Linux preview 0.7.1b0.2 and adds bounded caches, interrupted-import
-recovery, and the RAR/CBR extraction fallback to `v0.7.1-beta`. See the
-[release notes](docs/releases/macos-beta-0.7.1b0.2.md).
+This macOS beta refreshes the bookshelf, reading settings, and shortcut help.
+Center-click controls show navigation and keyboard shortcuts on demand. It also
+fixes false colors in high-quality correction and improves cache reuse during
+forward/back movement. See the
+[release notes](docs/releases/macos-beta-0.7.1b0.3.md).
 
 1. Download the standalone ZIP from the link above.
 2. Unzip it and move `MangaCrisp.app` to Applications.
 3. On first launch, Control-click `MangaCrisp.app` and choose **Open**.
 
-The current beta is not signed or notarized. See
+The current beta is ad-hoc signed, without Apple Developer ID signing or notarization. See
 [INSTALL.md](INSTALL.md) for detailed installation and troubleshooting steps.
 All versions and the SHA-256 checksum are available on the
 [Releases page](https://github.com/jydie5/MangaCrisp/releases).
@@ -68,13 +69,11 @@ remain before the stable Windows release. Original-image reading remains
 available if enhancement is unavailable. See
 [INSTALL.windows.md](INSTALL.windows.md) for installation and limitations.
 
-> The reader and bookshelf UX maintenance (fullscreen
-> cursor auto-hide, overlay Bookshelf button, bookshelf multi-select and batch
-> removal, visible-spread-first correction, prefetch tuning) is in `main`.
-> The macOS checks and a local Windows candidate's human check have passed;
-> the Windows download above still predates it. No new ZIP is published by
-> the source/documentation update. See
-> [docs/development/ux-maintenance-handover.md](docs/development/ux-maintenance-handover.md).
+> The source now includes the UI/UX and correction/cache fixes released in
+> macOS Beta 0.7.1b0.3. This Windows download predates them. Native Windows
+> acceptance of the new controls and help is pending; previous candidate
+> checks do not certify the new UI. See the
+> [developer handover](docs/development/windows-handover.md).
 
 ### Linux (Ubuntu) preview
 
@@ -92,6 +91,9 @@ corrected-display flashing and managed-copy removal errors. It passed clean
 Ubuntu 24.04/26.04 validation and a GNOME Wayland human check. AMD/Intel GPUs,
 a physical X11 session and fractional scaling remain unverified. See the
 [release notes](docs/releases/linux-preview-0.7.1b0.3.md).
+The newer controls/help redesign and correction/cache fixes in macOS Beta
+0.7.1b0.3 are not in this Linux package; native verification is tracked in the
+[Linux handover](docs/development/linux-handover.md).
 
 ## Read your first book
 
@@ -108,9 +110,9 @@ first launch. A custom library location selected by the user is left unchanged.
 
 ## Reader and bookshelf UX update (Linux preview 0.7.1b0.3)
 
-The Linux preview above includes the following changes. They were also
-verified on macOS and accepted in a local Windows candidate; the macOS and
-Windows downloads above still predate this update.
+The Linux preview and macOS Beta 0.7.1b0.3 include the following changes.
+They were also accepted in an earlier local Windows candidate; the Windows
+download above still predates this update.
 
 **Features**
 
