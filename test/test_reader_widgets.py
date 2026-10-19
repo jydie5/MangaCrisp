@@ -78,11 +78,19 @@ def test_choice_subtitles_fit_two_column_cards(qapp) -> None:
         assert subtitle.geometry().bottom() < button.height()
         assert subtitle.heightForWidth(subtitle.width()) <= subtitle.height()
 
-    assert buttons[0].subtitle_label.text() == "Natural Lines and Tones"
+    # Native fonts have different metrics. A narrow card may elide even this
+    # short description; its complete accessible text must still be retained.
+    assert buttons[0].accessibleDescription() == "Natural Lines and Tones"
+    assert buttons[0].subtitle_label.text()
     assert "…" in buttons[1].subtitle_label.text()
     assert buttons[1].subtitle == (
         "pro/noise 3. Prioritizes line and texture quality over processing time."
     )
+
+    # Growing a card must restore text that was elided at the narrow width.
+    root.resize(800, 200)
+    qapp.processEvents()
+    assert buttons[0].subtitle_label.text() == "Natural Lines and Tones"
 
     root.close()
     root.deleteLater()

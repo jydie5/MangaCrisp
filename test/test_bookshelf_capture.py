@@ -17,7 +17,9 @@ def _bookshelf(tmp_path: Path) -> BookshelfWindow:
 
 
 @pytest.mark.parametrize("platform", ["win32", "linux"])
-def test_capture_controller_stays_in_taskbar(qapp, tmp_path: Path, platform: str) -> None:
+def test_capture_controller_stays_in_taskbar(
+    qapp, tmp_path: Path, platform: str
+) -> None:
     bookshelf = _bookshelf(tmp_path)
     controller = QMainWindow()
     bookshelf.active_capture = controller  # type: ignore[assignment]
