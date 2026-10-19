@@ -675,6 +675,16 @@ class BookshelfWindow(QMainWindow):
         )
 
     def eventFilter(self, watched, event) -> bool:
+        if (
+            watched in {self.list_widget, self.list_widget.viewport()}
+            and event.type() == QEvent.KeyPress
+            and event.key() in {Qt.Key_H, Qt.Key_Question}
+            and not (event.modifiers() & (Qt.ControlModifier | Qt.MetaModifier | Qt.AltModifier))
+            and self.stack.currentWidget() is self.bookshelf_page
+            and QApplication.activeModalWidget() is None
+        ):
+            self.show_shortcuts_help()
+            return True
         if watched in {self.list_widget, self.list_widget.viewport()} and self.handle_drop_event(event):
             return True
         return super().eventFilter(watched, event)

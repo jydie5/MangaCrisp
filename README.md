@@ -235,6 +235,8 @@ Click the center of the page to open the translucent controls panel. It shows
 navigation buttons and shortcut badges for `P` (settings), `O` (original comparison),
 `F` (full screen), `V` (layout), and `Shift` + arrow keys (one-page movement).
 There is no persistent controls bar; keyboard shortcuts remain available while reading.
+The `H` help panel uses the same design and closes with `Esc`, its Close button,
+or a click outside the panel. Dismissing it does not turn a page.
 
 ## Mouse controls
 

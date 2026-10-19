@@ -226,16 +226,13 @@ def help_dialog_html(shortcuts_text: str) -> str:
 
 
 def show_help_dialog(parent, shortcuts_text: str) -> None:
-    message = QMessageBox(parent)
-    message.setWindowTitle(tr("ショートカット"))
-    message.setIcon(QMessageBox.Information)
-    message.setTextFormat(Qt.RichText)
-    message.setTextInteractionFlags(Qt.TextBrowserInteraction)
-    message.setText(help_dialog_html(shortcuts_text))
-    message.setStandardButtons(QMessageBox.Ok)
-    for label in message.findChildren(QLabel):
-        label.setOpenExternalLinks(True)
-    message.exec()
+    from mangacrisp_app.shortcut_help import ShortcutHelpDialog
+
+    dialog = ShortcutHelpDialog(parent, shortcuts_text)
+    try:
+        dialog.exec()
+    finally:
+        dialog.deleteLater()
 
 
 def compact_shortcuts_text(reading_direction: str) -> str:

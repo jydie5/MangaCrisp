@@ -109,3 +109,20 @@ def test_bookshelf_remains_usable_at_narrow_english_and_japanese_sizes(
             window.close()
             window.library.close()
             qapp.processEvents()
+
+
+def test_h_key_opens_help_when_book_grid_has_focus(qapp, tmp_path: Path) -> None:
+    from PySide6.QtTest import QTest
+
+    window = _bookshelf(tmp_path, count=1)
+    try:
+        window.show()
+        window.list_widget.setFocus()
+        qapp.processEvents()
+        with patch.object(window, "show_shortcuts_help") as show_help:
+            QTest.keyClick(window.list_widget, Qt.Key_H)
+            show_help.assert_called_once_with()
+    finally:
+        window.close()
+        window.library.close()
+        qapp.processEvents()
