@@ -14,10 +14,16 @@ Apple Silicon beta `macos-beta-0.7.1b0.3` is published from `main` after PRs
 correction/cache fixes. The automated suite passed 274 tests with 8 skips and
 12 subtests; distribution audit, ad-hoc signature, extracted startup, and color
 PDF smoke checks passed. Developer ID signing and notarization remain pending.
-Windows b0.4 and Linux b0.3 artifacts are unchanged. Native verification of the
-new UI on those platforms is tracked in the [shared handover](ux-maintenance-handover.md).
+The current cross-platform previews are
+[`windows-preview-0.7.1b0.5`](../releases/windows-preview-0.7.1b0.5.md) and
+[`linux-preview-0.7.1b0.4`](../releases/linux-preview-0.7.1b0.4.md), both built
+from `main` at `d7bbf50`. They remain Development Preview releases, not stable
+releases. The earlier Windows b0.4 and Linux b0.3 assets remain unchanged as
+historical rollback artifacts. The 2026-10-20 general native success report and
+the remaining OS-specific evidence are tracked in the [shared handover](ux-maintenance-handover.md).
 See the [release notes](../releases/macos-beta-0.7.1b0.3.md) and
-[UI rollback checkpoints](reader-controls-checkpoint.md).
+[UI rollback checkpoints](reader-controls-checkpoint.md). The release notes use
+the clean demo gallery and [capture procedure](../images/README.md).
 
 ## Historical checkpoint (2026-08-15 onward)
 
@@ -27,8 +33,8 @@ See the [release notes](../releases/macos-beta-0.7.1b0.3.md) and
 - The previous macOS package was the `macos-beta-0.7.1b0.2` Apple Silicon
   prerelease (2026-10-01), built from `main` at PR #42. It supersedes
   `v0.7.1-beta` and matches the shared source of Linux preview `0.7.1b0.2`.
-- The current Windows package is Development Preview
-  `windows-preview-0.7.1b0.4`.
+- At this historical checkpoint, the Windows package was Development Preview
+  `windows-preview-0.7.1b0.4`; it is retained as an unchanged rollback artifact.
 - PR #27 passed the complete source suite (`99 passed, 3 skipped`), macOS source
   and package CI, and the Windows portable build, distribution audit, and
   sanitized-environment smoke test.

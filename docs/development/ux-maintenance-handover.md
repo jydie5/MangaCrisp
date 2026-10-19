@@ -8,6 +8,14 @@ PR #53 (correction/cache) and PR #54 (reader/bookshelf UI) are merged into
 implementation checkpoint is `97dc06f`, with portable font-metric tests at
 `ed7fa11`. This supersedes the earlier PR #44 handover.
 
+The current cross-platform previews are Linux
+[`linux-preview-0.7.1b0.4`](../releases/linux-preview-0.7.1b0.4.md) and Windows
+[`windows-preview-0.7.1b0.5`](../releases/windows-preview-0.7.1b0.5.md), both
+built from `main` at `d7bbf50`. The earlier Windows b0.4 and Linux b0.3 assets
+remain available as historical rollback artifacts and were not overwritten.
+The release notes use the clean demo gallery and its
+[capture procedure](../images/README.md).
+
 The shared automated suite passed 274 tests, with 8 skips and 12 subtests.
 macOS, Windows, and Ubuntu CI passed. Native macOS UI checks, distribution
 audit, extracted startup, and color-PDF smoke checks passed separately. On
@@ -15,8 +23,6 @@ audit, extracted startup, and color-PDF smoke checks passed separately. On
 machine and confirmed it on Windows. This is a general native success report,
 not evidence for each OS/session, GPU/driver, scaling, package-smoke, or
 checklist item; those detailed gates remain open where evidence is absent.
-Published Windows b0.4 and Linux b0.3 artifacts remain unchanged until new
-previews are actually published.
 The macOS beta uses the existing ad-hoc signed `scripts/package_standalone.py`
 workflow and is not Apple notarized.
 

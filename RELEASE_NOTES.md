@@ -1,3 +1,19 @@
+# UI/UX and minor fixes — platform previews (2026-10-20)
+
+The updated UI is available in macOS Beta 0.7.1b0.3, Windows Development Preview
+0.7.1b0.5, and Linux Preview 0.7.1b0.4. Windows and Linux native operation was
+reported by the user on 2026-10-20; individual hardware/session evidence remains
+recorded separately. The README now shows clean English/Japanese screenshots
+using only the CC BY 4.0 Pepper&Carrot demo in a temporary library.
+
+各OSのUI/UX・軽微なバグ修正を公開しました。2026-10-20にWindows／Linuxの利用者による
+実機動作確認を受領し、READMEにはデモ専用本棚で撮影した日英の画像を掲載しています。
+
+- [macOS Beta 0.7.1b0.3](docs/releases/macos-beta-0.7.1b0.3.md)
+- [Windows Preview 0.7.1b0.5](docs/releases/windows-preview-0.7.1b0.5.md)
+- [Linux Preview 0.7.1b0.4](docs/releases/linux-preview-0.7.1b0.4.md)
+- [Screenshot provenance and reproduction / 撮影手順・出典](docs/images/README.md)
+
 # MangaCrisp for macOS — Beta 0.7.1b0.3
 
 UI/UX features and minor bug fixes: refreshed bookshelf and settings, on-demand
@@ -10,8 +26,8 @@ H/?のヘルプはEsc・外側クリックでも閉じられます。高画質�
 補正とキャッシュを改善しました。下部の常時操作バーはありません。
 
 This is an Apple Silicon beta, ad-hoc signed without Apple notarization.
-Windows/Linux packages remain unchanged; native checks are handed over to their developers.
-Apple Silicon向けベータです。Windows／Linuxの配布物は据え置き、実機確認項目を引き継いでいます。
+Windows/Linux previews now include the same UI; see the current platform releases above.
+Apple Silicon向けベータです。Windows／Linuxも同じUIを含むプレビューを公開しています。
 
 [Full release notes / 詳細](docs/releases/macos-beta-0.7.1b0.3.md)
 

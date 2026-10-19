@@ -69,42 +69,32 @@ All versions and the SHA-256 checksum are available on the
 
 ### Windows development preview
 
-**[Download the Windows 10/11 x64 Development Preview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.1b0.4/MangaCrisp-0.7.1b0-windows-x64-portable-preview.zip)**
+**[Download Windows 10/11 x64 Preview 0.7.1b0.5](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.1b0.5/MangaCrisp-0.7.1b0-windows-x64-portable-preview.zip)**
 
-The unsigned portable ZIP needs no Python, uv, CUDA, or installer. It bundles
-the audited Zig-built Real-CUGAN engine and has passed interactive validation
-on NVIDIA graphics. Version 0.7.1 adds manual fixed-region sequential capture
-with Windows global capture/undo shortcuts and the Single Page reader layout.
-Intel and AMD enhancement evidence and a separate clean Windows account test
-remain before the stable Windows release. Original-image reading remains
-available if enhancement is unavailable. See
-[INSTALL.windows.md](INSTALL.windows.md) for installation and limitations.
+This preview includes the new bookshelf, quality cards, center-click controls,
+shortcut help, and correction/cache fixes. The current UI has been confirmed
+on a real Windows machine. The portable package passes native build,
+distribution-audit, and extracted-startup checks.
 
-> The source now includes the UI/UX and correction/cache fixes released in
-> macOS Beta 0.7.1b0.3. This Windows download predates them. The user confirmed the current UI on a real Windows machine on
-> 2026-10-20. A new preview package is being prepared; the download above
-> remains the older build until publication. See the
-> [developer handover](docs/development/windows-handover.md).
+Python, uv, CUDA, and an installer are not required. The unsigned package bundles
+the pinned Zig-built Real-CUGAN engine and 7-Zip. Intel/AMD engine-matched Vulkan
+and separate clean-account evidence remain stable-release requirements.
+See [release notes](docs/releases/windows-preview-0.7.1b0.5.md) and
+[Windows installation](INSTALL.windows.md).
 
 ### Linux (Ubuntu) preview
 
-**[Download MangaCrisp for Linux x86_64 (Preview 0.7.1b0.3)](https://github.com/jydie5/MangaCrisp/releases/download/linux-preview-0.7.1b0.3/MangaCrisp-0.7.1b0-linux-x86_64.tar.gz)**
+**[Download Linux x86_64 Preview 0.7.1b0.4](https://github.com/jydie5/MangaCrisp/releases/download/linux-preview-0.7.1b0.4/MangaCrisp-0.7.1b0-linux-x86_64.tar.gz)**
 
-Ubuntu 24.04 or newer on x86_64 is supported as a one-folder `tar.gz` build
-with a per-user installer (no root needed), or from source. It bundles the official Real-CUGAN
-Ubuntu engine (Vulkan) and supports sequential capture on GNOME Wayland and
-X11. See [INSTALL.linux.md](INSTALL.linux.md) for required packages,
-installation, and capture permissions. Linux is new: if it works on your GPU,
-please report it, and consider [supporting AMD/Intel test hardware](https://buymeacoffee.com/jydie5).
+Ubuntu 24.04+ x86_64. The native Ubuntu CI archive includes the same UI/UX and
+correction/cache updates, with a per-user installer and bundled official
+Real-CUGAN Vulkan engine. The current UI has been confirmed on a real Linux
+machine. Python, uv, and CUDA are not required.
 
-Preview 0.7.1b0.3 includes the reader/bookshelf UX improvements and fixes for
-corrected-display flashing and managed-copy removal errors. It passed clean
-Ubuntu 24.04/26.04 validation and a GNOME Wayland human check. AMD/Intel GPUs,
-a physical X11 session and fractional scaling remain unverified. See the
-[release notes](docs/releases/linux-preview-0.7.1b0.3.md).
-The newer controls/help redesign and correction/cache fixes in macOS Beta
-0.7.1b0.3 are not in this Linux package; native verification is tracked in the
-[Linux handover](docs/development/linux-handover.md).
+This is a preview; platform validation and remaining GPU/session coverage are
+recorded in the [release notes](docs/releases/linux-preview-0.7.1b0.4.md),
+[Linux installation](INSTALL.linux.md), and the
+[developer handover](docs/development/linux-handover.md).
 
 ## Read your first book
 
@@ -119,11 +109,10 @@ extracted reading copy in `~/MangaCrisp Library`. For existing RAIV for mac
 users, the previous default `~/RAIV Library` is renamed to this location on
 first launch. A custom library location selected by the user is left unchanged.
 
-## Reader and bookshelf UX update (Linux preview 0.7.1b0.3)
+## Earlier reader and bookshelf UX improvements
 
-The Linux preview and macOS Beta 0.7.1b0.3 include the following changes.
-They were also accepted in an earlier local Windows candidate; the Windows
-download above still predates this update.
+All current platform downloads include the following earlier improvements,
+alongside the new controls, help, and correction/cache fixes described above.
 
 **Features**
 

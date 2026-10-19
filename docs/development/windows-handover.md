@@ -245,7 +245,8 @@ The reviewed shared baseline is `f50daa2` (PR #41), which links Linux preview
 packaging use platform-specific adapters; Windows already has the corresponding
 reader and capture workflows and does not need duplicate implementations.
 
-The published Windows preview remains `windows-preview-0.7.1b0.4`. A new local
+At this historical 2026-09-30 checkpoint, the published Windows preview was
+`windows-preview-0.7.1b0.4`. A new local
 candidate includes the shared storage hygiene from PR #27 and the RAR fixes from
 PR #40: fall back to bundled 7-Zip when `rarfile` can list but cannot decompress
 an archive, and retain only the selected volume's pages during normalization.
@@ -280,7 +281,7 @@ the shared `core/managed-removal-errors` fix (PR #49), published separately
 before the dependent Windows acceptance-document PR.
 
 The local build identifier is `0.7.1b0+win.ux.20261015.2`, distinct from the
-earlier UX candidate and public Windows b0.4. The full Windows suite passes
+earlier UX candidate and then-public Windows b0.4. The full Windows suite passes
 with 186 tests, 9 skips and 5 passing subtests. Distribution audit and
 extracted-ZIP startup without development-tool paths pass.
 
@@ -323,19 +324,27 @@ the corrected spread from flashing back to the original while late work arrives;
 old pages may be evicted after navigation. The macOS verification run for this
 candidate records **274 passed, 8 skipped, 12 subtests**.
 
-On 2026-10-20, the user confirmed this current UI on Windows and reported that
-it worked on a real Linux machine. Record this as general native success only:
-the report does not provide Windows package-smoke, GPU/driver, clean-account,
-or individual checklist evidence. Keep those detailed gates explicit below.
-The published Windows `0.7.1b0.4` release and its download assets remain
-unchanged until a new Windows preview is actually published; this report does
-not replace or relabel that release.
+On 2026-10-20, before these preview packages were published, the user confirmed
+this current UI on Windows and reported that it worked on a real Linux machine.
+Record this as general native success only: the report does not provide Windows
+package-smoke, GPU/driver, clean-account, or individual checklist evidence.
+Keep those detailed gates explicit below.
 
-For the remaining Windows evidence, rebase from current `main`, run
+The current Windows Development Preview is
+[windows-preview-0.7.1b0.5](../releases/windows-preview-0.7.1b0.5.md), built from
+`main` at `d7bbf50` by the native preview workflow
+[39342829512](https://github.com/jydie5/MangaCrisp/actions/runs/39342829512).
+The prior `windows-preview-0.7.1b0.4` remains available as an unchanged
+historical rollback artifact; it was not overwritten. The release note uses the
+clean demo gallery and [capture procedure](../images/README.md).
+
+For the remaining Windows evidence, use the current preview and record
+environment-specific results. Rebase from current `main`, run
 `uv run pytest -q`, build the portable package on Windows, and check the
 center-pane controls, help dismissal and focus behavior on the packaged reader
 together with a cold/warm pro correction run and cache cleanup. Record those
-results before updating release notes or assets.
+results before making any stable-release claim. Intel/AMD engine-matched Vulkan,
+clean-account, and other unreported GPU/session evidence remain open.
 
 ## Technology decision
 
