@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import shutil
 import tempfile
 import threading
@@ -42,6 +43,26 @@ def pdf_source_key(pdf_path: Path) -> str:
     return sha256(identity.encode("utf-8")).hexdigest()[:24]
 
 
+def pdf_render_cache_dir(
+    pdf_path: Path,
+    cache_dir: Path | None = None,
+    *,
+    dpi: int = PDF_RENDER_DPI,
+    source_key: str | None = None,
+) -> Path:
+    """Return the rendered-page directory for one PDF source and DPI.
+
+    The historical default-DPI directory is kept in place so existing render
+    caches remain usable. Non-default render sizes live below that source
+    directory and cannot overwrite the default render.
+    """
+    root = (cache_dir or CACHE_DIR / "pdf-render").expanduser()
+    fingerprint = source_key or pdf_source_key(pdf_path)
+    normalized_dpi = max(72, dpi)
+    base = root / fingerprint
+    return base if normalized_dpi == PDF_RENDER_DPI else base / f"dpi-{normalized_dpi}"
+
+
 def pdf_page_count(pdf_path: Path) -> int:
     try:
         import pypdfium2 as pdfium
@@ -76,6 +97,43 @@ def prune_render_cache(
     )
 
 
+def _pdf_page_identity(source_key: str, dpi: int, index: int) -> str:
+    return f"pdf:{source_key}:dpi-{dpi}:page-{index}"
+
+
+class PdfPageIdentityProvider:
+    """Expose PDF cache identities without opening or rendering the PDF.
+
+    The bookshelf keeps the recorded page count for an imported PDF.  That
+    count is enough to enumerate disposable AI-cache keys even when the PDF
+    has since become unreadable, while the source fingerprint still prevents
+    deleting results for a different file at the same path.
+    """
+
+    def __init__(
+        self,
+        pdf_path: Path,
+        page_count: int,
+        *,
+        dpi: int = PDF_RENDER_DPI,
+        source_key: str | None = None,
+    ) -> None:
+        self.pdf_path = pdf_path.expanduser().resolve()
+        self._pdf_source_key = source_key or pdf_source_key(self.pdf_path)
+        self.page_count = max(0, int(page_count))
+        self.dpi = max(72, dpi)
+
+    def __len__(self) -> int:
+        return self.page_count
+
+    def cache_source_identity(self, index: int) -> str:
+        if index < 0:
+            index += len(self)
+        if index < 0 or index >= len(self):
+            raise IndexError(index)
+        return _pdf_page_identity(self._pdf_source_key, self.dpi, index)
+
+
 class PdfPageList(Sequence[Path]):
     def __init__(
         self,
@@ -86,13 +144,20 @@ class PdfPageList(Sequence[Path]):
         cache_limit_bytes: int = PDF_RENDER_CACHE_LIMIT_BYTES,
     ) -> None:
         self.pdf_path = pdf_path.expanduser().resolve()
+        self._pdf_source_key = pdf_source_key(self.pdf_path)
         self.page_count = pdf_page_count(self.pdf_path)
         self.cache_root = (cache_dir or CACHE_DIR / "pdf-render").expanduser()
-        self.cache_dir = self.cache_root / pdf_source_key(self.pdf_path)
         self.dpi = max(72, dpi)
+        self.cache_dir = pdf_render_cache_dir(
+            self.pdf_path,
+            self.cache_root,
+            dpi=self.dpi,
+            source_key=self._pdf_source_key,
+        )
         self.cache_limit_bytes = max(0, cache_limit_bytes)
         self.extracted: dict[int, Path] = {}
         self._materialize_lock = threading.RLock()
+        self._touched_paths: set[Path] = set()
         self._render_count = 0
         prune_render_cache(self.cache_root, max_bytes=self.cache_limit_bytes)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
@@ -109,45 +174,85 @@ class PdfPageList(Sequence[Path]):
             raise IndexError(index)
         return self.materialize(index)
 
+    def cache_source_identity(self, index: int) -> str:
+        """Return an identity independent of the rendered PNG's access mtime."""
+        if index < 0:
+            index += len(self)
+        if index < 0 or index >= len(self):
+            raise IndexError(index)
+        return _pdf_page_identity(self._pdf_source_key, self.dpi, index)
+
     def materialize(self, index: int) -> Path:
+        if index < 0:
+            index += len(self)
+        if index < 0 or index >= len(self):
+            raise IndexError(index)
         output = self.cache_dir / f"{index + 1:06d}.png"
-        cached = self.extracted.get(index)
-        if cached is not None and cached.is_file():
-            cached.touch(exist_ok=True)
-            self._remember(index, cached)
-            return cached
-        if output.is_file():
-            output.touch(exist_ok=True)
-            self._remember(index, output)
-            return output
         with self._materialize_lock:
-            if output.is_file():
-                output.touch(exist_ok=True)
+            cached = self.extracted.get(index)
+            if cached is not None:
+                if self._touch_once(cached):
+                    self._remember(index, cached)
+                    return cached
+                self.extracted.pop(index, None)
+                self._touched_paths.discard(cached)
+
+            if self._touch_once(output):
                 self._remember(index, output)
                 return output
+
+            self._touched_paths.discard(output)
             self._render_page(index, output)
+            # A newly rendered file already has a current mtime. Mark it as
+            # touched so the next viewer lookup does not change that mtime.
+            self._touched_paths.add(output)
             self._remember(index, output)
             self._render_count += 1
             if self._render_count == 1 or self._render_count % 16 == 0:
+                # Take the protected set while the provider state is locked;
+                # pruning must not race a concurrent materialization.
+                protected = set(self.extracted.values())
                 prune_render_cache(
                     self.cache_root,
                     max_bytes=self.cache_limit_bytes,
-                    protected=set(self.extracted.values()),
+                    protected=protected,
                 )
             return output
+
+    def _touch_once(self, path: Path) -> bool:
+        """Touch an existing cache file once without recreating a missing one."""
+        if path in self._touched_paths:
+            if path.is_file():
+                return True
+            self._touched_paths.discard(path)
+            return False
+        if not path.is_file():
+            return False
+        try:
+            os.utime(path, None)
+        except OSError:
+            self._touched_paths.discard(path)
+            return False
+        if not path.is_file():
+            self._touched_paths.discard(path)
+            return False
+        self._touched_paths.add(path)
+        return True
 
     def _remember(self, index: int, path: Path) -> None:
         self.extracted.pop(index, None)
         self.extracted[index] = path
         while len(self.extracted) > PDF_RENDER_RECENT_PAGE_LIMIT:
-            oldest = next(iter(self.extracted))
+            oldest, oldest_path = next(iter(self.extracted.items()))
             self.extracted.pop(oldest, None)
+            self._touched_paths.discard(oldest_path)
 
     def _render_page(self, index: int, output: Path) -> None:
         try:
             import pypdfium2 as pdfium
 
             temporary = output.with_suffix(".tmp.png")
+            temporary.parent.mkdir(parents=True, exist_ok=True)
             with _PDFIUM_LOCK:
                 document = pdfium.PdfDocument(self.pdf_path)
                 try:
@@ -177,10 +282,13 @@ class PdfPageList(Sequence[Path]):
 
 class LazyZipPageList(Sequence[Path]):
     def __init__(self, archive_path: Path, temp_dir: Path, members: list[zipfile.ZipInfo]) -> None:
-        self.archive_path = archive_path
+        self.archive_path = archive_path.expanduser().resolve()
         self.temp_dir = temp_dir
         self.members = members
         self.extracted: dict[int, Path] = {}
+        self._materialize_lock = threading.RLock()
+        stat = self.archive_path.stat()
+        self._archive_fingerprint = f"{self.archive_path}:{stat.st_size}:{stat.st_mtime_ns}"
 
     def __len__(self) -> int:
         return len(self.members)
@@ -194,24 +302,45 @@ class LazyZipPageList(Sequence[Path]):
             raise IndexError(index)
         return self.materialize(index)
 
-    def materialize(self, index: int) -> Path:
-        cached = self.extracted.get(index)
-        if cached is not None:
-            return cached
+    def cache_source_identity(self, index: int) -> str:
+        """Return a stable identity for an archive member, excluding temp_dir."""
+        if index < 0:
+            index += len(self)
+        if index < 0 or index >= len(self):
+            raise IndexError(index)
         member = self.members[index]
-        output = archive_member_output_path(self.temp_dir, member.filename)
-        if output is None:
-            raise RuntimeError(f"unsafe archive member: {member.filename}")
-        output.parent.mkdir(parents=True, exist_ok=True)
-        with (
-            zipfile.ZipFile(self.archive_path) as archive,
-            archive.open(member) as source,
-            output.open("wb") as destination,
-        ):
-            copy_stream_limited(source, destination)
-        resolved = output.resolve()
-        self.extracted[index] = resolved
-        return resolved
+        member_name = archive_display_name(member.filename)
+        return (
+            f"zip:{self._archive_fingerprint}:index={index}:member={member_name}:"
+            f"crc={member.CRC}:size={member.file_size}"
+        )
+
+    def materialize(self, index: int) -> Path:
+        if index < 0:
+            index += len(self)
+        if index < 0 or index >= len(self):
+            raise IndexError(index)
+        with self._materialize_lock:
+            cached = self.extracted.get(index)
+            if cached is not None:
+                if cached.is_file():
+                    return cached
+                self.extracted.pop(index, None)
+
+            member = self.members[index]
+            output = archive_member_output_path(self.temp_dir, member.filename)
+            if output is None:
+                raise RuntimeError(f"unsafe archive member: {member.filename}")
+            output.parent.mkdir(parents=True, exist_ok=True)
+            with (
+                zipfile.ZipFile(self.archive_path) as archive,
+                archive.open(member) as source,
+                output.open("wb") as destination,
+            ):
+                copy_stream_limited(source, destination)
+            resolved = output.resolve()
+            self.extracted[index] = resolved
+            return resolved
 
 
 def open_pages_for_viewer(source_path: Path) -> tuple[Sequence[Path], Path | None]:

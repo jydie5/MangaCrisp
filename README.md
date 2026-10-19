@@ -187,9 +187,12 @@ Development Preview bundles the pinned, audited Zig-built Windows engine and
 the same models. Both need no additional engine setup.
 
 MangaCrisp automatically processes the visible spread and nearby pages in the
-background. The cache revolves as you read: normally 6-24 pages ahead and six
-pages behind are retained. Original pages remain available immediately while
-enhancement catches up.
+background, normally preparing 6-24 pages ahead and six pages behind.
+Completed corrections stay on disk within the cache size and age limits, so
+returning to an earlier page can reuse them. Original pages remain available
+immediately while enhancement catches up. After a processing error, moving to
+another page or changing quality settings allows automatic correction to retry.
+PDF and ZIP corrections are also reused after reopening the same source.
 
 Press `P` to open Reading Settings. Enable **Show original** to view the source
 page; disable it to return to the enhanced page. Pages at or above the default
@@ -203,6 +206,10 @@ page; disable it to return to the enhanced page. Pages at or above the default
 | Natural | Balance line clarity and screentone preservation |
 | Cleaning | More strongly reduce scan and compression artifacts |
 | High quality | Prioritize output quality over processing time |
+
+High quality uses accurate tile synchronization to prevent false colors on
+some pages. This takes longer than the engine's default approximation. Older
+high-quality caches are regenerated automatically after this fix.
 
 Manual mode exposes model, scale, noise, tile size, TTA, and the resolution
 threshold. Custom combinations can be named and reused.
@@ -295,8 +302,10 @@ books. Removing a book from the bookshelf deletes that managed copy and its
 reading state, but never deletes the source ZIP, RAR, or PDF.
 
 PDF render and AI enhancement caches are disposable. Each cache is limited to
-2 GiB, entries unused for more than 30 days are removed when the reader opens,
-and **Clear Cache** removes both immediately. The database contains bookshelf
+2 GiB, except while protecting pages currently in use or being processed.
+Entries unused for more than 30 days are removed when the reader opens; AI
+cache maintenance also runs during reading. **Clear Cache** removes both
+immediately. The database contains bookshelf
 metadata and is normally small; a one-time backup can be retained when its
 schema is upgraded. Interrupted imports are cleaned up or restored on the next
 launch.
@@ -344,7 +353,8 @@ uv run --extra app python scripts/build_macos_app.py --bundle-engine
 The build script downloads the official Real-CUGAN macOS archive, verifies its
 SHA-256 digest, and bundles it. Unknown local binaries are not substituted.
 
-Run the development test suite:
+See [correction and cache ownership](docs/development/correction-pipeline.md)
+before changing reader scheduling or cache behavior. Run the development test suite:
 
 ```bash
 uv sync --extra dev

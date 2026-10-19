@@ -9,6 +9,7 @@ from pathlib import Path
 from mangacrisp_app.archive_utils import is_image, natural_sort_key
 from mangacrisp_app.branding import APP_NAME
 from mangacrisp_app.capture_window import CaptureWindow
+from mangacrisp_app.correction_cache import remove_enhancement_cache_for_sources
 from mangacrisp_app.diagnostics import diagnostics_text
 from mangacrisp_app.i18n import (
     current_language,
@@ -26,7 +27,11 @@ from mangacrisp_app.library import (
     save_library_settings,
     utc_now_iso,
 )
-from mangacrisp_app.page_provider import open_pages_for_viewer
+from mangacrisp_app.page_provider import (
+    PdfPageIdentityProvider,
+    PdfPageList,
+    open_pages_for_viewer,
+)
 from mangacrisp_app.platform import open_directory
 from mangacrisp_app.viewer import (
     DEFAULT_FORWARD_PREFETCH_COUNT,
@@ -35,7 +40,6 @@ from mangacrisp_app.viewer import (
     SpreadWindow,
     collect_processed_pages,
     default_spread_order,
-    remove_enhancement_cache_for_sources,
     show_help_dialog,
 )
 
@@ -850,6 +854,28 @@ class BookshelfWindow(QMainWindow):
         book_dir = managed_book_dir_from_book(book, self.library.paths.library_dir)
         if book_dir is None or not book_dir.is_dir():
             return
+
+        if book.file_kind == "pdf":
+            pdf_path = Path(book.local_path).expanduser()
+            if not pdf_path.is_file():
+                return
+            if book.page_count is not None:
+                try:
+                    # A recorded page count is enough to enumerate keys.  Do
+                    # not open or render a PDF during cache cleanup.
+                    pages = PdfPageIdentityProvider(pdf_path, book.page_count)
+                except OSError:
+                    return
+            else:
+                try:
+                    # Legacy records without a count still use the lazy PDF
+                    # provider; construction counts pages but materializes none.
+                    pages = PdfPageList(pdf_path, self.library.paths.cache_dir / "pdf-render")
+                except (OSError, RuntimeError):
+                    return
+            remove_enhancement_cache_for_sources(pages)
+            return
+
         sources = [path for path in book_dir.rglob("*") if path.is_file() and is_image(path)]
         remove_enhancement_cache_for_sources(sources)
 

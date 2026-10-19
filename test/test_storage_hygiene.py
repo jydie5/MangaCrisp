@@ -52,6 +52,63 @@ def test_png_cache_prunes_oldest_files_to_size_and_preserves_active_file(
     assert not newest.exists()
 
 
+def test_png_cache_protects_all_descendants_of_protected_directory(
+    tmp_path: Path,
+) -> None:
+    protected_dir = tmp_path / "active-output"
+    protected_png = protected_dir / "result.png"
+    protected_staging = protected_dir / "staging" / "partial.png"
+    expired = tmp_path / "old" / "expired.png"
+    for path in (protected_png, protected_staging, expired):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"png")
+
+    now = 1_000.0
+    old_timestamp = 100.0
+    for path in (protected_png, protected_staging, expired):
+        os.utime(path, (old_timestamp, old_timestamp))
+
+    removed = prune_png_cache(
+        tmp_path,
+        max_bytes=1,
+        max_age_seconds=500,
+        protected={protected_dir},
+        now=now,
+    )
+
+    assert removed == 1
+    assert protected_png.is_file()
+    assert protected_staging.is_file()
+    assert not expired.exists()
+
+
+def test_png_cache_keeps_empty_protected_staging_directory(
+    tmp_path: Path,
+) -> None:
+    protected_dir = tmp_path / "active-output"
+    empty_staging = protected_dir / "staging"
+    unrelated_empty = tmp_path / "old" / "empty"
+    expired = tmp_path / "old" / "expired.png"
+    empty_staging.mkdir(parents=True)
+    unrelated_empty.mkdir(parents=True)
+    expired.write_bytes(b"expired")
+    os.utime(expired, (100.0, 100.0))
+
+    removed = prune_png_cache(
+        tmp_path,
+        max_bytes=0,
+        max_age_seconds=500,
+        protected={protected_dir},
+        now=1_000.0,
+    )
+
+    assert removed == 1
+    assert protected_dir.is_dir()
+    assert empty_staging.is_dir()
+    assert not expired.exists()
+    assert not unrelated_empty.exists()
+
+
 def test_interrupted_import_cleanup_restores_backup_and_removes_staging(
     tmp_path: Path,
 ) -> None:
