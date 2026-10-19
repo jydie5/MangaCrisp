@@ -89,6 +89,12 @@ def run_realcugan(
         "-f",
         "png",
     ]
+    if model == "models-pro":
+        # The engine's default very-rough sync gap (-c 3) can corrupt pro
+        # output with strong false colors on screentone-heavy pages, even
+        # when the process succeeds. Keep accurate cross-tile statistics.
+        # viewer.current_parameter_key also versions the pro cache for this.
+        command.extend(["-c", "1"])
     if tta:
         command.append("-x")
     started = time.perf_counter()

@@ -90,6 +90,32 @@ class ViewerNavigationTests(ViewerWindowTestCase):
         self.assertTrue(self.window.handle_navigation_key(Qt.Key_O))
         self.assertFalse(self.window.original_check.isChecked())
 
+    def test_pro_cache_key_isolated_from_legacy_key_and_se_key_is_unchanged(self) -> None:
+        self.assertEqual(
+            self.window.current_parameter_key(),
+            "scale2_noise0_tile0_models-se",
+        )
+
+        self.window.tta_check.setChecked(True)
+        self.assertEqual(
+            self.window.current_parameter_key(),
+            "scale2_noise0_tile0_models-se_tta",
+        )
+
+        self.window.tta_check.setChecked(False)
+        self.window.model_combo.setCurrentText("models-pro")
+        self.window.scale_spin.setValue(3)
+        self.window.noise_combo.setCurrentText("3")
+        pro_key = self.window.current_parameter_key()
+        self.assertEqual(pro_key, "scale3_noise3_tile0_models-pro_syncgap1")
+        self.assertNotEqual(pro_key, "scale3_noise3_tile0_models-pro")
+
+        self.window.tta_check.setChecked(True)
+        self.assertEqual(
+            self.window.current_parameter_key(),
+            "scale3_noise3_tile0_models-pro_syncgap1_tta",
+        )
+
     def test_click_zones_follow_right_bound_reading_direction(self) -> None:
         self.assertEqual(reader_click_action(100, 1000, "rtl"), "next")
         self.assertEqual(reader_click_action(500, 1000, "rtl"), "info")
@@ -693,6 +719,38 @@ class CorrectedDisplayStabilityTests(ViewerWindowTestCase):
 
         self.assertEqual(output_path.stat().st_mtime_ns, first_mtime)
         self.assertIs(self.window.processed_pages[0], output_path)
+
+    def test_pro_cache_loader_ignores_legacy_parameter_dir(self) -> None:
+        cache_root = self.root / "upscale"
+        with patch.object(viewer_module, "DEFAULT_UPSCALE_DIR", cache_root):
+            self.window.model_combo.setCurrentText("models-pro")
+            self.window.scale_spin.setValue(3)
+            self.window.noise_combo.setCurrentText("3")
+            self.window.processed_pages = [None] * len(self.window.pages)
+
+            current_path = self.window.current_output_path(0)
+            self.assertEqual(
+                current_path.parent.parent.name,
+                "scale3_noise3_tile0_models-pro_syncgap1",
+            )
+            legacy_path = (
+                cache_root
+                / "interactive"
+                / "scale3_noise3_tile0_models-pro"
+                / current_path.parent.name
+                / current_path.name
+            )
+            self.assertNotEqual(current_path, legacy_path)
+            legacy_path.parent.mkdir(parents=True, exist_ok=True)
+            Image.new("RGB", (120, 180), (20, 90, 220)).save(legacy_path)
+
+            self.window.load_cached_outputs([0])
+            self.assertIsNone(self.window.processed_pages[0])
+
+            current_path.parent.mkdir(parents=True, exist_ok=True)
+            Image.new("RGB", (120, 180), (220, 90, 20)).save(current_path)
+            self.window.load_cached_outputs([0])
+            self.assertEqual(self.window.processed_pages[0], current_path)
 
     def test_display_keys_show_same_image_ignores_size_and_mtime(self) -> None:
         shown = ("a.png", 10, 100, 640, 480, 1, 1)

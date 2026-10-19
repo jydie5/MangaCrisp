@@ -204,6 +204,10 @@ page; disable it to return to the enhanced page. Pages at or above the default
 | Cleaning | More strongly reduce scan and compression artifacts |
 | High quality | Prioritize output quality over processing time |
 
+High quality uses accurate tile synchronization to prevent false colors on
+some pages. This takes longer than the engine's default approximation. Older
+high-quality caches are regenerated automatically after this fix.
+
 Manual mode exposes model, scale, noise, tile size, TTA, and the resolution
 threshold. Custom combinations can be named and reused.
 

@@ -2104,10 +2104,12 @@ class SpreadWindow(QMainWindow):
                 self.processed_pages[index] = output_path
 
     def current_parameter_key(self) -> str:
+        model = self.model_combo.currentText()
+        model_suffix = "_syncgap1" if model == "models-pro" else ""
         tta = "_tta" if self.tta_check.isChecked() else ""
         return (
             f"scale{self.scale_spin.value()}_noise{self.noise_combo.currentText()}_"
-            f"tile{self.tile_spin.value()}_{self.model_combo.currentText()}{tta}"
+            f"tile{self.tile_spin.value()}_{model}{model_suffix}{tta}"
         )
 
     def current_output_path(self, index: int) -> Path:
