@@ -82,6 +82,46 @@ Those checks remain unreported despite the previous general native success
 report. A headless run or the old b0.3 Wayland result cannot establish
 X11/Wayland layout, modal alpha, focus, correction navigation or cache behavior.
 
+## Linux native check of the UI/UX candidate (d7bbf50, 2026-10-21)
+
+Source: `main` at `d7bbf50` (includes PR #53/#54 and UI checkpoints `97dc06f`
+and `ed7fa11`). Package: Ubuntu 24.04 CI artifact from
+[run 39335510308](https://github.com/jydie5/MangaCrisp/actions/runs/39335510308),
+archive SHA-256 verified against its `SHA256SUMS.txt`.
+
+Automated results on Linux:
+
+- `uv run pytest -q`: **274 passed, 8 skipped, 12 subtests passed**. All eight
+  skips are macOS/Windows-only tests; the Xvfb X11 capture test ran and passed.
+- Native build with `scripts/build_linux_app.py` and the packaged smoke test passed.
+- `packaging/linux/validate-clean-ubuntu.sh` passed on clean Ubuntu 24.04 and
+  26.04 (install, smoke test, demo book, 7-Zip RAR, Real-CUGAN on CPU Vulkan,
+  uninstall).
+- `models-pro` ran with `-c 1` on the GTX 1060 (return code 0, output written);
+  caches were created under `~/.cache/MangaCrisp/{upscale,pdf-render}`.
+
+Desktop check: the installed CI package was run on Ubuntu 26.04.1, GNOME 50.1,
+Wayland, Qt 6.11.1, 4K at 125% fractional scaling, NVIDIA GeForce GTX 1060 6GB
+(driver 580.178.04). The user was given the reader, help modal, fullscreen and
+cursor, enhancement flicker, bookshelf layout, multi-select, removal, and resume
+checks and reported "確認終わり" (check finished). This is an overall pass of the
+candidate, not an item-by-item report.
+
+Not verified here:
+
+- X11 on a real desktop: Ubuntu 26.04 / GNOME 50 ships no Xorg session. X11 is
+  covered only by the automated Xvfb capture/shortcut test.
+- AMD and Intel GPUs.
+
+Finding for a later `linux/` change: the 24.04-built package bundles an older
+GLib, so on 26.04 the system gvfs GIO module fails to load
+(`libgvfscommon.so: undefined symbol: g_variant_builder_init_static`). Reading,
+import, and capture were not affected. Options are to stop bundling GLib/GIO or
+to disable external GIO modules in the frozen app.
+
+The public Linux download is still preview b0.3. Publishing a new Linux preview
+with this candidate needs the user's release request.
+
 ## Historical Linux preview b0.3 validation checkpoint (2026-10-15)
 
 [Linux preview b0.3](https://github.com/jydie5/MangaCrisp/releases/tag/linux-preview-0.7.1b0.3)

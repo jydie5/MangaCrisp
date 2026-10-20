@@ -65,6 +65,44 @@ previewのCI確認では、上記の環境ごとの証跡までは得られま�
 個別には未報告です。headless実行や古いb0.3のWayland結果だけでは、X11／Waylandのレイアウト、モーダル透明度、
 フォーカス、補正移動、キャッシュ動作を確定できません。
 
+## UI/UX候補のLinux実機確認（d7bbf50、2026-10-21）
+
+ソースは`main`の`d7bbf50`（PR #53/#54、UIチェックポイント`97dc06f`・`ed7fa11`を含む）。
+配布物はUbuntu 24.04 CIの成果物
+（[run 39335510308](https://github.com/jydie5/MangaCrisp/actions/runs/39335510308)）で、
+`SHA256SUMS.txt`と照合済み。
+
+Linuxでの自動確認:
+
+- `uv run pytest -q`: **274成功、8スキップ、12サブテスト成功**。スキップ8件はすべて
+  macOS／Windows専用テスト。XvfbでのX11キャプチャテストは実行・合格。
+- `scripts/build_linux_app.py`のネイティブビルドと配布版スモークテストが合格。
+- `packaging/linux/validate-clean-ubuntu.sh`がクリーンなUbuntu 24.04／26.04で合格
+  （インストール、スモーク、デモ本、7-ZipのRAR、CPU VulkanでのReal-CUGAN、アンインストール）。
+- GTX 1060で`models-pro`を`-c 1`付きで実行し、終了コード0で出力を確認。キャッシュは
+  `~/.cache/MangaCrisp/{upscale,pdf-render}`に作成。
+
+実機確認: インストールしたCI配布物を、Ubuntu 26.04.1、GNOME 50.1、Wayland、Qt 6.11.1、
+4K・125%の小数倍率、NVIDIA GeForce GTX 1060 6GB（ドライバ580.178.04）で起動。
+読書操作ペイン、操作一覧モーダル、全画面とカーソル、補正のちらつき、本棚の表示、
+複数選択、削除、再開位置の確認項目を利用者に渡し、「確認終わり」との報告を受領。
+候補全体の合格であり、各項目の個別報告ではない。
+
+ここで未確認の項目:
+
+- 実デスクトップのX11: Ubuntu 26.04／GNOME 50にはXorgセッションがない。X11は
+  Xvfbでのキャプチャ／ショートカット自動テストのみ。
+- AMD／Intel GPU。
+
+後続の`linux/`修正候補: 24.04でビルドした配布物が古いGLibを同梱するため、26.04では
+システムのgvfs GIOモジュールの読み込みに失敗する
+（`libgvfscommon.so: undefined symbol: g_variant_builder_init_static`）。閲覧、取り込み、
+キャプチャへの影響は見られない。GLib／GIOを同梱しない、またはフリーズ版で外部GIO
+モジュールを無効にする方法が考えられる。
+
+公開中のLinux版はpreview b0.3のまま。この候補で新しいLinux previewを公開するには、
+利用者からのリリース指示が必要。
+
 ## 過去に公開したLinux preview b0.3の検証（2026-10-15）
 
 [Linux preview b0.3](https://github.com/jydie5/MangaCrisp/releases/tag/linux-preview-0.7.1b0.3)を
