@@ -343,7 +343,12 @@ class LazyZipPageList(Sequence[Path]):
             return resolved
 
 
-def open_pages_for_viewer(source_path: Path) -> tuple[Sequence[Path], Path | None]:
+def open_pages_for_viewer(
+    source_path: Path,
+    *,
+    pdf_cache_dir: Path | None = None,
+) -> tuple[Sequence[Path], Path | None]:
+    """Open a source for the reader, optionally overriding the PDF render cache."""
     source_path = source_path.expanduser().resolve()
     if source_path.is_dir():
         return collect_folder_images(source_path), None
@@ -352,7 +357,7 @@ def open_pages_for_viewer(source_path: Path) -> tuple[Sequence[Path], Path | Non
     if is_image(source_path):
         return [source_path], None
     if is_pdf(source_path):
-        return PdfPageList(source_path), None
+        return PdfPageList(source_path, cache_dir=pdf_cache_dir), None
     if not is_archive(source_path):
         raise RuntimeError(f"unsupported sample type: {source_path.suffix}")
     suffix = source_path.suffix.lower()
