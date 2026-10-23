@@ -21,7 +21,7 @@ capture/undo shortcuts and the Single Page reader layout.
 
 ## Download the Development Preview
 
-[Download MangaCrisp 0.7.1b0 Windows x64 portable preview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.1b0.4/MangaCrisp-0.7.1b0-windows-x64-portable-preview.zip)
+[Download MangaCrisp 0.7.1b0.5 Windows x64 portable preview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.1b0.5/MangaCrisp-0.7.1b0-windows-x64-portable-preview.zip)
 
 1. Download the ZIP.
 2. Extract the complete `MangaCrisp` folder.

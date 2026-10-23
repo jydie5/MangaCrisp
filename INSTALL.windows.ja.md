@@ -21,7 +21,7 @@ RAR/CBRのフォールバック展開には、SHA-256を固定・検証した7-Z
 
 ## Development Previewをダウンロード
 
-[MangaCrisp 0.7.1b0 Windows x64ポータブルpreview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.1b0.4/MangaCrisp-0.7.1b0-windows-x64-portable-preview.zip)
+[MangaCrisp 0.7.1b0.5 Windows x64ポータブルpreview](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.1b0.5/MangaCrisp-0.7.1b0-windows-x64-portable-preview.zip)
 
 1. ZIPをダウンロードします。
 2. `MangaCrisp`フォルダ全体を展開します。
