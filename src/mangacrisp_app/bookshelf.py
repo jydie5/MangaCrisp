@@ -155,11 +155,11 @@ def reading_state_from_window(book_id: str, window: SpreadWindow) -> ReadingStat
     return ReadingState(
         book_id=book_id,
         page_index=window.index,
-        spread_mode="spread",
+        spread_mode=window.page_layout_mode,
         reading_direction=window.reading_direction,
         cover_single=window.cover_single,
         fit_mode="page",
-        correction_preset=window.current_quality_preset,
+        correction_preset=window.quality_preset_for_state,
     )
 
 
@@ -1115,7 +1115,11 @@ class BookshelfWindow(QMainWindow):
             return
         state = self.library.reading_states.get(book.id)
         next_book = next_book_after_reading(book.id, self.library.books.list_books())
-        reading_direction = state.reading_direction if state else "rtl"
+        reading_direction = state.reading_direction if state and state.reading_direction in {"rtl", "ltr"} else "rtl"
+        cover_single = state.cover_single if state else True
+        initial_page_layout = state.spread_mode if state and state.spread_mode in {"spread", "single"} else "spread"
+        initial_page_index = state.page_index if state else 0
+        initial_quality_preset = state.correction_preset if state else None
         self.close_active_reader(return_to_bookshelf=False)
         window = SpreadWindow(
             pages,
@@ -1124,7 +1128,7 @@ class BookshelfWindow(QMainWindow):
             processed_pages=collect_processed_pages(pages, None),
             reading_direction=reading_direction,
             spread_order=default_spread_order(reading_direction),
-            cover_single=state.cover_single if state else True,
+            cover_single=cover_single,
             auto_prefetch=True,
             prefetch_count=DEFAULT_FORWARD_PREFETCH_COUNT,
             previous_prefetch_count=DEFAULT_PREVIOUS_PREFETCH_COUNT,
@@ -1138,10 +1142,10 @@ class BookshelfWindow(QMainWindow):
             settings_path=self.library.paths.settings_path,
             embedded=True,
             parent=self.stack,
+            initial_page_index=initial_page_index,
+            initial_page_layout=initial_page_layout,
+            initial_quality_preset=initial_quality_preset,
         )
-        if state is not None:
-            window.index = min(max(0, state.page_index), len(pages) - 1)
-            window.render_spread()
         self.active_reader = window
         self.stack.addWidget(window)
         self.stack.setCurrentWidget(window)

@@ -469,6 +469,10 @@ class SpreadWindow(QMainWindow):
         settings_path: Path | None = None,
         embedded: bool = False,
         parent: QWidget | None = None,
+        *,
+        initial_page_index: int = 0,
+        initial_page_layout: str = "spread",
+        initial_quality_preset: str | None = None,
     ) -> None:
         super().__init__(parent)
         if embedded:
@@ -498,7 +502,7 @@ class SpreadWindow(QMainWindow):
         self.custom_presets = list(self.quality_preferences["custom_presets"])
         self.settings_ui_mode = self.quality_preferences["ui_mode"]
         self.embedded = embedded
-        self.index = 0
+        self.index = min(max(0, initial_page_index), max(0, len(pages) - 1))
         self.is_fullscreen = False
         self.upscale_running = False
         self.prefetch_running = False
@@ -510,6 +514,10 @@ class SpreadWindow(QMainWindow):
         self.running_parameter_key: str | None = None
         self.active_output_paths: set[Path] = set()
         self.current_quality_preset = "自然"
+        # The current display can be Original while temporarily comparing with
+        # O. Keep the durable quality choice separate so that
+        # comparison state is never saved for this book or globally.
+        self.quality_preset_for_state = "自然"
         self.last_corrected_preset_name = "自然"
         self.navigation_intervals: deque[float] = deque(maxlen=8)
         self.correction_misses: deque[bool] = deque(maxlen=CORRECTION_MISS_WINDOW)
@@ -517,7 +525,8 @@ class SpreadWindow(QMainWindow):
         self.correction_seconds_per_page = 1.25
         self.adaptive_prefetch_count = prefetch_count
         self.controls_visible = True
-        self.page_layout_mode = "spread"
+        self.page_layout_mode = "single" if initial_page_layout == "single" else "spread"
+        self.initial_quality_preset = initial_quality_preset
         self.reading_info_visible = False
         self.mouse_press_button = None
         self.mouse_press_global_position = None
@@ -874,13 +883,18 @@ class SpreadWindow(QMainWindow):
         self.on_model_changed(self.model_combo.currentText(), announce=False)
         self.refresh_custom_preset_combo()
         self.restore_quality_preferences()
+        self._sync_initial_page_layout_controls()
         self.apply_settings_mode(self.settings_ui_mode, persist=False)
+        self.update_reader_action_states()
         self.update_quality_state()
         scroll.setWidget(controls)
         return scroll
 
     def select_quality_preset(self, preset: dict) -> None:
-        if preset["name"] != self.current_quality_preset:
+        if (
+            preset["name"] != self.current_quality_preset
+            or preset["name"] != self.quality_preset_for_state
+        ):
             self.apply_preset(preset)
         self.update_reader_action_states()
 
@@ -1087,10 +1101,36 @@ class SpreadWindow(QMainWindow):
             self.persist_quality_preferences()
 
     def restore_quality_preferences(self) -> None:
-        selected_name = self.quality_preferences["selected_preset"]
-        preset = self.find_quality_preset(selected_name) or self.find_quality_preset("自然")
+        preset = None
+        for name in (self.initial_quality_preset, self.quality_preferences["selected_preset"], "自然"):
+            if name:
+                preset = self.find_quality_preset(name)
+            if preset is not None:
+                break
         if preset is not None:
             self.apply_preset(preset, render=False, persist=False, request_prefetch=False)
+
+    def _sync_initial_page_layout_controls(self) -> None:
+        """Reflect the constructor layout choice without scheduling a render."""
+        mode = self.page_layout_mode
+        self.right.setVisible(mode == "spread")
+        for button in (
+            self.shift_back_button,
+            self.shift_forward_button,
+            self.swap_button,
+            self.reset_spread_button,
+        ):
+            button.setEnabled(mode == "spread")
+        combo_index = self.page_layout_combo.findData(mode)
+        if combo_index >= 0:
+            signals_were_blocked = self.page_layout_combo.blockSignals(True)
+            try:
+                self.page_layout_combo.setCurrentIndex(combo_index)
+            finally:
+                self.page_layout_combo.blockSignals(signals_were_blocked)
+        for name, button in self.layout_buttons.items():
+            button.setChecked(name == mode)
+        self.update_spread_status()
 
     def find_quality_preset(self, name: str) -> dict | None:
         return next(
@@ -1114,6 +1154,7 @@ class SpreadWindow(QMainWindow):
         self.original_check.setChecked(is_original)
         self.original_check.blockSignals(False)
         self.current_quality_preset = preset["name"]
+        self.quality_preset_for_state = preset["name"]
         if not is_original:
             self.last_corrected_preset_name = preset["name"]
         displayed_name = display_preset_name(preset["name"])
@@ -1231,6 +1272,8 @@ class SpreadWindow(QMainWindow):
             self.custom_presets.remove(existing)
         self.custom_presets.append(preset)
         self.current_quality_preset = preset["name"]
+        self.quality_preset_for_state = preset["name"]
+        self.last_corrected_preset_name = preset["name"]
         self.refresh_custom_preset_combo(preset["name"])
         self.persist_quality_preferences()
         self.parameter_status.setText(
@@ -1258,6 +1301,9 @@ class SpreadWindow(QMainWindow):
         self.custom_presets.remove(preset)
         if self.current_quality_preset == preset["name"]:
             self.current_quality_preset = "カスタム補正"
+        if self.quality_preset_for_state == preset["name"]:
+            self.quality_preset_for_state = "カスタム補正"
+            self.last_corrected_preset_name = "カスタム補正"
         self.refresh_custom_preset_combo()
         self.persist_quality_preferences()
         self.parameter_status.setText(
@@ -1269,7 +1315,7 @@ class SpreadWindow(QMainWindow):
         save_quality_preferences(
             self.settings_path,
             ui_mode=self.settings_ui_mode,
-            selected_preset=self.current_quality_preset,
+            selected_preset=self.quality_preset_for_state,
             custom_presets=self.custom_presets,
         )
 
@@ -1355,6 +1401,8 @@ class SpreadWindow(QMainWindow):
         elif hasattr(self, "model_combo"):
             self.current_quality_preset = "カスタム補正"
             self.last_corrected_preset_name = "カスタム補正"
+        if hasattr(self, "model_combo"):
+            self.quality_preset_for_state = "カスタム補正"
         if hasattr(self, "parameter_status") and not self.upscale_running and not self.prefetch_running:
             self.parameter_status.setText(tr("設定を変更しました。古い先読み結果は使いません。"))
         if hasattr(self, "quality_mode_label"):
