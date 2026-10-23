@@ -40,7 +40,7 @@ from mangacrisp_app.engine_utils import (
     run_realcugan,
 )
 from mangacrisp_app.i18n import initialize_language, tr
-from mangacrisp_app.library import migrate_legacy_application_state
+from mangacrisp_app.library import Bookmark, migrate_legacy_application_state
 from mangacrisp_app.page_provider import open_pages_for_viewer
 from mangacrisp_app.quality_settings import (
     DEFAULT_QUALITY_SETTINGS_PATH,
@@ -67,6 +67,7 @@ try:
         QApplication,
         QCheckBox,
         QComboBox,
+        QDialog,
         QFileDialog,
         QFormLayout,
         QGridLayout,
@@ -94,7 +95,7 @@ try:
     PYSIDE_IMPORT_ERROR: ImportError | None = None
 except ImportError as exc:
     QEvent = QObject = QRunnable = QSize = QThreadPool = QTimer = Qt = Signal = QCursor = QImage = QPixmap = None
-    QApplication = QCheckBox = QComboBox = QFormLayout = None
+    QApplication = QCheckBox = QComboBox = QDialog = QFormLayout = None
     QHBoxLayout = QInputDialog = QLabel = QMessageBox = QProgressBar = QPushButton = QScrollArea = QSpinBox = QVBoxLayout = QWidget = QFileDialog = None
     QMainWindow = object
     PYSIDE_IMPORT_ERROR = exc
@@ -179,8 +180,8 @@ NOISE_LABELS = {
 
 def navigation_help_text(reading_direction: str) -> str:
     if reading_direction == "rtl":
-        return "Left/Space: next | Right: previous | Shift+Left/Right: +/-1p | V: spread/single | O: original/enhanced | F: fullscreen | P: panel | H: help"
-    return "Right/Space: next | Left: previous | Shift+Right/Left: +/-1p | V: spread/single | O: original/enhanced | F: fullscreen | P: panel | H: help"
+        return "Left/Space: next | Right: previous | Shift+Left/Right: +/-1p | V: spread/single | O: original/enhanced | F: fullscreen | P: panel | Shift+B: bookmarks | H: help"
+    return "Right/Space: next | Left: previous | Shift+Right/Left: +/-1p | V: spread/single | O: original/enhanced | F: fullscreen | P: panel | Shift+B: bookmarks | H: help"
 
 
 def viewer_shortcuts_text(reading_direction: str) -> str:
@@ -205,6 +206,7 @@ def viewer_shortcuts_text(reading_direction: str) -> str:
             tr("V: 見開き/単ページを切り替え"),
             tr("O: 原画/補正版を切り替え"),
             tr("B: しおり追加"),
+            tr("Shift+B: しおり一覧"),
             tr("画面左右クリック: 次へ/前へ（読書方向に連動）"),
             tr("Shift+画面左右クリック: 1ページ進む/戻す"),
             tr("画面中央クリック: 操作ペインを表示/非表示"),
@@ -458,13 +460,19 @@ class SpreadWindow(QMainWindow):
         previous_prefetch_count: int = DEFAULT_PREVIOUS_PREFETCH_COUNT,
         upscale_height_threshold: int = 2234,
         page_changed_callback: Callable[[int], None] | None = None,
-        bookmark_callback: Callable[[int], None] | None = None,
+        bookmark_callback: Callable[[int], bool | None] | None = None,
+        bookmarks_provider: Callable[[], list[Bookmark]] | None = None,
+        bookmark_delete_callback: Callable[[str], bool] | None = None,
         next_book_callback: Callable[[], None] | None = None,
         next_book_label: str | None = None,
         close_callback: Callable[[SpreadWindow], None] | None = None,
         settings_path: Path | None = None,
         embedded: bool = False,
         parent: QWidget | None = None,
+        *,
+        initial_page_index: int = 0,
+        initial_page_layout: str = "spread",
+        initial_quality_preset: str | None = None,
     ) -> None:
         super().__init__(parent)
         if embedded:
@@ -484,6 +492,8 @@ class SpreadWindow(QMainWindow):
         self.upscale_height_threshold_default = upscale_height_threshold
         self.page_changed_callback = page_changed_callback
         self.bookmark_callback = bookmark_callback
+        self.bookmarks_provider = bookmarks_provider
+        self.bookmark_delete_callback = bookmark_delete_callback
         self.next_book_callback = next_book_callback
         self.next_book_label = next_book_label
         self.close_callback = close_callback
@@ -492,7 +502,7 @@ class SpreadWindow(QMainWindow):
         self.custom_presets = list(self.quality_preferences["custom_presets"])
         self.settings_ui_mode = self.quality_preferences["ui_mode"]
         self.embedded = embedded
-        self.index = 0
+        self.index = min(max(0, initial_page_index), max(0, len(pages) - 1))
         self.is_fullscreen = False
         self.upscale_running = False
         self.prefetch_running = False
@@ -504,6 +514,10 @@ class SpreadWindow(QMainWindow):
         self.running_parameter_key: str | None = None
         self.active_output_paths: set[Path] = set()
         self.current_quality_preset = "自然"
+        # The current display can be Original while temporarily comparing with
+        # O. Keep the durable quality choice separate so that
+        # comparison state is never saved for this book or globally.
+        self.quality_preset_for_state = "自然"
         self.last_corrected_preset_name = "自然"
         self.navigation_intervals: deque[float] = deque(maxlen=8)
         self.correction_misses: deque[bool] = deque(maxlen=CORRECTION_MISS_WINDOW)
@@ -511,11 +525,13 @@ class SpreadWindow(QMainWindow):
         self.correction_seconds_per_page = 1.25
         self.adaptive_prefetch_count = prefetch_count
         self.controls_visible = True
-        self.page_layout_mode = "spread"
+        self.page_layout_mode = "single" if initial_page_layout == "single" else "spread"
+        self.initial_quality_preset = initial_quality_preset
         self.reading_info_visible = False
         self.mouse_press_button = None
         self.mouse_press_global_position = None
         self.suppress_next_mouse_release = False
+        self.reading_page_input_dirty = False
         self.image_size_cache: dict[int, tuple[int, int]] = {}
         self.display_pixmap_cache: DisplayCache[tuple, QPixmap] = DisplayCache(capacity=18)
         self.pending_display_renders: dict[tuple, int] = {}
@@ -867,13 +883,18 @@ class SpreadWindow(QMainWindow):
         self.on_model_changed(self.model_combo.currentText(), announce=False)
         self.refresh_custom_preset_combo()
         self.restore_quality_preferences()
+        self._sync_initial_page_layout_controls()
         self.apply_settings_mode(self.settings_ui_mode, persist=False)
+        self.update_reader_action_states()
         self.update_quality_state()
         scroll.setWidget(controls)
         return scroll
 
     def select_quality_preset(self, preset: dict) -> None:
-        if preset["name"] != self.current_quality_preset:
+        if (
+            preset["name"] != self.current_quality_preset
+            or preset["name"] != self.quality_preset_for_state
+        ):
             self.apply_preset(preset)
         self.update_reader_action_states()
 
@@ -894,6 +915,7 @@ class SpreadWindow(QMainWindow):
             "layout": ("見開き", "V", self.toggle_page_layout),
             "help": ("操作一覧", "H", self.show_shortcuts_help),
             "bookmark": ("しおり", "B", self.add_bookmark),
+            "bookmarks": ("しおり一覧", "Shift+B", self.show_bookmarks),
         }
         title, shortcut, callback = actions[action]
         button = ShortcutButton(tr(title), shortcut, parent, compact=compact)
@@ -924,6 +946,28 @@ class SpreadWindow(QMainWindow):
         self.reading_progress = QProgressBar(self.reading_info_panel)
         self.reading_progress.setFixedHeight(18)
         layout.addWidget(self.reading_progress)
+        page_jump_row = QHBoxLayout()
+        page_label = QLabel(tr("ページ"), self.reading_info_panel)
+        page_jump_row.addWidget(page_label)
+        self.reading_page_spin = QSpinBox(self.reading_info_panel)
+        self.reading_page_spin.setRange(1, max(1, len(self.pages)))
+        self.reading_page_spin.setKeyboardTracking(False)
+        self.reading_page_spin.setMinimumWidth(92)
+        self.reading_page_spin.setAccessibleName(tr("ページ番号"))
+        self.reading_page_spin.setToolTip(tr("ページ番号を入力して移動"))
+        page_label.setBuddy(self.reading_page_spin)
+        page_line_edit = self.reading_page_spin.lineEdit()
+        if page_line_edit is not None:
+            page_line_edit.textEdited.connect(self.mark_page_jump_input_dirty)
+            page_line_edit.returnPressed.connect(self.confirm_page_jump)
+        self.reading_page_spin.valueChanged.connect(self.mark_page_jump_value_dirty)
+        page_jump_row.addWidget(self.reading_page_spin, 1)
+        self.reading_page_jump_button = QPushButton(tr("移動"), self.reading_info_panel)
+        self.reading_page_jump_button.setAccessibleName(tr("ページ番号を入力して移動"))
+        self.reading_page_jump_button.setToolTip(tr("ページ番号を入力して移動"))
+        self.reading_page_jump_button.clicked.connect(self.confirm_page_jump)
+        page_jump_row.addWidget(self.reading_page_jump_button)
+        layout.addLayout(page_jump_row)
         grid = QGridLayout()
         grid.setSpacing(8)
         navigation = ("next", "previous", "forward_one", "back_one") if self.is_right_bound() else ("previous", "next", "back_one", "forward_one")
@@ -932,6 +976,9 @@ class SpreadWindow(QMainWindow):
             grid.addWidget(self.make_reader_action(action, self.reading_info_panel), index // 2, index % 2)
         if self.bookmark_callback is not None:
             grid.addWidget(self.make_reader_action("bookmark", self.reading_info_panel), 4, 1)
+        if self.bookmarks_provider is not None:
+            row = 5 if self.bookmark_callback is not None else 4
+            grid.addWidget(self.make_reader_action("bookmarks", self.reading_info_panel), row, 0)
         layout.addLayout(grid)
         self.reading_info_bookshelf_button = QPushButton(tr("本棚へ戻る"), self.reading_info_panel)
         self.reading_info_bookshelf_button.clicked.connect(self.return_to_bookshelf)
@@ -944,9 +991,67 @@ class SpreadWindow(QMainWindow):
         self.reading_info_panel.setCursor(Qt.ArrowCursor)
 
     def dismiss_reading_overlay(self) -> None:
+        self.cancel_page_jump_input()
         self.reading_info_visible = False
         self.reading_info_panel.hide()
         self.setFocus(Qt.OtherFocusReason)
+
+    def mark_page_jump_input_dirty(self, _text: str) -> None:
+        self.reading_page_input_dirty = True
+
+    def mark_page_jump_value_dirty(self, _value: int) -> None:
+        self.reading_page_input_dirty = True
+
+    def sync_page_jump_spin(self, page_number: int) -> None:
+        signals_were_blocked = self.reading_page_spin.blockSignals(True)
+        try:
+            self.reading_page_spin.setValue(page_number)
+            line_edit = self.reading_page_spin.lineEdit()
+            if line_edit is not None:
+                line_edit.setText(self.reading_page_spin.text())
+        finally:
+            self.reading_page_spin.blockSignals(signals_were_blocked)
+
+    def cancel_page_jump_input(self) -> None:
+        if not hasattr(self, "reading_page_spin"):
+            return
+        current_page = min(max(self.index + 1, 1), max(1, len(self.pages)))
+        self.reading_page_input_dirty = False
+        self.sync_page_jump_spin(current_page)
+
+    def confirm_page_jump(self) -> bool:
+        if not self.pages or not hasattr(self, "reading_page_spin"):
+            return False
+        self.reading_page_spin.interpretText()
+        return self.jump_to_page(self.reading_page_spin.value())
+
+    def jump_to_page(self, page_number: int) -> bool:
+        """Move to a one-based physical page without changing its meaning by RTL."""
+        if (
+            isinstance(page_number, bool)
+            or not isinstance(page_number, int)
+            or page_number < 1
+            or page_number > len(self.pages)
+        ):
+            return False
+        target_index = page_number - 1
+        if self.page_layout_mode == "spread":
+            target_index = standard_spread_index(target_index, self.cover_single)
+        if target_index == self.index:
+            self.reading_page_input_dirty = False
+            self.update_reading_info()
+            return True
+        self.reading_page_input_dirty = False
+        self.clear_queued_visible_requests()
+        self.index = target_index
+        self.invalidate_prefetch_for_navigation()
+        self.render_spread()
+        self.request_prefetch()
+        self.record_correction_miss()
+        self.notify_page_changed()
+        self.update_spread_status()
+        self.update_next_book_action()
+        return True
 
     def update_reader_action_states(self) -> None:
         if not hasattr(self, "original_check"):
@@ -996,10 +1101,36 @@ class SpreadWindow(QMainWindow):
             self.persist_quality_preferences()
 
     def restore_quality_preferences(self) -> None:
-        selected_name = self.quality_preferences["selected_preset"]
-        preset = self.find_quality_preset(selected_name) or self.find_quality_preset("自然")
+        preset = None
+        for name in (self.initial_quality_preset, self.quality_preferences["selected_preset"], "自然"):
+            if name:
+                preset = self.find_quality_preset(name)
+            if preset is not None:
+                break
         if preset is not None:
             self.apply_preset(preset, render=False, persist=False, request_prefetch=False)
+
+    def _sync_initial_page_layout_controls(self) -> None:
+        """Reflect the constructor layout choice without scheduling a render."""
+        mode = self.page_layout_mode
+        self.right.setVisible(mode == "spread")
+        for button in (
+            self.shift_back_button,
+            self.shift_forward_button,
+            self.swap_button,
+            self.reset_spread_button,
+        ):
+            button.setEnabled(mode == "spread")
+        combo_index = self.page_layout_combo.findData(mode)
+        if combo_index >= 0:
+            signals_were_blocked = self.page_layout_combo.blockSignals(True)
+            try:
+                self.page_layout_combo.setCurrentIndex(combo_index)
+            finally:
+                self.page_layout_combo.blockSignals(signals_were_blocked)
+        for name, button in self.layout_buttons.items():
+            button.setChecked(name == mode)
+        self.update_spread_status()
 
     def find_quality_preset(self, name: str) -> dict | None:
         return next(
@@ -1023,6 +1154,7 @@ class SpreadWindow(QMainWindow):
         self.original_check.setChecked(is_original)
         self.original_check.blockSignals(False)
         self.current_quality_preset = preset["name"]
+        self.quality_preset_for_state = preset["name"]
         if not is_original:
             self.last_corrected_preset_name = preset["name"]
         displayed_name = display_preset_name(preset["name"])
@@ -1140,6 +1272,8 @@ class SpreadWindow(QMainWindow):
             self.custom_presets.remove(existing)
         self.custom_presets.append(preset)
         self.current_quality_preset = preset["name"]
+        self.quality_preset_for_state = preset["name"]
+        self.last_corrected_preset_name = preset["name"]
         self.refresh_custom_preset_combo(preset["name"])
         self.persist_quality_preferences()
         self.parameter_status.setText(
@@ -1167,6 +1301,9 @@ class SpreadWindow(QMainWindow):
         self.custom_presets.remove(preset)
         if self.current_quality_preset == preset["name"]:
             self.current_quality_preset = "カスタム補正"
+        if self.quality_preset_for_state == preset["name"]:
+            self.quality_preset_for_state = "カスタム補正"
+            self.last_corrected_preset_name = "カスタム補正"
         self.refresh_custom_preset_combo()
         self.persist_quality_preferences()
         self.parameter_status.setText(
@@ -1178,7 +1315,7 @@ class SpreadWindow(QMainWindow):
         save_quality_preferences(
             self.settings_path,
             ui_mode=self.settings_ui_mode,
-            selected_preset=self.current_quality_preset,
+            selected_preset=self.quality_preset_for_state,
             custom_presets=self.custom_presets,
         )
 
@@ -1264,6 +1401,8 @@ class SpreadWindow(QMainWindow):
         elif hasattr(self, "model_combo"):
             self.current_quality_preset = "カスタム補正"
             self.last_corrected_preset_name = "カスタム補正"
+        if hasattr(self, "model_combo"):
+            self.quality_preset_for_state = "カスタム補正"
         if hasattr(self, "parameter_status") and not self.upscale_running and not self.prefetch_running:
             self.parameter_status.setText(tr("設定を変更しました。古い先読み結果は使いません。"))
         if hasattr(self, "quality_mode_label"):
@@ -1485,6 +1624,9 @@ class SpreadWindow(QMainWindow):
         elif key == Qt.Key_O:
             self.original_check.toggle()
             return True
+        elif key == Qt.Key_B and modifiers & Qt.ShiftModifier:
+            self.show_bookmarks()
+            return True
         elif key == Qt.Key_B:
             self.add_bookmark()
             return True
@@ -1607,8 +1749,34 @@ class SpreadWindow(QMainWindow):
 
     def add_bookmark(self) -> None:
         if self.bookmark_callback is not None:
-            self.bookmark_callback(self.index)
-            self.statusBar().showMessage(f"Bookmark added at p.{self.index + 1}")
+            result = self.bookmark_callback(self.index)
+            if result is False:
+                self.statusBar().showMessage(tr("このページにはしおりがあります。"))
+            else:
+                self.statusBar().showMessage(tr("しおりを追加しました: p.{page}", page=self.index + 1))
+
+    def show_bookmarks(self) -> None:
+        if self.bookmarks_provider is None:
+            self.statusBar().showMessage(tr("しおり一覧を利用できません。"))
+            return
+        from mangacrisp_app.bookmark_dialog import BookmarkDialog
+
+        bookmarks = list(self.bookmarks_provider() or [])
+        dialog = BookmarkDialog(
+            self,
+            bookmarks,
+            len(self.pages),
+            delete_callback=self.bookmark_delete_callback,
+        )
+        try:
+            if (
+                dialog.exec() == QDialog.DialogCode.Accepted
+                and dialog.selected_page_index is not None
+                and not self.jump_to_page(dialog.selected_page_index + 1)
+            ):
+                self.statusBar().showMessage(tr("しおりのページが見つかりません。"))
+        finally:
+            dialog.deleteLater()
 
     def show_shortcuts_help(self) -> None:
         show_help_dialog(self, viewer_shortcuts_text(self.reading_direction))
@@ -2073,6 +2241,9 @@ class SpreadWindow(QMainWindow):
         value = visible_indexes[-1] + 1 if visible_indexes else 0
         self.reading_progress.setValue(value)
         self.reading_progress.setFormat(page_text)
+        if hasattr(self, "reading_page_spin") and not self.reading_page_input_dirty:
+            current_page = min(max(self.index + 1, 1), max(1, len(self.pages)))
+            self.sync_page_jump_spin(current_page)
 
     def is_at_end(self) -> bool:
         visible_indexes = self.visible_page_indexes()

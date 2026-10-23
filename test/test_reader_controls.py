@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -135,6 +136,203 @@ class ReaderControlsTests(ViewerWindowTestCase):
         self.assertEqual(self.window.index, 5)
         self._action("back_one", overlay=True).click()
         self.assertEqual(self.window.index, 4)
+
+    def _show_page_jump(self) -> None:
+        self._show_reader()
+        self.window.toggle_reading_info()
+        self.application.processEvents()
+        self.assertTrue(self.window.reading_info_visible)
+
+    def _focus_page_input(self):
+        spin = self.window.reading_page_spin
+        line_edit = spin.lineEdit()
+        self.assertIsNotNone(line_edit)
+        spin.setFocus(Qt.FocusReason.OtherFocusReason)
+        self.application.processEvents()
+        self.assertTrue(spin.hasFocus() or line_edit.hasFocus())
+        return line_edit
+
+    def _type_page_input(self, text: str):
+        line_edit = self._focus_page_input()
+        line_edit.selectAll()
+        QTest.keyClicks(line_edit, text)
+        self.application.processEvents()
+        return line_edit
+
+    def test_page_jump_uses_one_based_physical_page_numbers(self) -> None:
+        self._show_page_jump()
+        self.window.index = 4
+        self.window.update_reading_info()
+        self.assertEqual(self.window.reading_page_spin.value(), 5)
+
+        self.window.reading_page_spin.setValue(7)
+        self.window.reading_page_jump_button.click()
+        self.application.processEvents()
+
+        # The fixture uses normal spreads, so physical page 7 is the first
+        # page of the 7-8 spread and is stored as zero-based index 6.
+        self.assertEqual(self.window.index, 6)
+        self.assertEqual(self.window.visible_page_indexes(), [6, 7])
+        self.assertEqual(self.window.reading_page_spin.value(), 7)
+
+    def test_page_jump_focus_loss_preserves_input_until_go(self) -> None:
+        self._show_page_jump()
+        self.window.index = 4
+        self.window.update_reading_info()
+        line_edit = self._type_page_input("9")
+
+        # Moving focus away (including the Tab path to the Go button) must
+        # leave the input pending.  Only Go or Enter commits the jump.
+        QTest.keyClick(line_edit, Qt.Key.Key_Tab)
+        self.application.processEvents()
+        self.assertEqual(self.window.index, 4)
+        self.assertEqual(line_edit.text(), "9")
+
+        self.window.reading_page_jump_button.click()
+        self.application.processEvents()
+        self.assertEqual(self.window.index, 8)
+        self.assertTrue(self.window.reading_info_visible)
+
+    def test_page_jump_enter_confirms_after_spinbox_focus(self) -> None:
+        self._show_page_jump()
+        self.window.index = 4
+        self.window.update_reading_info()
+        line_edit = self._type_page_input("9")
+
+        QTest.keyClick(line_edit, Qt.Key.Key_Return)
+        self.application.processEvents()
+        self.assertEqual(self.window.index, 8)
+        self.assertTrue(self.window.reading_info_visible)
+
+    def test_page_jump_escape_cancels_input_and_closes_only_overlay(self) -> None:
+        self._show_page_jump()
+        self.window.index = 4
+        self.window.update_reading_info()
+        line_edit = self._type_page_input("9")
+        QTest.keyClick(line_edit, Qt.Key.Key_Escape)
+        self.application.processEvents()
+
+        self.assertEqual(self.window.index, 4)
+        self.assertEqual(self.window.reading_page_spin.value(), 5)
+        self.assertEqual(line_edit.text(), "5")
+        self.assertFalse(self.window.reading_info_visible)
+        self.assertFalse(self.window.is_closing)
+
+    def test_page_jump_outer_click_cancels_input_without_turning_page(self) -> None:
+        self._show_page_jump()
+        self.window.index = 4
+        self.window.update_reading_info()
+        line_edit = self._type_page_input("9")
+        QTest.mouseClick(
+            self.window.left,
+            Qt.MouseButton.LeftButton,
+            Qt.KeyboardModifier.NoModifier,
+            QPoint(20, self.window.left.height() // 2),
+        )
+        self.application.processEvents()
+
+        self.assertEqual(self.window.index, 4)
+        self.assertEqual(self.window.reading_page_spin.value(), 5)
+        self.assertEqual(line_edit.text(), "5")
+        self.assertFalse(self.window.reading_info_visible)
+
+    def test_page_jump_updown_stays_pending_through_background_update(self) -> None:
+        self._show_page_jump()
+        self.window.index = 4
+        self.window.update_reading_info()
+        spin = self.window.reading_page_spin
+        self._focus_page_input()
+
+        for _ in range(3):
+            QTest.keyClick(spin, Qt.Key.Key_Up)
+        self.application.processEvents()
+        self.assertEqual(self.window.index, 4)
+        self.assertEqual(spin.value(), 8)
+        self.assertEqual(spin.lineEdit().text(), "8")
+
+        # Rendering/status updates must not overwrite an uncommitted arrow
+        # change.  The page only moves after the explicit Go action.
+        self.window.update_reading_info()
+        self.assertEqual(self.window.index, 4)
+        self.assertEqual(spin.value(), 8)
+        self.assertEqual(spin.lineEdit().text(), "8")
+
+        self.window.reading_page_jump_button.click()
+        self.application.processEvents()
+        self.assertEqual(self.window.index, 6)
+        self.assertEqual(self.window.visible_page_indexes(), [6, 7])
+
+    def test_page_jump_sync_restores_original_signal_block_state(self) -> None:
+        self._show_page_jump()
+        spin = self.window.reading_page_spin
+        for initially_blocked in (False, True):
+            spin.blockSignals(initially_blocked)
+            try:
+                self.window.sync_page_jump_spin(5)
+                self.assertEqual(spin.signalsBlocked(), initially_blocked)
+            finally:
+                spin.blockSignals(False)
+
+    def test_page_jump_boundary_pages_and_ltr_notify_callback(self) -> None:
+        # N=19 exercises an odd final page in spread mode.  Physical page
+        # numbers remain stable when the reading direction is changed to LTR.
+        self.window.pages = self.pages[:19]
+        self.window.processed_pages = list(self.window.pages)
+        self.window.cover_single = True
+        self.window.reading_direction = "ltr"
+        self.window.spread_order = "ltr"
+        self.window.page_layout_mode = "spread"
+        self.window.reading_page_spin.setRange(1, 19)
+        self.window.reading_page_input_dirty = False
+        self.window.page_state_save_timer.stop()
+        changed: list[int] = []
+        self.window.page_changed_callback = changed.append
+
+        self.window.index = 4
+        self.assertTrue(self.window.jump_to_page(1))
+        self.window.flush_page_changed()
+        self.assertEqual(self.window.index, 0)
+        self.assertEqual(self.window.visible_page_indexes(), [0])
+        self.assertEqual(changed, [0])
+
+        changed.clear()
+        self.assertTrue(self.window.jump_to_page(19))
+        self.window.flush_page_changed()
+        self.assertEqual(self.window.index, 17)
+        self.assertEqual(self.window.visible_page_indexes(), [17, 18])
+        self.assertEqual(changed, [17])
+
+    def test_page_jump_api_rejects_out_of_range_values(self) -> None:
+        self.window.index = 4
+        self.assertFalse(self.window.jump_to_page(0))
+        self.assertFalse(self.window.jump_to_page(len(self.pages) + 1))
+        self.assertEqual(self.window.index, 4)
+
+    def test_page_jump_handles_cover_and_single_page_modes(self) -> None:
+        self.window.cover_single = True
+        self.assertTrue(self.window.jump_to_page(2))
+        self.assertEqual(self.window.index, 1)
+        self.assertEqual(self.window.visible_page_indexes(), [1, 2])
+
+        self.window.set_page_layout("single")
+        self.assertTrue(self.window.jump_to_page(7))
+        self.assertEqual(self.window.index, 6)
+        self.assertEqual(self.window.visible_page_indexes(), [6])
+
+    def test_page_jump_prioritizes_arrival_spread_for_prefetch(self) -> None:
+        self.window.prefetch_enabled = True
+        self.window.prefetch_count_default = 2
+        self.window.adaptive_prefetch_count = 2
+        self.window.processed_pages = [None] * len(self.window.pages)
+        with (
+            patch("mangacrisp_app.viewer.realcugan_executable", return_value=self.root / "realcugan"),
+            patch("mangacrisp_app.viewer.threading.Thread"),
+        ):
+            self.window.start_prefetch()
+            self.assertTrue(self.window.prefetch_running)
+            self.assertTrue(self.window.jump_to_page(7))
+
+        self.assertEqual(self.window.correction_queue.priority[:2], [6, 7])
 
     def test_p_toggles_sidebar_without_a_bottom_toolbar(self) -> None:
         self._show_reader()
