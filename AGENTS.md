@@ -10,6 +10,8 @@ before changing code, packaging, documentation, or release assets.
 - `docs/development/macos-handover.md` when working on macOS
 - `docs/development/linux-port-plan.ja.md` when working on Linux
 - `docs/development/linux-handover.md` when continuing work on Linux
+- `docs/development/claude-code-history.ja.md` when continuing work on Linux:
+  summary of the earlier Claude Code sessions on the Linux machine
 - `docs/development/ux-maintenance-handover.md` when working on Windows or
   Linux after the macOS-first UX maintenance
 - `README.md`, `ROADMAP.md`, and `THIRD_PARTY_NOTICES.md`
