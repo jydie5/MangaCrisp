@@ -1,0 +1,125 @@
+name: macOS bundled standalone audit
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/macos-standalone-ci.yml"
+      - ".github/workflows/macos-ci.yml"
+      - "scripts/build_macos_app.py"
+      - "scripts/package_standalone.py"
+      - "scripts/audit_distribution.py"
+      - "scripts/fetch_realcugan.py"
+      - "scripts/release_macos_app.py"
+      - "scripts/mangacrisp.entitlements.plist"
+      - "assets/mangacrisp-app-icon.png"
+      - "LICENSE"
+      - "THIRD_PARTY_NOTICES.md"
+      - "pyproject.toml"
+      - "uv.lock"
+  workflow_dispatch:
+
+concurrency:
+  group: macos-standalone-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  bundled-audit:
+    name: Build and audit macOS standalone
+    runs-on: macos-14
+    timeout-minutes: 90
+    env:
+      UV_FROZEN: "1"
+      MANGACRISP_LANGUAGE: "en"
+      MANGACRISP_CI_VERSION: ci-${{ github.sha }}
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        run: python -m pip install --disable-pip-version-check uv==0.11.15
+
+      - name: Restore verified Real-CUGAN archive cache
+        id: vendor-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/Library/Caches/MangaCrisp/vendor
+          key: macos-realcugan-v1-${{ hashFiles('scripts/fetch_realcugan.py') }}
+
+      - name: Install project dependencies
+        run: uv sync --extra dev --extra app
+
+      - name: Build, audit, and package standalone application
+        run: uv run python scripts/package_standalone.py --version "$MANGACRISP_CI_VERSION"
+
+      - name: Smoke-test extracted standalone application
+        id: extracted-smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive_path=""
+          for candidate in dist/MangaCrisp-vci-*-macos-apple-silicon-standalone.zip; do
+            if [[ -f "$candidate" ]]; then
+              archive_path="$candidate"
+              break
+            fi
+          done
+          if [[ -z "$archive_path" ]]; then
+            echo "standalone ZIP was not created" >&2
+            exit 1
+          fi
+
+          extract_dir="$RUNNER_TEMP/mangacrisp-standalone-extracted"
+          rm -rf "$extract_dir"
+          mkdir -p "$extract_dir"
+          ditto -x -k "$archive_path" "$extract_dir"
+          app_path="$extract_dir/MangaCrisp.app"
+          app_executable="$app_path/Contents/MacOS/MangaCrisp"
+          test -x "$app_executable"
+          "$app_executable" --smoke-test
+
+          pdf_path="$RUNNER_TEMP/mangacrisp-color-smoke.pdf"
+          SMOKE_PDF_PATH="$pdf_path" uv run python - <<'PY'
+          import os
+          from PIL import Image
+
+          path = os.environ["SMOKE_PDF_PATH"]
+          Image.new("RGB", (240, 360), (220, 30, 40)).save(
+              path,
+              "PDF",
+              save_all=True,
+              append_images=[Image.new("RGB", (240, 360), (20, 50, 220))],
+          )
+          PY
+          "$app_executable" "$pdf_path" --no-auto-prefetch --smoke-close-ms 1000
+          echo "archive_path=$archive_path" >> "$GITHUB_OUTPUT"
+
+      - name: Upload standalone audit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: MangaCrisp-macos-standalone-${{ github.sha }}
+          if-no-files-found: warn
+          retention-days: 7
+          path: |
+            dist/MangaCrisp-vci-*-macos-apple-silicon-standalone.zip
+            dist/MangaCrisp-vci-*-macos-apple-silicon-standalone.zip.sha256
+            dist/distribution-audit.json
+            dist/standalone-release-manifest.json
+
+      - name: Save verified Real-CUGAN archive cache
+        if: success() && steps.vendor-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/Library/Caches/MangaCrisp/vendor
+          key: ${{ steps.vendor-cache.outputs.cache-primary-key }}
