@@ -182,6 +182,14 @@ class PdfPageList(Sequence[Path]):
             raise IndexError(index)
         return _pdf_page_identity(self._pdf_source_key, self.dpi, index)
 
+    def page_stem(self, index: int) -> str:
+        """Return the rendered page filename stem without materializing it."""
+        if index < 0:
+            index += len(self)
+        if index < 0 or index >= len(self):
+            raise IndexError(index)
+        return f"{index + 1:06d}"
+
     def materialize(self, index: int) -> Path:
         if index < 0:
             index += len(self)
@@ -314,6 +322,17 @@ class LazyZipPageList(Sequence[Path]):
             f"zip:{self._archive_fingerprint}:index={index}:member={member_name}:"
             f"crc={member.CRC}:size={member.file_size}"
         )
+
+    def page_stem(self, index: int) -> str:
+        """Return the extracted member filename stem without extracting it."""
+        if index < 0:
+            index += len(self)
+        if index < 0 or index >= len(self):
+            raise IndexError(index)
+        output = archive_member_output_path(self.temp_dir, self.members[index].filename)
+        if output is None:
+            raise RuntimeError(f"unsafe archive member: {self.members[index].filename}")
+        return output.stem
 
     def materialize(self, index: int) -> Path:
         if index < 0:
