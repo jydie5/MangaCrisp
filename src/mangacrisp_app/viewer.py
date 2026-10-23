@@ -215,6 +215,7 @@ def viewer_shortcuts_text(reading_direction: str) -> str:
             tr("+ / -: 表示倍率を変更 / Ctrl/⌘+ホイール: 表示倍率を変更"),
             tr("B: しおり追加"),
             tr("Shift+B: しおり一覧"),
+            tr("T: ページ一覧"),
             tr("画面左右クリック: 次へ/前へ（読書方向に連動）"),
             tr("Shift+画面左右クリック: 1ページ進む/戻す"),
             tr("画面中央クリック: 操作ペインを表示/非表示"),
@@ -973,6 +974,7 @@ class SpreadWindow(QMainWindow):
             "help": ("操作一覧", "H", self.show_shortcuts_help),
             "bookmark": ("しおり", "B", self.add_bookmark),
             "bookmarks": ("しおり一覧", "Shift+B", self.show_bookmarks),
+            "pages": ("ページ一覧", "T", self.show_page_overview),
         }
         title, shortcut, callback = actions[action]
         button = ShortcutButton(tr(title), shortcut, parent, compact=compact)
@@ -1081,14 +1083,14 @@ class SpreadWindow(QMainWindow):
         grid = QGridLayout()
         grid.setSpacing(8)
         navigation = ("next", "previous", "forward_one", "back_one") if self.is_right_bound() else ("previous", "next", "back_one", "forward_one")
-        actions = (*navigation, "original", "settings", "fullscreen", "layout", "help")
+        actions = [*navigation, "original", "settings", "fullscreen", "layout", "help"]
+        if self.bookmark_callback is not None:
+            actions.append("bookmark")
+        if self.bookmarks_provider is not None:
+            actions.append("bookmarks")
+        actions.append("pages")
         for index, action in enumerate(actions):
             grid.addWidget(self.make_reader_action(action, self.reading_info_content), index // 2, index % 2)
-        if self.bookmark_callback is not None:
-            grid.addWidget(self.make_reader_action("bookmark", self.reading_info_content), 4, 1)
-        if self.bookmarks_provider is not None:
-            row = 5 if self.bookmark_callback is not None else 4
-            grid.addWidget(self.make_reader_action("bookmarks", self.reading_info_content), row, 0)
         layout.addLayout(grid)
         self.reading_info_bookshelf_button = QPushButton(tr("本棚へ戻る"), self.reading_info_panel)
         self.reading_info_bookshelf_button.clicked.connect(self.return_to_bookshelf)
@@ -1967,6 +1969,9 @@ class SpreadWindow(QMainWindow):
         elif key == Qt.Key_B:
             self.add_bookmark()
             return True
+        elif key == Qt.Key_T and modifiers == Qt.NoModifier:
+            self.show_page_overview()
+            return True
         elif key in {Qt.Key_H, Qt.Key_Question}:
             self.show_shortcuts_help()
             return True
@@ -2112,6 +2117,19 @@ class SpreadWindow(QMainWindow):
                 self.statusBar().showMessage(tr("しおりのページが見つかりません。"))
         finally:
             dialog.deleteLater()
+
+    def show_page_overview(self) -> None:
+        from mangacrisp_app.page_overview import PageOverviewDialog
+
+        dialog = PageOverviewDialog(self, self.pages, self.index)
+        try:
+            if dialog.exec() == QDialog.DialogCode.Accepted and dialog.selected_page_index is not None:
+                self.jump_to_page(dialog.selected_page_index + 1)
+        finally:
+            dialog.shutdown()
+            dialog.deleteLater()
+            self.activateWindow()
+            self.setFocus(Qt.ActiveWindowFocusReason)
 
     def show_shortcuts_help(self) -> None:
         show_help_dialog(self, viewer_shortcuts_text(self.reading_direction))
