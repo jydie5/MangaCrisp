@@ -40,7 +40,7 @@ from mangacrisp_app.engine_utils import (
     run_realcugan,
 )
 from mangacrisp_app.i18n import initialize_language, tr
-from mangacrisp_app.library import migrate_legacy_application_state
+from mangacrisp_app.library import Bookmark, migrate_legacy_application_state
 from mangacrisp_app.page_provider import open_pages_for_viewer
 from mangacrisp_app.quality_settings import (
     DEFAULT_QUALITY_SETTINGS_PATH,
@@ -67,6 +67,7 @@ try:
         QApplication,
         QCheckBox,
         QComboBox,
+        QDialog,
         QFileDialog,
         QFormLayout,
         QGridLayout,
@@ -94,7 +95,7 @@ try:
     PYSIDE_IMPORT_ERROR: ImportError | None = None
 except ImportError as exc:
     QEvent = QObject = QRunnable = QSize = QThreadPool = QTimer = Qt = Signal = QCursor = QImage = QPixmap = None
-    QApplication = QCheckBox = QComboBox = QFormLayout = None
+    QApplication = QCheckBox = QComboBox = QDialog = QFormLayout = None
     QHBoxLayout = QInputDialog = QLabel = QMessageBox = QProgressBar = QPushButton = QScrollArea = QSpinBox = QVBoxLayout = QWidget = QFileDialog = None
     QMainWindow = object
     PYSIDE_IMPORT_ERROR = exc
@@ -179,8 +180,8 @@ NOISE_LABELS = {
 
 def navigation_help_text(reading_direction: str) -> str:
     if reading_direction == "rtl":
-        return "Left/Space: next | Right: previous | Shift+Left/Right: +/-1p | V: spread/single | O: original/enhanced | F: fullscreen | P: panel | H: help"
-    return "Right/Space: next | Left: previous | Shift+Right/Left: +/-1p | V: spread/single | O: original/enhanced | F: fullscreen | P: panel | H: help"
+        return "Left/Space: next | Right: previous | Shift+Left/Right: +/-1p | V: spread/single | O: original/enhanced | F: fullscreen | P: panel | Shift+B: bookmarks | H: help"
+    return "Right/Space: next | Left: previous | Shift+Right/Left: +/-1p | V: spread/single | O: original/enhanced | F: fullscreen | P: panel | Shift+B: bookmarks | H: help"
 
 
 def viewer_shortcuts_text(reading_direction: str) -> str:
@@ -205,6 +206,7 @@ def viewer_shortcuts_text(reading_direction: str) -> str:
             tr("V: 見開き/単ページを切り替え"),
             tr("O: 原画/補正版を切り替え"),
             tr("B: しおり追加"),
+            tr("Shift+B: しおり一覧"),
             tr("画面左右クリック: 次へ/前へ（読書方向に連動）"),
             tr("Shift+画面左右クリック: 1ページ進む/戻す"),
             tr("画面中央クリック: 操作ペインを表示/非表示"),
@@ -458,7 +460,9 @@ class SpreadWindow(QMainWindow):
         previous_prefetch_count: int = DEFAULT_PREVIOUS_PREFETCH_COUNT,
         upscale_height_threshold: int = 2234,
         page_changed_callback: Callable[[int], None] | None = None,
-        bookmark_callback: Callable[[int], None] | None = None,
+        bookmark_callback: Callable[[int], bool | None] | None = None,
+        bookmarks_provider: Callable[[], list[Bookmark]] | None = None,
+        bookmark_delete_callback: Callable[[str], bool] | None = None,
         next_book_callback: Callable[[], None] | None = None,
         next_book_label: str | None = None,
         close_callback: Callable[[SpreadWindow], None] | None = None,
@@ -484,6 +488,8 @@ class SpreadWindow(QMainWindow):
         self.upscale_height_threshold_default = upscale_height_threshold
         self.page_changed_callback = page_changed_callback
         self.bookmark_callback = bookmark_callback
+        self.bookmarks_provider = bookmarks_provider
+        self.bookmark_delete_callback = bookmark_delete_callback
         self.next_book_callback = next_book_callback
         self.next_book_label = next_book_label
         self.close_callback = close_callback
@@ -895,6 +901,7 @@ class SpreadWindow(QMainWindow):
             "layout": ("見開き", "V", self.toggle_page_layout),
             "help": ("操作一覧", "H", self.show_shortcuts_help),
             "bookmark": ("しおり", "B", self.add_bookmark),
+            "bookmarks": ("しおり一覧", "Shift+B", self.show_bookmarks),
         }
         title, shortcut, callback = actions[action]
         button = ShortcutButton(tr(title), shortcut, parent, compact=compact)
@@ -955,6 +962,9 @@ class SpreadWindow(QMainWindow):
             grid.addWidget(self.make_reader_action(action, self.reading_info_panel), index // 2, index % 2)
         if self.bookmark_callback is not None:
             grid.addWidget(self.make_reader_action("bookmark", self.reading_info_panel), 4, 1)
+        if self.bookmarks_provider is not None:
+            row = 5 if self.bookmark_callback is not None else 4
+            grid.addWidget(self.make_reader_action("bookmarks", self.reading_info_panel), row, 0)
         layout.addLayout(grid)
         self.reading_info_bookshelf_button = QPushButton(tr("本棚へ戻る"), self.reading_info_panel)
         self.reading_info_bookshelf_button.clicked.connect(self.return_to_bookshelf)
@@ -1566,6 +1576,9 @@ class SpreadWindow(QMainWindow):
         elif key == Qt.Key_O:
             self.original_check.toggle()
             return True
+        elif key == Qt.Key_B and modifiers & Qt.ShiftModifier:
+            self.show_bookmarks()
+            return True
         elif key == Qt.Key_B:
             self.add_bookmark()
             return True
@@ -1688,8 +1701,34 @@ class SpreadWindow(QMainWindow):
 
     def add_bookmark(self) -> None:
         if self.bookmark_callback is not None:
-            self.bookmark_callback(self.index)
-            self.statusBar().showMessage(f"Bookmark added at p.{self.index + 1}")
+            result = self.bookmark_callback(self.index)
+            if result is False:
+                self.statusBar().showMessage(tr("このページにはしおりがあります。"))
+            else:
+                self.statusBar().showMessage(tr("しおりを追加しました: p.{page}", page=self.index + 1))
+
+    def show_bookmarks(self) -> None:
+        if self.bookmarks_provider is None:
+            self.statusBar().showMessage(tr("しおり一覧を利用できません。"))
+            return
+        from mangacrisp_app.bookmark_dialog import BookmarkDialog
+
+        bookmarks = list(self.bookmarks_provider() or [])
+        dialog = BookmarkDialog(
+            self,
+            bookmarks,
+            len(self.pages),
+            delete_callback=self.bookmark_delete_callback,
+        )
+        try:
+            if (
+                dialog.exec() == QDialog.DialogCode.Accepted
+                and dialog.selected_page_index is not None
+                and not self.jump_to_page(dialog.selected_page_index + 1)
+            ):
+                self.statusBar().showMessage(tr("しおりのページが見つかりません。"))
+        finally:
+            dialog.deleteLater()
 
     def show_shortcuts_help(self) -> None:
         show_help_dialog(self, viewer_shortcuts_text(self.reading_direction))

@@ -1130,6 +1130,8 @@ class BookshelfWindow(QMainWindow):
             previous_prefetch_count=DEFAULT_PREVIOUS_PREFETCH_COUNT,
             page_changed_callback=lambda _index: self.save_reading_state(book.id, window),
             bookmark_callback=lambda page_index: self.add_bookmark(book.id, page_index),
+            bookmarks_provider=lambda: self.library.bookmarks.list_for_book(book.id),
+            bookmark_delete_callback=lambda bookmark_id: self.delete_bookmark(book.id, bookmark_id),
             next_book_callback=(lambda: self.open_next_book_from_window(book.id, window)) if next_book else None,
             next_book_label=next_book.title if next_book else None,
             close_callback=self.on_reader_closed,
@@ -1190,8 +1192,18 @@ class BookshelfWindow(QMainWindow):
         if book is not None:
             self.library.books.upsert(book.with_updates(reading_status="reading", last_opened_at=utc_now_iso()))
 
-    def add_bookmark(self, book_id: str, page_index: int) -> None:
+    def add_bookmark(self, book_id: str, page_index: int) -> bool:
+        if self.library.books.get(book_id) is None:
+            return False
+        if any(bookmark.page_index == page_index for bookmark in self.library.bookmarks.list_for_book(book_id)):
+            return False
         self.library.bookmarks.add(book_id, page_index, label=f"p.{page_index + 1}")
+        return True
+
+    def delete_bookmark(self, book_id: str, bookmark_id: str) -> bool:
+        if not any(bookmark.id == bookmark_id for bookmark in self.library.bookmarks.list_for_book(book_id)):
+            return False
+        return self.library.bookmarks.delete(bookmark_id)
 
     def closeEvent(self, event) -> None:
         if self.active_reader is not None:
