@@ -37,6 +37,19 @@ QWidget#readerRoot QLabel {
     background: transparent;
     border: 0;
 }
+QWidget#readerRoot QWidget#readingControlsOverlay QSpinBox {
+    color: #eef5f3;
+    background: #0b1320;
+    border: 1px solid #414b5c;
+    border-radius: 8px;
+    min-height: 32px;
+    padding: 6px 10px;
+    selection-background-color: #183d3b;
+    selection-color: #66d9c4;
+}
+QWidget#readerRoot QWidget#readingControlsOverlay QSpinBox:focus {
+    border: 2px solid #66d9c4;
+}
 QWidget#readerRoot QPushButton {
     color: #eef5f3;
     background: #252c36;

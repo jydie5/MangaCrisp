@@ -60,6 +60,7 @@ if PYSIDE_IMPORT_ERROR is None:
         QFileDialog,
         QHBoxLayout,
         QLabel,
+        QLineEdit,
         QListWidget,
         QListWidgetItem,
         QMainWindow,
@@ -72,7 +73,7 @@ if PYSIDE_IMPORT_ERROR is None:
         QWidget,
     )
 else:
-    QEvent = QItemSelectionModel = QTimer = QObject = QSize = Qt = Signal = QAction = QIcon = QApplication = QFileDialog = QComboBox = QHBoxLayout = QLabel = QListWidget = QListWidgetItem = QMessageBox = QMenu = QPushButton = QStackedWidget = QToolButton = QVBoxLayout = QWidget = None
+    QEvent = QItemSelectionModel = QTimer = QObject = QSize = Qt = Signal = QAction = QIcon = QApplication = QFileDialog = QComboBox = QHBoxLayout = QLabel = QListWidget = QListWidgetItem = QLineEdit = QMessageBox = QMenu = QPushButton = QStackedWidget = QToolButton = QVBoxLayout = QWidget = None
     QMainWindow = object
 
 
@@ -86,6 +87,11 @@ READING_STATUS_LABELS = {
     "reading": "読書中",
     "completed": "完了",
 }
+
+BOOK_SORT_TITLE = "title"
+BOOK_SORT_LAST_OPENED = "last_opened"
+BOOK_SORT_CREATED = "created"
+BookSnapshot = tuple[Book, ReadingState | None]
 
 
 def volume_badge(title: str) -> str:
@@ -134,11 +140,43 @@ def bookshelf_grid_label(book: Book, state: ReadingState | None) -> str:
     return "\n".join(lines)
 
 
+def _book_title_sort_key(book: Book) -> tuple:
+    return (natural_sort_key(book.title), natural_sort_key(str(Path(book.local_path).parent)), book.id)
+
+
 def books_in_folder_display_order(books: list[Book]) -> list[Book]:
-    return sorted(
-        books,
-        key=lambda book: (natural_sort_key(book.title), natural_sort_key(str(Path(book.local_path).parent)), book.id),
-    )
+    return sorted(books, key=_book_title_sort_key)
+
+
+def filter_books_for_discovery(
+    snapshot: list[BookSnapshot],
+    query: str = "",
+    sort_key: str = BOOK_SORT_TITLE,
+    recent_only: bool = False,
+) -> list[BookSnapshot]:
+    """Filter and sort a cached bookshelf snapshot without touching storage."""
+    normalized_query = query.strip().casefold()
+    entries = [
+        entry
+        for entry in snapshot
+        if (not normalized_query or normalized_query in entry[0].title.casefold())
+        and (not recent_only or entry[0].last_opened_at is not None)
+    ]
+    if sort_key == BOOK_SORT_LAST_OPENED:
+        entries.sort(key=lambda entry: _book_title_sort_key(entry[0]))
+        return sorted(
+            entries,
+            key=lambda entry: (entry[0].last_opened_at is not None, entry[0].last_opened_at or ""),
+            reverse=True,
+        )
+    if sort_key == BOOK_SORT_CREATED:
+        entries.sort(key=lambda entry: _book_title_sort_key(entry[0]))
+        return sorted(
+            entries,
+            key=lambda entry: (entry[0].created_at is not None, entry[0].created_at or ""),
+            reverse=True,
+        )
+    return sorted(entries, key=lambda entry: _book_title_sort_key(entry[0]))
 
 
 def next_book_after_reading(current_book_id: str, books: list[Book]) -> Book | None:
@@ -155,11 +193,11 @@ def reading_state_from_window(book_id: str, window: SpreadWindow) -> ReadingStat
     return ReadingState(
         book_id=book_id,
         page_index=window.index,
-        spread_mode="spread",
+        spread_mode=window.page_layout_mode,
         reading_direction=window.reading_direction,
         cover_single=window.cover_single,
         fit_mode="page",
-        correction_preset=window.current_quality_preset,
+        correction_preset=window.quality_preset_for_state,
     )
 
 
@@ -260,10 +298,44 @@ QWidget#bookshelfRoot QLabel#statusLabel {
 }
 QWidget#bookshelfRoot QWidget#librarySummaryCard,
 QWidget#bookshelfRoot QWidget#libraryInfoCard,
+QWidget#bookshelfRoot QWidget#discoveryBar,
 QWidget#bookshelfRoot QWidget#actionBar {
     background: #151f2e;
     border: 1px solid #26364a;
     border-radius: 14px;
+}
+QWidget#bookshelfRoot QWidget#discoveryBar QLabel {
+    color: #aeb8c2;
+    font-size: 13px;
+    font-weight: 600;
+}
+QWidget#bookshelfRoot QLineEdit#bookSearch,
+QWidget#bookshelfRoot QComboBox#bookSort {
+    background: #0b1320;
+    border: 1px solid #3b4d62;
+    border-radius: 9px;
+    color: #eef5f3;
+    min-height: 38px;
+    padding: 0 10px;
+}
+QWidget#bookshelfRoot QLineEdit#bookSearch:focus,
+QWidget#bookshelfRoot QComboBox#bookSort:focus {
+    border: 2px solid #66d9c4;
+}
+QWidget#bookshelfRoot QLineEdit#bookSearch::placeholder {
+    color: #778695;
+}
+QWidget#bookshelfRoot QComboBox#bookSort QAbstractItemView {
+    background: #151f2e;
+    border: 1px solid #3b4d62;
+    color: #eef5f3;
+    selection-background-color: #183d3b;
+    selection-color: #66d9c4;
+}
+QWidget#bookshelfRoot QPushButton#recentButton:checked {
+    background: #183d3b;
+    border-color: #66d9c4;
+    color: #66d9c4;
 }
 QWidget#bookshelfRoot QLabel#libraryCount {
     color: #66d9c4;
@@ -449,6 +521,15 @@ class BookshelfWindow(QMainWindow):
         self.register_total = 0
         self.register_done_count = 0
         self.register_running = False
+        self._book_snapshot: list[BookSnapshot] = []
+        self._book_icon_cache: dict[str, QIcon | None] = {}
+        self._book_icon_signatures: dict[str, tuple[str, int, int] | None] = {}
+        self._discovery_selected_ids: set[str] = set()
+        self._discovery_current_id: str | None = None
+        self._discovery_query = ""
+        self._discovery_sort = BOOK_SORT_TITLE
+        self._discovery_recent_only = False
+        self._updating_book_view = False
         self.signals = BookshelfSignals()
         self.signals.register_progress.connect(self.on_register_progress)
         self.signals.register_done.connect(self.on_register_done)
@@ -551,6 +632,41 @@ class BookshelfWindow(QMainWindow):
         info_layout.addWidget(self.open_library_button)
         layout.addWidget(info_card)
 
+        discovery_bar = QWidget(root)
+        discovery_bar.setObjectName("discoveryBar")
+        discovery_layout = QHBoxLayout(discovery_bar)
+        discovery_layout.setContentsMargins(10, 8, 10, 8)
+        discovery_layout.setSpacing(8)
+        search_label = QLabel(tr("検索"), discovery_bar)
+        discovery_layout.addWidget(search_label)
+        self.search_edit = QLineEdit(discovery_bar)
+        self.search_edit.setObjectName("bookSearch")
+        self.search_edit.setPlaceholderText(tr("タイトルを検索"))
+        self.search_edit.setClearButtonEnabled(True)
+        self.search_edit.textChanged.connect(self._on_search_text_changed)
+        discovery_layout.addWidget(self.search_edit, 1)
+        sort_label = QLabel(tr("並べ替え"), discovery_bar)
+        discovery_layout.addWidget(sort_label)
+        self.sort_combo = QComboBox(discovery_bar)
+        self.sort_combo.setObjectName("bookSort")
+        self.sort_combo.addItem(tr("タイトル順"), BOOK_SORT_TITLE)
+        self.sort_combo.addItem(tr("最終閲覧"), BOOK_SORT_LAST_OPENED)
+        self.sort_combo.addItem(tr("追加日"), BOOK_SORT_CREATED)
+        self.sort_combo.currentIndexChanged.connect(self._on_sort_changed)
+        discovery_layout.addWidget(self.sort_combo)
+        self.recent_button = QPushButton(tr("最近読んだ本"), discovery_bar)
+        self.recent_button.setObjectName("recentButton")
+        self.recent_button.setCheckable(True)
+        self.recent_button.setToolTip(tr("最近読んだ本だけを最終閲覧順で表示"))
+        self.recent_button.toggled.connect(self._on_recent_toggled)
+        discovery_layout.addWidget(self.recent_button)
+        layout.addWidget(discovery_bar)
+
+        self._book_view_timer = QTimer(self)
+        self._book_view_timer.setSingleShot(True)
+        self._book_view_timer.setInterval(150)
+        self._book_view_timer.timeout.connect(self._refresh_book_view)
+
         self.list_widget = QListWidget(root)
         self.list_widget.setObjectName("bookGrid")
         self.list_widget.setViewMode(QListWidget.IconMode)
@@ -618,25 +734,156 @@ class BookshelfWindow(QMainWindow):
         QTimer.singleShot(0, self.confirm_library_location_if_needed)
 
     def reload_books(self) -> None:
-        self.list_widget.clear()
-        books = books_in_folder_display_order(self.library.books.list_books())
-        for book in books:
-            state = self.library.reading_states.get(book.id)
-            item = QListWidgetItem(bookshelf_grid_label(book, state))
-            item.setToolTip(bookshelf_label(book, state))
-            item.setTextAlignment(Qt.AlignHCenter | Qt.AlignTop)
-            item.setSizeHint(QSize(190, 292))
-            if book.cover_thumbnail_path and Path(book.cover_thumbnail_path).exists():
-                item.setIcon(QIcon(book.cover_thumbnail_path))
-            item.setData(Qt.UserRole, book.id)
-            self.list_widget.addItem(item)
+        self._remember_visible_selection()
+        books = self.library.books.list_books()
+        book_ids = {book.id for book in books}
+        self._discovery_selected_ids.intersection_update(book_ids)
+        if self._discovery_current_id not in book_ids:
+            self._discovery_current_id = None
+        self._book_snapshot = [(book, self.library.reading_states.get(book.id)) for book in books]
+        self._refresh_book_icon_cache(books)
         self.library_location_label.setText(library_location_label(self.library.paths))
-        self.library_count_label.setText(tr("{count}冊 / タイトル昇順", count=len(books)))
+        self._refresh_book_view()
         self.status_label.clear()
+
+    def _refresh_book_icon_cache(self, books: list[Book]) -> None:
+        book_ids = {book.id for book in books}
+        for book_id in set(self._book_icon_cache) - book_ids:
+            self._book_icon_cache.pop(book_id, None)
+            self._book_icon_signatures.pop(book_id, None)
+        for book in books:
+            signature: tuple[str, int, int] | None = None
+            if book.cover_thumbnail_path:
+                cover_path = Path(book.cover_thumbnail_path).expanduser()
+                try:
+                    stat = cover_path.stat()
+                    if cover_path.is_file():
+                        signature = (str(cover_path), stat.st_mtime_ns, stat.st_size)
+                except OSError:
+                    signature = None
+            if self._book_icon_signatures.get(book.id) == signature and book.id in self._book_icon_cache:
+                continue
+            self._book_icon_signatures[book.id] = signature
+            self._book_icon_cache[book.id] = QIcon(str(signature[0])) if signature else None
+
+    def _on_search_text_changed(self, text: str) -> None:
+        self._discovery_query = text
+        self._book_view_timer.start()
+
+    def _on_sort_changed(self, _index: int) -> None:
+        if self._updating_book_view:
+            return
+        sort_key = self.sort_combo.currentData()
+        if sort_key in {BOOK_SORT_TITLE, BOOK_SORT_LAST_OPENED, BOOK_SORT_CREATED}:
+            self._discovery_sort = sort_key
+        self._book_view_timer.stop()
+        self._refresh_book_view()
+
+    def _on_recent_toggled(self, checked: bool) -> None:
+        if self._updating_book_view:
+            return
+        self._discovery_recent_only = checked
+        if checked:
+            self._set_sort_combo(BOOK_SORT_LAST_OPENED)
+            self.sort_combo.setEnabled(False)
+        else:
+            self.sort_combo.setEnabled(True)
+        self._book_view_timer.stop()
+        self._refresh_book_view()
+
+    def _set_sort_combo(self, sort_key: str) -> None:
+        index = self.sort_combo.findData(sort_key)
+        if index < 0 or self.sort_combo.currentIndex() == index:
+            self._discovery_sort = sort_key
+            return
+        self._updating_book_view = True
+        try:
+            self.sort_combo.setCurrentIndex(index)
+        finally:
+            self._updating_book_view = False
+        self._discovery_sort = sort_key
+
+    def _remember_visible_selection(self) -> None:
+        if self._updating_book_view or not hasattr(self, "list_widget"):
+            return
+        visible_ids = {
+            self.list_widget.item(row).data(Qt.UserRole)
+            for row in range(self.list_widget.count())
+            if self.list_widget.item(row) is not None
+        }
+        self._discovery_selected_ids.difference_update(visible_ids)
+        self._discovery_selected_ids.update(self.selected_book_ids())
+        current = self.list_widget.currentItem()
+        if current is not None:
+            self._discovery_current_id = current.data(Qt.UserRole)
+
+    def _discovery_sort_label(self) -> str:
+        return {
+            BOOK_SORT_TITLE: tr("タイトル順"),
+            BOOK_SORT_LAST_OPENED: tr("最終閲覧"),
+            BOOK_SORT_CREATED: tr("追加日"),
+        }.get(self._discovery_sort, tr("タイトル順"))
+
+    def _refresh_book_view(self) -> None:
+        if not hasattr(self, "list_widget"):
+            return
+        self._book_view_timer.stop()
+        self._remember_visible_selection()
+        entries = filter_books_for_discovery(
+            self._book_snapshot,
+            query=self._discovery_query,
+            sort_key=self._discovery_sort,
+            recent_only=self._discovery_recent_only,
+        )
+        visible_ids = {book.id for book, _state in entries}
+        self._updating_book_view = True
+        signals_were_blocked = self.list_widget.blockSignals(True)
+        try:
+            self.list_widget.clear()
+            for book, state in entries:
+                item = QListWidgetItem(bookshelf_grid_label(book, state))
+                item.setToolTip(bookshelf_label(book, state))
+                item.setTextAlignment(Qt.AlignHCenter | Qt.AlignTop)
+                item.setSizeHint(QSize(190, 292))
+                icon = self._book_icon_cache.get(book.id)
+                if icon is not None:
+                    item.setIcon(icon)
+                item.setData(Qt.UserRole, book.id)
+                self.list_widget.addItem(item)
+                item.setSelected(book.id in self._discovery_selected_ids)
+            current_item = None
+            if self._discovery_current_id in visible_ids:
+                for row in range(self.list_widget.count()):
+                    item = self.list_widget.item(row)
+                    if item is not None and item.data(Qt.UserRole) == self._discovery_current_id:
+                        current_item = item
+                        break
+            if current_item is not None:
+                self.list_widget.setCurrentItem(current_item, QItemSelectionModel.NoUpdate)
+        finally:
+            self.list_widget.blockSignals(signals_were_blocked)
+            self._updating_book_view = False
+        if (
+            not self._discovery_query.strip()
+            and not self._discovery_recent_only
+            and self._discovery_sort == BOOK_SORT_TITLE
+            and len(entries) == len(self._book_snapshot)
+        ):
+            self.library_count_label.setText(tr("{count}冊 / タイトル昇順", count=len(self._book_snapshot)))
+        else:
+            self.library_count_label.setText(
+                tr(
+                    "{visible}/{total}冊 / {sort}",
+                    visible=len(entries),
+                    total=len(self._book_snapshot),
+                    sort=self._discovery_sort_label(),
+                )
+            )
         self.update_action_states()
 
     def update_action_states(self) -> None:
         """Keep the primary and destructive actions clear when nothing is selected."""
+        self._remember_visible_selection()
         has_selection = bool(self.selected_book_ids())
         self.open_button.setEnabled(has_selection)
         self.delete_button.setEnabled(has_selection)
@@ -1060,6 +1307,10 @@ class BookshelfWindow(QMainWindow):
             except OSError:
                 removed = False
             (deleted if removed else failed).append(book.title)
+            if removed:
+                self._discovery_selected_ids.discard(book.id)
+                if self._discovery_current_id == book.id:
+                    self._discovery_current_id = None
         self.reload_books()
         self.status_label.setText(delete_outcome_message(deleted, failed))
 
@@ -1115,7 +1366,11 @@ class BookshelfWindow(QMainWindow):
             return
         state = self.library.reading_states.get(book.id)
         next_book = next_book_after_reading(book.id, self.library.books.list_books())
-        reading_direction = state.reading_direction if state else "rtl"
+        reading_direction = state.reading_direction if state and state.reading_direction in {"rtl", "ltr"} else "rtl"
+        cover_single = state.cover_single if state else True
+        initial_page_layout = state.spread_mode if state and state.spread_mode in {"spread", "single"} else "spread"
+        initial_page_index = state.page_index if state else 0
+        initial_quality_preset = state.correction_preset if state else None
         self.close_active_reader(return_to_bookshelf=False)
         window = SpreadWindow(
             pages,
@@ -1124,22 +1379,24 @@ class BookshelfWindow(QMainWindow):
             processed_pages=collect_processed_pages(pages, None),
             reading_direction=reading_direction,
             spread_order=default_spread_order(reading_direction),
-            cover_single=state.cover_single if state else True,
+            cover_single=cover_single,
             auto_prefetch=True,
             prefetch_count=DEFAULT_FORWARD_PREFETCH_COUNT,
             previous_prefetch_count=DEFAULT_PREVIOUS_PREFETCH_COUNT,
             page_changed_callback=lambda _index: self.save_reading_state(book.id, window),
             bookmark_callback=lambda page_index: self.add_bookmark(book.id, page_index),
+            bookmarks_provider=lambda: self.library.bookmarks.list_for_book(book.id),
+            bookmark_delete_callback=lambda bookmark_id: self.delete_bookmark(book.id, bookmark_id),
             next_book_callback=(lambda: self.open_next_book_from_window(book.id, window)) if next_book else None,
             next_book_label=next_book.title if next_book else None,
             close_callback=self.on_reader_closed,
             settings_path=self.library.paths.settings_path,
             embedded=True,
             parent=self.stack,
+            initial_page_index=initial_page_index,
+            initial_page_layout=initial_page_layout,
+            initial_quality_preset=initial_quality_preset,
         )
-        if state is not None:
-            window.index = min(max(0, state.page_index), len(pages) - 1)
-            window.render_spread()
         self.active_reader = window
         self.stack.addWidget(window)
         self.stack.setCurrentWidget(window)
@@ -1190,8 +1447,18 @@ class BookshelfWindow(QMainWindow):
         if book is not None:
             self.library.books.upsert(book.with_updates(reading_status="reading", last_opened_at=utc_now_iso()))
 
-    def add_bookmark(self, book_id: str, page_index: int) -> None:
+    def add_bookmark(self, book_id: str, page_index: int) -> bool:
+        if self.library.books.get(book_id) is None:
+            return False
+        if any(bookmark.page_index == page_index for bookmark in self.library.bookmarks.list_for_book(book_id)):
+            return False
         self.library.bookmarks.add(book_id, page_index, label=f"p.{page_index + 1}")
+        return True
+
+    def delete_bookmark(self, book_id: str, bookmark_id: str) -> bool:
+        if not any(bookmark.id == bookmark_id for bookmark in self.library.bookmarks.list_for_book(book_id)):
+            return False
+        return self.library.bookmarks.delete(bookmark_id)
 
     def closeEvent(self, event) -> None:
         if self.active_reader is not None:
