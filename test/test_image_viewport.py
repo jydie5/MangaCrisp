@@ -46,8 +46,9 @@ def test_viewport_keeps_existing_two_pane_fit_geometry(qapp) -> None:
         assert viewport.page_layout.spacing() == 0
         assert viewport.page_layout.count() == 2
         assert viewport.left.objectName() == viewport.right.objectName() == "pagePane"
-        assert viewport.left.minimumSize().width() == viewport.right.minimumSize().width() == 320
-        assert viewport.left.minimumSize().height() == viewport.right.minimumSize().height() == 320
+        assert viewport.minimumSize().width() == 640
+        assert viewport.minimumSize().height() == 320
+        assert viewport.left.minimumSize().isEmpty() and viewport.right.minimumSize().isEmpty()
         assert viewport.left.hasMouseTracking() and viewport.right.hasMouseTracking()
         assert viewport.left.width() == viewport.right.width()
 
@@ -57,6 +58,7 @@ def test_viewport_keeps_existing_two_pane_fit_geometry(qapp) -> None:
         viewport.set_spread_visible(False)
         qapp.processEvents()
         assert not viewport.right.isVisible()
+        assert viewport.minimumSize().width() == 320
         assert viewport.left.width() == viewport.width()
     finally:
         viewport.close()
