@@ -516,6 +516,7 @@ class SpreadWindow(QMainWindow):
         self.mouse_press_button = None
         self.mouse_press_global_position = None
         self.suppress_next_mouse_release = False
+        self.reading_page_input_dirty = False
         self.image_size_cache: dict[int, tuple[int, int]] = {}
         self.display_pixmap_cache: DisplayCache[tuple, QPixmap] = DisplayCache(capacity=18)
         self.pending_display_renders: dict[tuple, int] = {}
@@ -924,6 +925,28 @@ class SpreadWindow(QMainWindow):
         self.reading_progress = QProgressBar(self.reading_info_panel)
         self.reading_progress.setFixedHeight(18)
         layout.addWidget(self.reading_progress)
+        page_jump_row = QHBoxLayout()
+        page_label = QLabel(tr("ページ"), self.reading_info_panel)
+        page_jump_row.addWidget(page_label)
+        self.reading_page_spin = QSpinBox(self.reading_info_panel)
+        self.reading_page_spin.setRange(1, max(1, len(self.pages)))
+        self.reading_page_spin.setKeyboardTracking(False)
+        self.reading_page_spin.setMinimumWidth(92)
+        self.reading_page_spin.setAccessibleName(tr("ページ番号"))
+        self.reading_page_spin.setToolTip(tr("ページ番号を入力して移動"))
+        page_label.setBuddy(self.reading_page_spin)
+        page_line_edit = self.reading_page_spin.lineEdit()
+        if page_line_edit is not None:
+            page_line_edit.textEdited.connect(self.mark_page_jump_input_dirty)
+            page_line_edit.returnPressed.connect(self.confirm_page_jump)
+        self.reading_page_spin.valueChanged.connect(self.mark_page_jump_value_dirty)
+        page_jump_row.addWidget(self.reading_page_spin, 1)
+        self.reading_page_jump_button = QPushButton(tr("移動"), self.reading_info_panel)
+        self.reading_page_jump_button.setAccessibleName(tr("ページ番号を入力して移動"))
+        self.reading_page_jump_button.setToolTip(tr("ページ番号を入力して移動"))
+        self.reading_page_jump_button.clicked.connect(self.confirm_page_jump)
+        page_jump_row.addWidget(self.reading_page_jump_button)
+        layout.addLayout(page_jump_row)
         grid = QGridLayout()
         grid.setSpacing(8)
         navigation = ("next", "previous", "forward_one", "back_one") if self.is_right_bound() else ("previous", "next", "back_one", "forward_one")
@@ -944,9 +967,67 @@ class SpreadWindow(QMainWindow):
         self.reading_info_panel.setCursor(Qt.ArrowCursor)
 
     def dismiss_reading_overlay(self) -> None:
+        self.cancel_page_jump_input()
         self.reading_info_visible = False
         self.reading_info_panel.hide()
         self.setFocus(Qt.OtherFocusReason)
+
+    def mark_page_jump_input_dirty(self, _text: str) -> None:
+        self.reading_page_input_dirty = True
+
+    def mark_page_jump_value_dirty(self, _value: int) -> None:
+        self.reading_page_input_dirty = True
+
+    def sync_page_jump_spin(self, page_number: int) -> None:
+        signals_were_blocked = self.reading_page_spin.blockSignals(True)
+        try:
+            self.reading_page_spin.setValue(page_number)
+            line_edit = self.reading_page_spin.lineEdit()
+            if line_edit is not None:
+                line_edit.setText(self.reading_page_spin.text())
+        finally:
+            self.reading_page_spin.blockSignals(signals_were_blocked)
+
+    def cancel_page_jump_input(self) -> None:
+        if not hasattr(self, "reading_page_spin"):
+            return
+        current_page = min(max(self.index + 1, 1), max(1, len(self.pages)))
+        self.reading_page_input_dirty = False
+        self.sync_page_jump_spin(current_page)
+
+    def confirm_page_jump(self) -> bool:
+        if not self.pages or not hasattr(self, "reading_page_spin"):
+            return False
+        self.reading_page_spin.interpretText()
+        return self.jump_to_page(self.reading_page_spin.value())
+
+    def jump_to_page(self, page_number: int) -> bool:
+        """Move to a one-based physical page without changing its meaning by RTL."""
+        if (
+            isinstance(page_number, bool)
+            or not isinstance(page_number, int)
+            or page_number < 1
+            or page_number > len(self.pages)
+        ):
+            return False
+        target_index = page_number - 1
+        if self.page_layout_mode == "spread":
+            target_index = standard_spread_index(target_index, self.cover_single)
+        if target_index == self.index:
+            self.reading_page_input_dirty = False
+            self.update_reading_info()
+            return True
+        self.reading_page_input_dirty = False
+        self.clear_queued_visible_requests()
+        self.index = target_index
+        self.invalidate_prefetch_for_navigation()
+        self.render_spread()
+        self.request_prefetch()
+        self.record_correction_miss()
+        self.notify_page_changed()
+        self.update_spread_status()
+        self.update_next_book_action()
+        return True
 
     def update_reader_action_states(self) -> None:
         if not hasattr(self, "original_check"):
@@ -2073,6 +2154,9 @@ class SpreadWindow(QMainWindow):
         value = visible_indexes[-1] + 1 if visible_indexes else 0
         self.reading_progress.setValue(value)
         self.reading_progress.setFormat(page_text)
+        if hasattr(self, "reading_page_spin") and not self.reading_page_input_dirty:
+            current_page = min(max(self.index + 1, 1), max(1, len(self.pages)))
+            self.sync_page_jump_spin(current_page)
 
     def is_at_end(self) -> bool:
         visible_indexes = self.visible_page_indexes()

@@ -17,6 +17,10 @@ _active_language = "en"
 
 
 ENGLISH_TRANSLATIONS = {
+    "ページ": "Page",
+    "ページ番号": "Page number",
+    "移動": "Go",
+    "ページ番号を入力して移動": "Enter a page number to jump",
     "未読": "Unread",
     "読書中": "Reading",
     "完了": "Completed",
