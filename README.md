@@ -350,6 +350,33 @@ reading positions are preserved.
 
 ## Build from source
 
+### Unreleased source status
+
+The following status applies to source development and does not update the
+downloadable releases or existing release screenshots. F03-F06 are integrated
+in `main`; F07/#70 and F08/#71 remain draft PRs awaiting lead verification.
+See the [next-features handover](docs/development/next-features-handover.md)
+for the current boundary.
+
+- **F03 — Bookshelf discovery:** Search titles and sort by natural title,
+  last opened, or added order. **Recently read** uses last-opened descending order.
+- **F04 — Physical page jump:** Jump by physical page number while preserving
+  right/left binding and spread boundaries.
+- **F05 — Bookmarks:** `B` adds the current page; `Shift+B` opens the list for
+  jump and delete. The same book/page is not added twice.
+- **F06 — Per-book reading state:** Layout and quality settings are restored per
+  book. `O` original/enhanced comparison remains a temporary reader action.
+- **F07 / #70 — Viewport draft:** `+` / `-`, `0` fit, `W` width, `1` actual
+  size, `Ctrl`/`Meta` + wheel, and drag-to-pan are implemented in the draft,
+  pending lead verification and main integration.
+- **F08 / #71 — Page overview draft:** `T` requests visible thumbnails only;
+  it does not create source PNGs, extract the whole archive, or run AI correction.
+  The thumbnail LRU is 16 MiB and offscreen icons are released. Implementation
+  is complete, but the draft awaits lead verification and main integration.
+- **F13 / #72 — EPUB Stage A:** The probe inspects metadata only. EPUB is not
+  readable yet because the UI, importer, factory, and page source are unconnected.
+  See the [EPUB Stage A handover](docs/development/epub-probe-handover.md).
+
 ```bash
 git clone https://github.com/jydie5/MangaCrisp.git
 cd MangaCrisp

@@ -14,15 +14,18 @@
 | main統合済み | #62 | 補正ライフサイクル回帰（F09） |
 | main統合済み | #63 | 本棚検索・ソート・最近読んだ本（F03） |
 | main統合済み | #64 | ページ番号ジャンプ（F04） |
-| CI検証中 | #65 | 実装済みのしおり管理（F05）をCIで検証中 |
-| Draft・先行PR検証待ち | #66 | 本ごとの読書状態復元（F06） |
-| Draft・先行PR検証待ち | #68 | ビューポート境界 |
-| Draft・検証中 | #70 | ズーム・パン・幅/全体合わせ・実寸（F07） |
-| native green・最終再検証待ち | #67 | macOS同梱エンジン監査CI |
-| native green・最終再検証待ち | #69 | Linux clean install CI |
+| main統合済み・3OS native pass | #65 | 実装済みのしおり管理（F05） |
+| main統合済み・3OS native pass | #66 | 本ごとの読書状態復元（F06） |
+| ready・3OS CI中（Win残り、Mac/Linux pass） | #68 | ビューポート境界 |
+| Draft・先行PR検証待ち | #70 | ズーム・パン・幅/全体合わせ・実寸（F07） |
+| Draft・先行PR検証待ち | #71 | 可視ページ一覧・遅延サムネイル（F08、実装完了） |
+| ready・native CI中 | #72 | F13 Stage A EPUBメタデータprobe（読書接続なし） |
+| native初回green・最新M1main再検証中 | #67 | macOS同梱エンジン監査CI |
+| native初回green・最新M1main再検証中 | #69 | Linux clean install CI |
 
-「CI検証中」「Draft・先行PR検証待ち」「native green」は、公開リリースの完了を意味しません。最終のsourceと
-対象OSの作業ツリーを突き合わせてから、親PRの検証結果を更新してください。
+「Draft・先行PR検証待ち」「ready・native CI中」「native初回green・最新M1main再検証中」は、
+公開リリースや既存binary更新の完了を意味しません。最終のsourceと対象OSの作業ツリーを突き合わせてから、
+親PRの検証結果を更新してください。
 
 ## 利用者から見える現在の操作
 
@@ -50,7 +53,7 @@
 
 ## F07の実装仕様と未統合部分
 
-#70 Draftで検証中です。仕様は実装済みですがmainへ未統合で、#68のビューポート境界も
+#70 Draft・先行PR検証待ちです。仕様は実装済みですがmainへ未統合で、#68のビューポート境界も
 先行PRの検証待ちです。
 
 - `+` / `-`: 拡大・縮小
@@ -64,8 +67,13 @@
 元画像をQImageへ読み込む全体ピークはこの上限の対象外であり、制限済みとは報告しない。
 ズームとパンはDBへ保存しない。補正キャッシュのキーやAI実行と、画面だけの表示変換を混ぜない。
 
-F08の遅延サムネイルは未着手である。サムネイル一覧を開いただけで大冊PDFの全ページ描画や
-AI補正を起こさないことを受入条件にする。
+## F08（#71 Draft・先行PR検証待ち）
+
+実装は完了しているが、#71は先行PRの検証待ちでmainへ未統合である。`T`でページoverviewを開き、
+visible範囲だけを要求する。画面外のsource PNG生成、archive全体extract、AI補正を起こさず、
+thumbnail LRUは16MiB、offscreen iconは解放する。ページ一覧を開いただけで大冊PDFを全ページ描画しない。
+overview選択からの物理ページjump、キャンセル、close後のworker停止を対象OSで確認する。
+PR #71の記録では全suiteが355 passed / 9 skipped / 12 subtests、target testsは21ケース。
 
 ## 検証手順
 
@@ -77,6 +85,22 @@ PySide6 6.11.1、Qt offscreenで、初回表示は1回測定して320ms、検索
 約8,000件検索296ms（最大301ms）、解除353ms（最大359ms）、最終閲覧順197ms（最大202ms）
 だった。検索中の本一覧/reading state/directory size追加取得は各0回、アイコンキャッシュは
 10,000件で固定だった。これは条件付きの判断材料であり、他OSや個人ライブラリの性能保証ではない。
+
+F07の合成画像測定は、macOS 27.0.1 arm64、Python 3.13.6、Qt 6.11.1、offscreen、
+3200×4800 RGB 4枚、`auto_prefetch=False`、0.25/1/2/4/8倍→W→actualと前後往復で行った。
+8倍時は6件・191.92MiB（201,242,592 bytes）で、192MiB（201,326,592 bytes）のcache単体target内だった。
+復帰時にcacheは増えず再利用した。DPR-aware表示上限は約8.4MP（8×1024²画素）。
+別processの`resource.ru_maxrss`は745.6MiB、paint後754.5MiBだったが、元QImage全読込・同時decode・
+表示cacheを含むprocess全体peakであり、source単体の値ではない。192MiBはcache単体の保護targetで、
+一時超過を許容しprocess全体を制限しない。QImageReader target decode、worker同時数、長時間計測はF24へ残す。
+
+## F13 Stage A（PR #72 ready・native CI中）
+
+PR #72のStage Aは純Pythonのmetadata/manifest/spine probeだけである。UI、importer、factory、cover、
+page sourceは未接続で、EPUBを読める機能として案内しない。`content_profile`は構造上の候補ヒントであり、
+対応形式の保証ではない。native CIは提出済みで検証中。詳細なAPI、4分類error、URI/XML/ZIP境界、
+Stage Bのdirect-image lazy source→cover/importer→XHTML/SVG段階は
+[EPUB Stage A引き継ぎ](epub-probe-handover.md)を参照する。
 
 ## Windows担当
 
@@ -97,9 +121,10 @@ stdout/stderrと依存状態を証跡にする。既存のLinux移植方針と�
 
 ## 残課題と境界
 
-- #70の検証完了とmain統合、入力競合、高DPI、表示メモリピークの検証。
-- F08遅延サムネイルとページ一覧。
-- #67/#69の最終source再検証。macOS CIは署名・公証を、Linux CIは実GPU・実デスクトップを保証しない。
+- #70の先行PR検証とmain統合、入力競合、高DPI、表示メモリピークの検証。
+- #71の先行PR検証とmain統合、overview選択・キャンセル・可視範囲の確認。
+- #72のnative CI検証とStage B設計。EPUBの読書接続は後続で、現時点のStage Aを読書対応と宣伝しない。
+- #68のWindows CI。#67/#69は最新M1mainで再検証中。macOS CIは署名・公証を、Linux CIは実GPU・実デスクトップを保証しない。
 - F12の署名・公証・各GPU/操作ゲート。
 - F13 Comic EPUB、続いてF22 OPDS。EPUBのspine順、拒否条件、秘密や取得の境界を先に確定する。
 - F14以降の読了フィルター、export/restore、メタデータ、再リンク、Webtoon、キー割当などは

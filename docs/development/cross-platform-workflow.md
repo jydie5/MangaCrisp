@@ -27,6 +27,10 @@ Platform handover checkpoints are maintained in:
 - `docs/development/linux-port-plan.ja.md` (Linux port history and plan)
 - `docs/development/ux-maintenance-handover.md` (macOS-first reader/bookshelf UX
   changes awaiting Windows and Linux verification)
+- `docs/development/next-features-handover.md` (unreleased shared feature status
+  and Windows/Linux verification boundary)
+- `docs/development/epub-probe-handover.md` (F13 Stage A metadata probe and
+  staged Comic EPUB integration boundary)
 
 Read the receiving platform's handover before continuing work after the other
 platform has moved shared code forward.

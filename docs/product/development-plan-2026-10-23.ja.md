@@ -328,12 +328,14 @@ PR番号は作業の追跡用であり、公開リリースの完了やstable判
 | main統合済み | #62 | F09: 補正ライフサイクルの回帰検証を追加 |
 | main統合済み | #63 | F03: 本棚のタイトル検索、自然順を含むソート、最近読んだ本、選択復元 |
 | main統合済み | #64 | F04: ページ番号ジャンプを読書画面へ接続 |
-| CI検証中 | #65 | F05: しおり機能の実装済み部分をCIで検証中 |
-| Draft・先行PR検証待ち | #66 | F06: 本ごとの読書状態保存・復元 |
-| Draft・先行PR検証待ち | #68 | ビューポート境界の導入 |
-| Draft・検証中 | #70 | F07: ズーム・パン・幅/全体合わせ・実寸 |
-| native green・最終再検証待ち | #67 | F10: macOS同梱エンジンのbuild / audit / 展開後smoke |
-| native green・最終再検証待ち | #69 | F11: Linux clean installのtar / container検証 |
+| main統合済み・3OS native pass | #65 | F05: しおり機能 |
+| main統合済み・3OS native pass | #66 | F06: 本ごとの読書状態保存・復元 |
+| ready・3OS CI中（Win残り、Mac/Linux pass） | #68 | ビューポート境界の導入 |
+| Draft・先行PR検証待ち | #70 | F07: ズーム・パン・幅/全体合わせ・実寸 |
+| Draft・先行PR検証待ち | #71 | F08: 可視ページ一覧・遅延サムネイル（実装完了） |
+| ready・native CI中 | #72 | F13 Stage A: EPUBメタデータprobe（読書接続なし） |
+| native初回green・最新M1main再検証中 | #67 | F10: macOS同梱エンジンのbuild / audit / 展開後smoke |
+| native初回green・最新M1main再検証中 | #69 | F11: Linux clean installのtar / container検証 |
 
 ### F03の測定結果
 
@@ -358,15 +360,33 @@ PR番号は作業の追跡用であり、公開リリースの完了やstable判
 
 ### 表示基盤と配布検証の境界
 
-F07は#70 Draftで検証中であり、仕様は実装済みだがmainへ未統合である。入力は`+` / `-`、
+F07は#70 Draft・先行PR検証待ちであり、仕様は実装済みだがmainへ未統合である。入力は`+` / `-`、
 CtrlまたはMetaを押したホイール、`0`（全体合わせ）、`W`（幅合わせ）、`1`（実寸）、
 ドラッグによるパン。表示デコードはDPRを考慮した約8.4MP（8×1024²画素）上限と192MiBの
 LRUを実装するが、元画像をQImageへ読み込む全体ピークは制限しない。ズームとパンはDBへ保存しない。
-#68のビューポート境界もDraft・先行PR検証待ちとして扱う。
+#68はready・3OS CI中（Mac/Linux pass、Win残り）として扱う。
 
-F08（遅延サムネイル）は未着手。#67と#69のCIは同梱・展開・監査・clean installの
+F07の合成画像測定は、macOS 27.0.1 arm64 / Python 3.13.6 / Qt 6.11.1 / offscreen、
+3200×4800 RGB 4枚、`auto_prefetch=False`、0.25/1/2/4/8倍→W→actualと前後往復で実施した。
+8倍時の表示cacheは6件・191.92MiB（201,242,592 bytes）で、192MiB（201,326,592 bytes）の
+cache単体target内だった。復帰時は増量せず再利用し、DPR-aware表示上限は約8.4MP（8×1024²画素）。
+別processの`resource.ru_maxrss`は745.6MiB（paint後754.5MiB）だったが、元QImage全読込・同時decode・
+表示cacheを含むprocess全体peakであり、source単体の値ではない。192MiBはcache単体の保護targetで、
+一時超過を許容しprocess全体を制限しない。QImageReader target decode、worker同時数、長時間計測はF24へ残す。
+
+F08は#71 Draft・先行PR検証待ちだが実装完了。`T`でoverviewを開き、可視範囲だけを要求する。
+画面外のsource PNG生成・全体extract・AI補正を起こさず、thumbnail LRUは16MiB、offscreen iconは解放する。
+全suiteは355 passed / 9 skipped / 12 subtests、target testsは21ケース。#67と#69のCIは同梱・展開・監査・clean installの
 証跡を作るためのもので、Developer ID署名、公証、実GPU、Wayland/X11の実デスクトップ
 合格を保証しない。これらは対象OSのnative buildと実機ゲートで別に確認する。
+
+F13の#72はready・native CI中。Stage Aは純PythonのEPUB metadata/manifest/spine検査だけで、
+UI/importer/factory/page sourceへ未接続であり、EPUB読書対応を宣伝しない。PR記録では全suite
+329 passed / 9 skipped / 12 subtests、EPUB probe 21 passed、target Ruff pass。詳細は
+[EPUB Stage A引き継ぎ](../development/epub-probe-handover.md)を参照する。
+
+公開リリースや既存binaryはこの進捗で更新していない。#67/#69はnative初回green後、最新M1mainで
+再検証中で、mergeは後続判断とする。
 
 次の受入手順とWindows/Linux担当への作業境界は、
 [未リリースmain引き継ぎ](../development/next-features-handover.md)にまとめる。

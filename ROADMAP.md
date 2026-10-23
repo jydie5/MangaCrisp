@@ -19,19 +19,28 @@
 | main統合済み | #59 / #60 | Linux履歴のprivacy整理、計画と導入リンク |
 | main統合済み | #61 / #62 | PDF cache注入、補正ライフサイクル回帰 |
 | main統合済み | #63 / #64 | 本棚の検索・ソート・最近読んだ本、ページジャンプ |
-| CI検証中 | #65 | 実装済みのしおり管理をCIで検証中 |
-| Draft・先行PR検証待ち | #66 / #68 | 読書状態復元、ビューポート境界 |
-| Draft・検証中 | #70 | F07のズーム・パン・幅/全体合わせ・実寸 |
-| native green・最終再検証待ち | #67 / #69 | macOS同梱エンジン監査、Linux clean install |
+| main統合済み・3OS native pass | #65 / #66 | しおり管理、読書状態復元 |
+| ready・3OS CI中（Win残り、Mac/Linux pass） | #68 | ビューポート境界 |
+| Draft・先行PR検証待ち | #70 | F07のズーム・パン・幅/全体合わせ・実寸 |
+| Draft・先行PR検証待ち | #71 | F08の可視ページ一覧・遅延サムネイル |
+| ready・native CI中 | #72 | F13 Stage A EPUBメタデータprobe（読書接続なし） |
+| native初回green・最新M1main再検証中 | #67 / #69 | macOS同梱エンジン監査、Linux clean install |
 
-F07は#70 Draft・検証中で、仕様は実装済みですがmainへ未統合です（`+` / `-`、CtrlまたはMeta
+F07は#70 Draft・先行PR検証待ちで、仕様は実装済みですがmainへ未統合です（`+` / `-`、CtrlまたはMeta
 ホイール、`0`全体、`W`幅、`1`実寸、ドラッグパン）。表示デコードはDPR-awareの約8.4MP（8×1024²画素）
 上限と192MiB LRUを実装し、元画像QImage読込の全体ピークを制限せず、
-ズーム/パンをDBへ保存しない前提で評価します。F08の遅延サムネイルは未着手です。
+ズーム/パンをDBへ保存しない前提で評価します。F08は#71 Draft・先行PR検証待ちですが実装済みで、
+`T`のページ一覧は表示範囲だけを要求し、source PNG生成・全体展開・AI補正を起こしません。
+サムネイルLRUは16MiB、画面外アイコンは解放します。
 macOS/Linuxの配布CIは署名・公証・実GPU・実デスクトップの合格を保証しません。
+
+F13の#72はStage Aの検査のみです。EPUBのUI/importer/factory/page sourceは未接続で、
+「EPUBが読める」という公開案内はしません。#67/#69は最新M1mainで再検証中で、mergeは後続です。
+公開リリースや既存binaryはこの進捗によって更新していません。
 
 現在のmainをWindows/Linuxで確認する手順と、未リリース機能の操作境界は
 [次期機能引き継ぎ](docs/development/next-features-handover.md)を参照してください。
+[EPUB Stage A引き継ぎ](docs/development/epub-probe-handover.md)も参照してください。
 
 ## P0: 画質設定を分かりやすくする
 
