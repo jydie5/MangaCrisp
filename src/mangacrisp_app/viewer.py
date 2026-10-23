@@ -86,6 +86,7 @@ try:
         QWidget,
     )
 
+    from mangacrisp_app.image_viewport import SpreadViewport
     from mangacrisp_app.reader_widgets import (
         READER_STYLE_SHEET,
         ChoiceButton,
@@ -98,6 +99,7 @@ except ImportError as exc:
     QEvent = QObject = QRunnable = QSize = QThreadPool = QTimer = Qt = Signal = QCursor = QImage = QPixmap = None
     QApplication = QCheckBox = QComboBox = QDialog = QFormLayout = None
     QHBoxLayout = QInputDialog = QLabel = QMessageBox = QProgressBar = QPushButton = QScrollArea = QSpinBox = QVBoxLayout = QWidget = QFileDialog = None
+    SpreadViewport = None
     QMainWindow = object
     PYSIDE_IMPORT_ERROR = exc
 
@@ -617,23 +619,16 @@ class SpreadWindow(QMainWindow):
         )
         self.next_book_banner.setVisible(False)
         self.next_book_banner.setCursor(Qt.ArrowCursor)
-        layout = QHBoxLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-        self.page_layout = layout
-        self.left = QLabel(alignment=Qt.AlignCenter)
-        self.right = QLabel(alignment=Qt.AlignCenter)
-        self.left.setObjectName("pagePane")
-        self.right.setObjectName("pagePane")
-        self.left.setMinimumSize(320, 320)
-        self.right.setMinimumSize(320, 320)
-        self.left.setMouseTracking(True)
-        self.right.setMouseTracking(True)
-        layout.addWidget(self.left, 1)
-        layout.addWidget(self.right, 1)
+        self.viewport = SpreadViewport(image_host)
+        self.page_layout = self.viewport.page_layout
+        # Keep the established pane attributes as compatibility aliases for
+        # rendering, input filters and extension code while the viewport owns
+        # only their geometry.
+        self.left = self.viewport.left
+        self.right = self.viewport.right
         self.left.installEventFilter(self)
         self.right.installEventFilter(self)
-        image_host_layout.addLayout(layout, 1)
+        image_host_layout.addWidget(self.viewport, 1)
         self.build_reading_overlay(image_host)
         root_layout.addWidget(image_host, 1)
         self.controls_panel = self.build_controls()
@@ -1114,7 +1109,7 @@ class SpreadWindow(QMainWindow):
     def _sync_initial_page_layout_controls(self) -> None:
         """Reflect the constructor layout choice without scheduling a render."""
         mode = self.page_layout_mode
-        self.right.setVisible(mode == "spread")
+        self.viewport.set_spread_visible(mode == "spread")
         for button in (
             self.shift_back_button,
             self.shift_forward_button,
@@ -1661,9 +1656,7 @@ class SpreadWindow(QMainWindow):
         self.page_layout_mode = mode
         if mode == "spread":
             self.index = standard_spread_index(self.index, self.cover_single)
-        self.right.setVisible(mode == "spread")
-        self.page_layout.invalidate()
-        self.page_layout.activate()
+        self.viewport.set_spread_visible(mode == "spread")
         for button in (
             self.shift_back_button,
             self.shift_forward_button,
@@ -1842,7 +1835,11 @@ class SpreadWindow(QMainWindow):
         if hasattr(self, "image_host") and QCursor is not None:
             local = self.image_host.mapFromGlobal(QCursor.pos())
             child = self.image_host.childAt(local)
-            pointer_over_overlay = child is not None and child not in {self.left, self.right}
+            pointer_over_overlay = child is not None and child not in {
+                self.left,
+                self.right,
+                self.viewport,
+            }
         return CursorAutoHideState(
             fullscreen=self.is_fullscreen,
             window_active=window.isActiveWindow(),
@@ -1955,16 +1952,16 @@ class SpreadWindow(QMainWindow):
 
     def update_page_pane_alignment(self, left_index: int, right_index: int) -> None:
         if self.page_layout_mode == "single":
-            self.left.setAlignment(Qt.AlignCenter)
-            self.right.setAlignment(Qt.AlignCenter)
+            self.viewport.set_pane_alignments(Qt.AlignCenter, Qt.AlignCenter)
             return
         is_pair = 0 <= left_index < len(self.pages) and 0 <= right_index < len(self.pages)
         if is_pair:
-            self.left.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-            self.right.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+            self.viewport.set_pane_alignments(
+                Qt.AlignRight | Qt.AlignVCenter,
+                Qt.AlignLeft | Qt.AlignVCenter,
+            )
             return
-        self.left.setAlignment(Qt.AlignCenter)
-        self.right.setAlignment(Qt.AlignCenter)
+        self.viewport.set_pane_alignments(Qt.AlignCenter, Qt.AlignCenter)
 
     def render_label(self, label: QLabel, index: int, high_quality: bool = True) -> None:
         if index < 0 or index >= len(self.pages):
