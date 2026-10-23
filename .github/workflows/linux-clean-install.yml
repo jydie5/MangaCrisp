@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - ".github/workflows/linux-clean-install.yml"
+      - ".github/workflows/linux-ci.yml"
       - "scripts/build_linux_app.py"
       - "scripts/fetch_*_linux.py"
       - "packaging/linux/**"
@@ -18,7 +19,9 @@ on:
       - "demo/**"
       - "src/mangacrisp_app/archive_utils.py"
       - "src/mangacrisp_app/engine_utils.py"
-      - "src/mangacrisp_app/platform/**"
+      - "src/mangacrisp_app/platform/*linux*.py"
+      - "src/mangacrisp_app/platform/__init__.py"
+      - "src/mangacrisp_app/platform/common.py"
   workflow_dispatch:
 
 concurrency:
@@ -137,9 +140,9 @@ jobs:
           log_path="$RUNNER_TEMP/mangacrisp-clean-${{ matrix.name }}.log"
           set +e
           packaging/linux/validate-clean-ubuntu.sh "$archive_path" "${{ matrix.image }}" 2>&1 | tee "$log_path"
-          status=${PIPESTATUS[0]}
+          validation_exit_code=${PIPESTATUS[0]}
           set -e
-          exit "$status"
+          exit "$validation_exit_code"
 
       - name: Upload clean validation logs
         if: always()
