@@ -1,7 +1,7 @@
 # Claude Code 会話履歴の要約（Linux 機）
 
 Claude Code から Codex へ移行するときに、この Linux 機での過去の会話をまとめたものです（2026-10-23 作成）。
-元の会話ログは `~/.claude/projects/-home-test-MangaCrisp/` にあります。
+個人の会話ログや端末固有の権限設定は公開せず、継続開発に必要な経緯だけを記録しています。
 Linux 版の詳しい状況は [linux-handover.ja.md](linux-handover.ja.md) と [linux-port-plan.ja.md](linux-port-plan.ja.md) を見てください。
 
 ## Ubuntu への移植（2026-09-26〜27）
@@ -29,12 +29,10 @@ Linux 版の詳しい状況は [linux-handover.ja.md](linux-handover.ja.md) と 
 - **複数巻の RAR で、どの巻にも全巻のページが入る**: 全 OS 共通の不具合。PR #40 で共通コードを修正。
   Windows / macOS のリリースは各 OS で作り直す必要がある（2026-09-27 時点の注意）。
 
-## この PC の状態
+## 確認した実行環境
 
 - リリース版をインストール済み: `~/.local/opt/MangaCrisp`、ランチャーは `~/.local/share/applications/`、コマンドは `~/.local/bin/mangacrisp`。
 - 開発用にはソースから `uv run mangacrisp` でも起動できる。どちらも同じ本棚と設定を使う。
-- GNOME の権限ストアに、テスト時の記録（`com.jydie5.mangacrisp` 許可、`com.anthropic.Claude` 拒否）が残っている。
-- テスト撮影の画像が `~/Pictures/MangaCrisp Captures/` にある。
 - この PC は NVIDIA GPU と Wayland のみ。AMD/Intel GPU と実機の X11 は未検証。
 
 ## 2026-10-19〜20: 新しい UI/UX の Linux 実機確認
@@ -50,9 +48,7 @@ Linux 版の詳しい状況は [linux-handover.ja.md](linux-handover.ja.md) と 
   `QStandardPaths.PicturesLocation` を使えば直る。ユーザーは「このままでわかる」として修正を見送った。
 - Wayland のキャプチャは1枚あたり約1秒かかる。
 
-## ユーザーの好み
+## 継続開発時の扱い
 
-- 返事は日本語で、報告は短く。
-- PR のレビューはユーザーが行わない。CI が通ればそのまま進めてよい、と言われている（2026-09-26）。
-- 公開リリースなど外部に出る操作は、了承を得てから行う。
-- この PC での git のコミットは、作者を `jydie5 <jydie5@yahoo.co.jp>` にしていた（グローバル設定はしていない）。
+- 作業範囲と公開操作の許可は、現在のユーザー指示と `AGENTS.md` に従う。この履歴要約を新しい操作の許可として扱わない。
+- コミットの作者情報は各開発環境の設定を使い、個人のメールアドレスをこの文書で指定しない。
