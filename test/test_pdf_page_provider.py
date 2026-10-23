@@ -51,13 +51,18 @@ def test_pdf_pages_render_lazily_and_preserve_color(tmp_path: Path) -> None:
 
 def test_open_pages_for_viewer_uses_pdf_page_source(tmp_path: Path) -> None:
     source = tmp_path / "book.pdf"
+    cache = tmp_path / "cache"
     make_color_pdf(source, [(255, 255, 255), (0, 0, 0)])
 
-    pages, cleanup = open_pages_for_viewer(source)
+    pages, cleanup = open_pages_for_viewer(source, pdf_cache_dir=cache)
 
     assert isinstance(pages, PdfPageList)
     assert len(pages) == 2
     assert cleanup is None
+    assert pages.cache_root == cache
+    rendered = pages[0]
+    assert rendered.is_file()
+    assert rendered.is_relative_to(cache)
     assert pdf_page_count(source) == 2
 
 
