@@ -325,14 +325,20 @@ class LazyZipPageList(Sequence[Path]):
 
     def page_stem(self, index: int) -> str:
         """Return the extracted member filename stem without extracting it."""
+        return self.extraction_path(index).stem
+
+    def extraction_path(self, index: int) -> Path:
+        """Return an index-isolated extraction path without touching the filesystem."""
         if index < 0:
             index += len(self)
         if index < 0 or index >= len(self):
             raise IndexError(index)
-        output = archive_member_output_path(self.temp_dir, self.members[index].filename)
+        member = self.members[index]
+        private_dir = self.temp_dir / f".page-{index:06d}"
+        output = archive_member_output_path(private_dir, member.filename)
         if output is None:
-            raise RuntimeError(f"unsafe archive member: {self.members[index].filename}")
-        return output.stem
+            raise RuntimeError(f"unsafe archive member: {member.filename}")
+        return output
 
     def materialize(self, index: int) -> Path:
         if index < 0:
@@ -347,9 +353,7 @@ class LazyZipPageList(Sequence[Path]):
                 self.extracted.pop(index, None)
 
             member = self.members[index]
-            output = archive_member_output_path(self.temp_dir, member.filename)
-            if output is None:
-                raise RuntimeError(f"unsafe archive member: {member.filename}")
+            output = self.extraction_path(index)
             output.parent.mkdir(parents=True, exist_ok=True)
             with (
                 zipfile.ZipFile(self.archive_path) as archive,
