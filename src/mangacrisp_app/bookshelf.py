@@ -193,11 +193,11 @@ def reading_state_from_window(book_id: str, window: SpreadWindow) -> ReadingStat
     return ReadingState(
         book_id=book_id,
         page_index=window.index,
-        spread_mode="spread",
+        spread_mode=window.page_layout_mode,
         reading_direction=window.reading_direction,
         cover_single=window.cover_single,
         fit_mode="page",
-        correction_preset=window.current_quality_preset,
+        correction_preset=window.quality_preset_for_state,
     )
 
 
@@ -1366,7 +1366,11 @@ class BookshelfWindow(QMainWindow):
             return
         state = self.library.reading_states.get(book.id)
         next_book = next_book_after_reading(book.id, self.library.books.list_books())
-        reading_direction = state.reading_direction if state else "rtl"
+        reading_direction = state.reading_direction if state and state.reading_direction in {"rtl", "ltr"} else "rtl"
+        cover_single = state.cover_single if state else True
+        initial_page_layout = state.spread_mode if state and state.spread_mode in {"spread", "single"} else "spread"
+        initial_page_index = state.page_index if state else 0
+        initial_quality_preset = state.correction_preset if state else None
         self.close_active_reader(return_to_bookshelf=False)
         window = SpreadWindow(
             pages,
@@ -1375,22 +1379,24 @@ class BookshelfWindow(QMainWindow):
             processed_pages=collect_processed_pages(pages, None),
             reading_direction=reading_direction,
             spread_order=default_spread_order(reading_direction),
-            cover_single=state.cover_single if state else True,
+            cover_single=cover_single,
             auto_prefetch=True,
             prefetch_count=DEFAULT_FORWARD_PREFETCH_COUNT,
             previous_prefetch_count=DEFAULT_PREVIOUS_PREFETCH_COUNT,
             page_changed_callback=lambda _index: self.save_reading_state(book.id, window),
             bookmark_callback=lambda page_index: self.add_bookmark(book.id, page_index),
+            bookmarks_provider=lambda: self.library.bookmarks.list_for_book(book.id),
+            bookmark_delete_callback=lambda bookmark_id: self.delete_bookmark(book.id, bookmark_id),
             next_book_callback=(lambda: self.open_next_book_from_window(book.id, window)) if next_book else None,
             next_book_label=next_book.title if next_book else None,
             close_callback=self.on_reader_closed,
             settings_path=self.library.paths.settings_path,
             embedded=True,
             parent=self.stack,
+            initial_page_index=initial_page_index,
+            initial_page_layout=initial_page_layout,
+            initial_quality_preset=initial_quality_preset,
         )
-        if state is not None:
-            window.index = min(max(0, state.page_index), len(pages) - 1)
-            window.render_spread()
         self.active_reader = window
         self.stack.addWidget(window)
         self.stack.setCurrentWidget(window)
@@ -1441,8 +1447,18 @@ class BookshelfWindow(QMainWindow):
         if book is not None:
             self.library.books.upsert(book.with_updates(reading_status="reading", last_opened_at=utc_now_iso()))
 
-    def add_bookmark(self, book_id: str, page_index: int) -> None:
+    def add_bookmark(self, book_id: str, page_index: int) -> bool:
+        if self.library.books.get(book_id) is None:
+            return False
+        if any(bookmark.page_index == page_index for bookmark in self.library.bookmarks.list_for_book(book_id)):
+            return False
         self.library.bookmarks.add(book_id, page_index, label=f"p.{page_index + 1}")
+        return True
+
+    def delete_bookmark(self, book_id: str, bookmark_id: str) -> bool:
+        if not any(bookmark.id == bookmark_id for bookmark in self.library.bookmarks.list_for_book(book_id)):
+            return False
+        return self.library.bookmarks.delete(bookmark_id)
 
     def closeEvent(self, event) -> None:
         if self.active_reader is not None:
