@@ -6,7 +6,8 @@
 
 [現行実装・競合比較・残タスク28件・PR単位の計画](docs/product/development-plan-2026-10-23.ja.md)を追加しました。
 直近の推奨順は、配布導線/テスト隔離 → 本棚検索・ページジャンプ・しおり管理・状態復元 →
-ズーム/パンと遅延サムネイルです。次の形式追加は従来どおりComic EPUB、続いてOPDSとします。
+ズーム/パンと遅延サムネイルでした。これらはmacOS beta 0.7.1b0.4へ収録します。次の形式追加は
+従来どおりComic EPUB、続いてOPDSとします。
 各OSのstable向け検証・署名は独立して並行します。下記の履歴にある完了項目を再実装する計画ではありません。
 
 ## 2026-10-23の実行状況
@@ -20,23 +21,22 @@
 | main統合済み | #61 / #62 | PDF cache注入、補正ライフサイクル回帰 |
 | main統合済み | #63 / #64 | 本棚の検索・ソート・最近読んだ本、ページジャンプ |
 | main統合済み・3OS native pass | #65 / #66 | しおり管理、読書状態復元 |
-| ready・3OS CI中（Win残り、Mac/Linux pass） | #68 | ビューポート境界 |
-| Draft・先行PR検証待ち | #70 | F07のズーム・パン・幅/全体合わせ・実寸 |
-| Draft・先行PR検証待ち | #71 | F08の可視ページ一覧・遅延サムネイル |
-| ready・native CI中 | #72 | F13 Stage A EPUBメタデータprobe（読書接続なし） |
-| native初回green・最新M1main再検証中 | #67 / #69 | macOS同梱エンジン監査、Linux clean install |
+| main統合済み | #68 / #70 | ビューポート境界、F07のズーム・パン・幅/全体合わせ・実寸 |
+| main統合済み | #74 | 処理済みページ探索の遅延化、ZIP物理ページごとの展開先分離 |
+| macOS beta 0.7.1b0.4収録 | #71 | F08の可視ページ一覧・遅延サムネイル |
+| 今回の配布対象外 | #72 | F13 Stage A EPUBメタデータprobe（読書接続なし） |
+| 未統合のCI整備 | #67 / #69 | macOS同梱エンジン監査、Linux clean install |
 
-F07は#70 Draft・先行PR検証待ちで、仕様は実装済みですがmainへ未統合です（`+` / `-`、CtrlまたはMeta
-ホイール、`0`全体、`W`幅、`1`実寸、ドラッグパン）。表示デコードはDPR-awareの約8.4MP（8×1024²画素）
+F07は`+` / `-`、CtrlまたはMetaホイール、`0`全体、`W`幅、`1`実寸、ドラッグパンを提供します。表示デコードはDPR-awareの約8.4MP（8×1024²画素）
 上限と192MiB LRUを実装し、元画像QImage読込の全体ピークを制限せず、
-ズーム/パンをDBへ保存しない前提で評価します。F08は#71 Draft・先行PR検証待ちですが実装済みで、
-`T`のページ一覧は表示範囲だけを要求し、source PNG生成・全体展開・AI補正を起こしません。
+ズーム/パンをDBへ保存しない前提で評価します。F08の`T`ページ一覧は表示範囲だけを要求し、
+source PNG生成・全体展開・AI補正を起こしません。
 サムネイルLRUは16MiB、画面外アイコンは解放します。
 macOS/Linuxの配布CIは署名・公証・実GPU・実デスクトップの合格を保証しません。
 
-F13の#72はStage Aの検査のみです。EPUBのUI/importer/factory/page sourceは未接続で、
-「EPUBが読める」という公開案内はしません。#67/#69は最新M1mainで再検証中で、mergeは後続です。
-公開リリースや既存binaryはこの進捗によって更新していません。
+F13の#72はStage Aの検査のみで、今回のmacOS betaへは収録しません。EPUBのUI/importer/factory/page sourceは未接続で、
+「EPUBが読める」という公開案内はしません。#67/#69はCI整備として未統合です。
+Windows/Linuxの既存binaryはこのmacOSリリースによって更新していません。
 
 現在のmainをWindows/Linuxで確認する手順と、未リリース機能の操作境界は
 [次期機能引き継ぎ](docs/development/next-features-handover.md)を参照してください。

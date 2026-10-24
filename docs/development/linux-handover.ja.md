@@ -2,6 +2,20 @@
 
 [English](linux-handover.md)
 
+## macOS beta 0.7.1b0.4からの受け取り（2026-10-24）
+
+現行のApple Silicon配布版は
+[`macos-beta-0.7.1b0.4`](../releases/macos-beta-0.7.1b0.4.md)です。共通の本棚検索、
+物理ページ番号ジャンプ、しおり、本ごとの状態、ズーム／パン、遅延ページ一覧、処理済みページ探索と
+ZIP展開先分離を含みます。Comic EPUB読書は含みません。
+
+既存Linux previewは今回更新していません。新しいmacOS版と同等と表記せず、Linux更新の前に最新の
+`origin/main`をUbuntuでbuildし、sourceとpackageの結果を分けて記録してください。WaylandとX11、
+fractional scaling、Ctrl＋ホイール、ドラッグパン、`T`一覧の選択／キャンセル／終了、実GPU、
+portal／captureを確認します。macOSの367成功・8スキップ・12 subtestsと一般的なmacOS受入は
+Linuxの受入証跡ではありません。[次期機能引き継ぎ](next-features-handover.md)と
+[共通UX引き継ぎ](ux-maintenance-handover.ja.md)を読んでから統合してください。
+
 ## 現行共通ソースのチェックポイント: PR #53/#54（35f2936、mainはd7bbf50、2026-10-20）
 
 現行Linux previewと今後のネイティブ検証は、このチェックポイントを使用します。現行の共通ソースには

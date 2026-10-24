@@ -4,6 +4,28 @@ This document is the starting point for continuing MangaCrisp on a Windows PC.
 The Windows version must preserve the completed macOS product behavior rather
 than become a separate implementation.
 
+## Incoming macOS beta 0.7.1b0.4 checkpoint (2026-10-24)
+
+The current Apple Silicon download is
+[`macos-beta-0.7.1b0.4`](../releases/macos-beta-0.7.1b0.4.md). It introduces
+shared bookshelf discovery, physical page jumps, bookmarks, per-book state
+restoration, zoom/pan, page overview, and lazy processed-page lookup with
+ZIP-page isolation. It does not introduce Comic EPUB reading.
+
+Do not describe the existing Windows preview as containing these additions.
+Before publishing a Windows update, merge the current `origin/main`, build on
+Windows, and record the portable-package smoke result separately from source
+tests. Use redistributable demo material and check high-DPI scaling, `Ctrl` +
+wheel zoom, keyboard focus in inputs, drag-pan without page turns, `T` overview
+open/select/cancel, and Intel/AMD/NVIDIA GPU behavior. The macOS suite result
+of 367 passed / 8 skipped / 12 subtests and the general macOS user acceptance
+are not Windows evidence.
+
+The release remains ad-hoc signed and not notarized on macOS. Windows signing,
+clean-account validation, and Intel/AMD engine-matched evidence remain separate
+Windows release gates. See [next-features handover](next-features-handover.md)
+and [shared UX handover](ux-maintenance-handover.md).
+
 ## Product baseline
 
 The macOS beta is the behavioral reference:

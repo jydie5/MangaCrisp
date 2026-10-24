@@ -6,7 +6,24 @@ Windows側の作業がPR #27まで先行したあと、macOSでMangaCrisp開発�
 引き継ぎです。Macでは必ず最新の`origin/main`から続けてください。古いMac側チェックアウトで
 共有ファイルを上書きしてはいけません。
 
-## 現在の配布チェックポイント（2026-10-20）
+## 現在の配布チェックポイント（2026-10-24）
+
+Apple Silicon向け
+[`macos-beta-0.7.1b0.4`](../releases/macos-beta-0.7.1b0.4.md)が現行のmacOS配布版です。
+作業ツリーのSHAではなくrelease tagをソース参照とします。本棚検索、物理ページ番号ジャンプ、
+しおり、本ごとの読書状態復元、ズーム／パン、遅延ページ一覧、処理済みページ探索の遅延化と
+ZIP展開先の物理ページ単位分離を収録します。Comic EPUBは含みません。
+
+macOSの統合共有suiteは**367成功、8スキップ、12 subtests成功**でした。Apple Siliconのローカル候補は
+配布監査、起動smoke、対話UI確認を通過し、利用者はおおむね問題ないと確認しています。配布版は
+ad-hoc署名のみで、Developer ID署名・notarizationは未実施です。
+
+Windows／Linuxのダウンロード配布物はこのmacOSリリースで更新していません。将来の各OS版は対象OSでbuildし、
+高DPI入力、Windows／LinuxのCtrl＋ホイール、実GPU、LinuxのWayland／X11を記録してください。
+作業は最新の`origin/main`から開始し、[次期機能引き継ぎ](next-features-handover.md)と
+[共通UX引き継ぎ](ux-maintenance-handover.ja.md)を読んでください。
+
+## 前回の配布チェックポイント（2026-10-20）
 
 Apple Silicon向け`macos-beta-0.7.1b0.3`を、PR #53/#54を統合した`main`から公開しました。
 本棚・読書設定・中央操作パネル・H/?ヘルプのUI/UX更新と、補正・キャッシュの修正を含みます。

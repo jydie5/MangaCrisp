@@ -1,4 +1,4 @@
-# 次期機能引き継ぎ（未リリース main）
+# 次期機能引き継ぎ（macOS beta 0.7.1b0.4後）
 
 この文書は、現在の `main` をWindows/Linux担当が検証・継続実装するための作業メモです。
 配布済みのstableやpreviewの操作保証を更新する文書ではありません。各OSの配布物は対象OSで
@@ -16,16 +16,16 @@
 | main統合済み | #64 | ページ番号ジャンプ（F04） |
 | main統合済み・3OS native pass | #65 | 実装済みのしおり管理（F05） |
 | main統合済み・3OS native pass | #66 | 本ごとの読書状態復元（F06） |
-| ready・3OS CI中（Win残り、Mac/Linux pass） | #68 | ビューポート境界 |
-| Draft・先行PR検証待ち | #70 | ズーム・パン・幅/全体合わせ・実寸（F07） |
-| Draft・先行PR検証待ち | #71 | 可視ページ一覧・遅延サムネイル（F08、実装完了） |
-| ready・native CI中 | #72 | F13 Stage A EPUBメタデータprobe（読書接続なし） |
-| native初回green・最新M1main再検証中 | #67 | macOS同梱エンジン監査CI |
-| native初回green・最新M1main再検証中 | #69 | Linux clean install CI |
+| main統合済み | #68 | ビューポート境界 |
+| main統合済み | #70 | ズーム・パン・幅/全体合わせ・実寸（F07） |
+| main統合済み | #74 | 処理済みページ探索の遅延化、ZIP物理ページごとの展開先分離 |
+| macOS beta 0.7.1b0.4の対象・Windows CI確認待ち | #71 | 可視ページ一覧・遅延サムネイル（F08） |
+| 今回の配布対象外 | #72 | F13 Stage A EPUBメタデータprobe（読書接続なし） |
+| 未統合のCI整備 | #67 | macOS同梱エンジン監査CI |
+| 未統合のCI整備 | #69 | Linux clean install CI |
 
-「Draft・先行PR検証待ち」「ready・native CI中」「native初回green・最新M1main再検証中」は、
-公開リリースや既存binary更新の完了を意味しません。最終のsourceと対象OSの作業ツリーを突き合わせてから、
-親PRの検証結果を更新してください。
+Windows/Linuxの既存ダウンロードはこのmacOS betaによって更新されません。各OSの更新を公開する場合は、
+対象OSで新しい`main`からbuildし、ここに記した未確認事項を実機で記録してください。
 
 ## 利用者から見える現在の操作
 
@@ -51,10 +51,9 @@
 - 中央操作ペイン、キー表示、Esc、モーダル外クリックの既存UI契約を壊さない。下バーを
   常設の操作表へ戻さない。
 
-## F07の実装仕様と未統合部分
+## F07の実装仕様
 
-#70 Draft・先行PR検証待ちです。仕様は実装済みですがmainへ未統合で、#68のビューポート境界も
-先行PRの検証待ちです。
+#70と#68はmainへ統合済みです。macOS beta 0.7.1b0.4に含めます。
 
 - `+` / `-`: 拡大・縮小
 - Ctrl（Windows/Linux）またはMeta（macOS）+ホイール: 倍率変更
@@ -67,13 +66,13 @@
 元画像をQImageへ読み込む全体ピークはこの上限の対象外であり、制限済みとは報告しない。
 ズームとパンはDBへ保存しない。補正キャッシュのキーやAI実行と、画面だけの表示変換を混ぜない。
 
-## F08（#71 Draft・先行PR検証待ち）
+## F08（#71、macOS beta 0.7.1b0.4の対象）
 
-実装は完了しているが、#71は先行PRの検証待ちでmainへ未統合である。`T`でページoverviewを開き、
+`T`でページoverviewを開き、
 visible範囲だけを要求する。画面外のsource PNG生成、archive全体extract、AI補正を起こさず、
 thumbnail LRUは16MiB、offscreen iconは解放する。ページ一覧を開いただけで大冊PDFを全ページ描画しない。
 overview選択からの物理ページjump、キャンセル、close後のworker停止を対象OSで確認する。
-PR #71の記録では全suiteが355 passed / 9 skipped / 12 subtests、target testsは21ケース。
+macOSとLinuxのsource/package CIは通過しているが、Windows engine/build確認は別途完了させる。
 
 ## 検証手順
 
@@ -94,18 +93,18 @@ F07の合成画像測定は、macOS 27.0.1 arm64、Python 3.13.6、Qt 6.11.1、o
 表示cacheを含むprocess全体peakであり、source単体の値ではない。192MiBはcache単体の保護targetで、
 一時超過を許容しprocess全体を制限しない。QImageReader target decode、worker同時数、長時間計測はF24へ残す。
 
-## F13 Stage A（PR #72 ready・native CI中）
+## F13 Stage A（PR #72、今回の配布対象外）
 
 PR #72のStage Aは純Pythonのmetadata/manifest/spine probeだけである。UI、importer、factory、cover、
 page sourceは未接続で、EPUBを読める機能として案内しない。`content_profile`は構造上の候補ヒントであり、
-対応形式の保証ではない。native CIは提出済みで検証中。詳細なAPI、4分類error、URI/XML/ZIP境界、
+対応形式の保証ではない。詳細なAPI、4分類error、URI/XML/ZIP境界、
 Stage Bのdirect-image lazy source→cover/importer→XHTML/SVG段階は
 [EPUB Stage A引き継ぎ](epub-probe-handover.md)を参照する。
 
 ## Windows担当
 
 Windowsでは対象OS上で配布物を作り、クリーンな利用者環境で本棚検索、ページジャンプ、
-しおり、読書状態復元を順に確認する。F07を試す場合はDPI変更、見開き、右綴じ/左綴じ、
+しおり、読書状態復元、F08ページ一覧を順に確認する。F07を試す場合はDPI変更、見開き、右綴じ/左綴じ、
 ドラッグ中の誤ページ送り、Ctrl+ホイールを確認し、Intel/AMD/NVIDIAの実GPU結果を混同しない。
 開発ツールの有無、入力フォーカス、H/?ヘルプと中央ペインのキー表示も確認対象にする。
 既存のWindows手順は [windows-handover.md](windows-handover.md) と
@@ -113,18 +112,17 @@ Windowsでは対象OS上で配布物を作り、クリーンな利用者環境�
 
 ## Linux担当
 
-F11はUbuntu 24.04/26.04のclean install、tar展開、CPU/Vulkan/RARのsmoke、uninstallを
-自動確認する。CIの成功だけでGLib/gvfs警告、Wayland/X11、portal、倍率、実GPUの受入を
+Linuxでは新しいmainからpackageをbuildする場合、Ubuntu 24.04/26.04のclean install、tar展開、CPU/Vulkan/RARのsmoke、uninstallを
+確認する。CIの成功だけでGLib/gvfs警告、Wayland/X11、portal、倍率、実GPUの受入を
 宣言しない。これらは対象OSの実機でログを残して確認する。警告を環境変数で隠さず、再現時の
 stdout/stderrと依存状態を証跡にする。既存のLinux移植方針と引き継ぎは
 [linux-port-plan.ja.md](linux-port-plan.ja.md) と [linux-handover.md](linux-handover.md) を読む。
 
 ## 残課題と境界
 
-- #70の先行PR検証とmain統合、入力競合、高DPI、表示メモリピークの検証。
-- #71の先行PR検証とmain統合、overview選択・キャンセル・可視範囲の確認。
-- #72のnative CI検証とStage B設計。EPUBの読書接続は後続で、現時点のStage Aを読書対応と宣伝しない。
-- #68のWindows CI。#67/#69は最新M1mainで再検証中。macOS CIは署名・公証を、Linux CIは実GPU・実デスクトップを保証しない。
+- #71のWindows native CI、overview選択・キャンセル・可視範囲の確認。
+- #72のStage B設計。EPUBの読書接続は後続で、現時点のStage Aを読書対応と宣伝しない。
+- #67/#69はCI整備として未統合。macOS CIは署名・公証を、Linux CIは実GPU・実デスクトップを保証しない。
 - F12の署名・公証・各GPU/操作ゲート。
 - F13 Comic EPUB、続いてF22 OPDS。EPUBのspine順、拒否条件、秘密や取得の境界を先に確定する。
 - F14以降の読了フィルター、export/restore、メタデータ、再リンク、Webtoon、キー割当などは

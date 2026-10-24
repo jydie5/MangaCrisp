@@ -54,14 +54,14 @@ AI機能の有無だけを独自性とはしない。競合の公式ドキュメ
 | AI補正・原画比較 | 実装済み | 4つの簡単モード、詳細設定、設定プリセットあり |
 | 先読み・補正/表示キャッシュ | 実装済み | 可変先読み、世代判定、見開き同時切替、保存上限、破損出力対策あり |
 | 中央操作パネル・H/?ヘルプ | 実装済み | キー表示、Esc / 外側クリック、全画面でも操作可能 |
-| 読書位置 | 実装済み | ページ番号を保存。表示設定一式の復元は未完 |
-| 本ごとの読書設定 | 部分実装 | DBにfit / zoom / pan / 補正preset等の欄があるがUIとの接続が不完全 |
-| しおり | 部分実装 | Bで追加、DBに一覧/削除APIあり。管理画面とジャンプはない |
+| 読書位置 | 実装済み | ページ番号を保存。本ごとのレイアウト・綴じ方向・表紙・補正presetも初回描画前に復元 |
+| 本ごとの読書設定 | 実装済み | レイアウト・綴じ方向・表紙・補正presetを初回描画前に復元。zoom / panは表示だけで保存しない |
+| しおり | 実装済み | Bで追加、Shift+Bで現在の本の一覧、移動、削除。重複追加しない |
 | 読了・読書中ビュー | 部分実装 | 読書中状態・日時はある。読了操作、状態フィルター、専用ビューはない |
-| 検索・並べ替え | 未実装 | タイトルの自然順が基本。検索欄や並べ替え選択がない |
-| ページ番号ジャンプ | 未実装 | 進捗バーは表示用。番号入力やドラッグ移動はない |
-| ページサムネイル | 未実装 | PDFを全ページ描画しない遅延方式で追加する必要がある |
-| ズーム・パン・幅合わせ・実寸 | 未実装 | 現状はQLabelへの画面内フィット。可変ビューポートはない |
+| 検索・並べ替え | 実装済み | タイトル検索、自然順／最終閲覧／追加順、「最近読んだ本」の最終閲覧降順 |
+| ページ番号ジャンプ | 実装済み | 物理ページ番号を入力して見開き規則を維持したまま移動 |
+| ページサムネイル | 実装済み | 表示範囲の近くだけを遅延生成し、PDF全ページ描画やAI補正を起こさない |
+| ズーム・パン・幅合わせ・実寸 | 実装済み | + / -、全体、幅、実寸、Ctrl/Meta＋ホイール、ドラッグパン。zoom/panは保存しない |
 | 連続縦スクロール / Webtoon | 未実装 | 単ページ表示はあるが連続スクロールとは異なる |
 | 回転・余白カット・色調整 | 未実装 | 表示変換として追加する候補。AI原画/キャッシュは別管理にする |
 | 読書キーの割当変更 | 未実装 | 読書操作のキーは固定。キャプチャ用のOS別設定とは別機能 |
@@ -330,10 +330,11 @@ PR番号は作業の追跡用であり、公開リリースの完了やstable判
 | main統合済み | #64 | F04: ページ番号ジャンプを読書画面へ接続 |
 | main統合済み・3OS native pass | #65 | F05: しおり機能 |
 | main統合済み・3OS native pass | #66 | F06: 本ごとの読書状態保存・復元 |
-| ready・3OS CI中（Win残り、Mac/Linux pass） | #68 | ビューポート境界の導入 |
-| Draft・先行PR検証待ち | #70 | F07: ズーム・パン・幅/全体合わせ・実寸 |
-| Draft・先行PR検証待ち | #71 | F08: 可視ページ一覧・遅延サムネイル（実装完了） |
-| ready・native CI中 | #72 | F13 Stage A: EPUBメタデータprobe（読書接続なし） |
+| main統合済み | #68 | ビューポート境界の導入 |
+| main統合済み | #70 | F07: ズーム・パン・幅/全体合わせ・実寸 |
+| main統合済み | #74 | 処理済みページ探索の遅延化、ZIP物理ページごとの展開先分離 |
+| macOS beta 0.7.1b0.4収録 | #71 | F08: 可視ページ一覧・遅延サムネイル |
+| 今回の配布対象外 | #72 | F13 Stage A: EPUBメタデータprobe（読書接続なし） |
 | native初回green・最新M1main再検証中 | #67 | F10: macOS同梱エンジンのbuild / audit / 展開後smoke |
 | native初回green・最新M1main再検証中 | #69 | F11: Linux clean installのtar / container検証 |
 
@@ -360,11 +361,11 @@ PR番号は作業の追跡用であり、公開リリースの完了やstable判
 
 ### 表示基盤と配布検証の境界
 
-F07は#70 Draft・先行PR検証待ちであり、仕様は実装済みだがmainへ未統合である。入力は`+` / `-`、
+F07は`+` / `-`、
 CtrlまたはMetaを押したホイール、`0`（全体合わせ）、`W`（幅合わせ）、`1`（実寸）、
 ドラッグによるパン。表示デコードはDPRを考慮した約8.4MP（8×1024²画素）上限と192MiBの
 LRUを実装するが、元画像をQImageへ読み込む全体ピークは制限しない。ズームとパンはDBへ保存しない。
-#68はready・3OS CI中（Mac/Linux pass、Win残り）として扱う。
+#68はmain統合済みであり、#70のズーム／パン表示基盤として使う。
 
 F07の合成画像測定は、macOS 27.0.1 arm64 / Python 3.13.6 / Qt 6.11.1 / offscreen、
 3200×4800 RGB 4枚、`auto_prefetch=False`、0.25/1/2/4/8倍→W→actualと前後往復で実施した。
@@ -374,19 +375,19 @@ cache単体target内だった。復帰時は増量せず再利用し、DPR-aware
 表示cacheを含むprocess全体peakであり、source単体の値ではない。192MiBはcache単体の保護targetで、
 一時超過を許容しprocess全体を制限しない。QImageReader target decode、worker同時数、長時間計測はF24へ残す。
 
-F08は#71 Draft・先行PR検証待ちだが実装完了。`T`でoverviewを開き、可視範囲だけを要求する。
+F08はmacOS beta 0.7.1b0.4へ収録し、`T`でoverviewを開いて可視範囲だけを要求する。
 画面外のsource PNG生成・全体extract・AI補正を起こさず、thumbnail LRUは16MiB、offscreen iconは解放する。
 全suiteは355 passed / 9 skipped / 12 subtests、target testsは21ケース。#67と#69のCIは同梱・展開・監査・clean installの
 証跡を作るためのもので、Developer ID署名、公証、実GPU、Wayland/X11の実デスクトップ
 合格を保証しない。これらは対象OSのnative buildと実機ゲートで別に確認する。
 
-F13の#72はready・native CI中。Stage Aは純PythonのEPUB metadata/manifest/spine検査だけで、
+F13の#72は今回の配布対象外。Stage Aは純PythonのEPUB metadata/manifest/spine検査だけで、
 UI/importer/factory/page sourceへ未接続であり、EPUB読書対応を宣伝しない。PR記録では全suite
 329 passed / 9 skipped / 12 subtests、EPUB probe 21 passed、target Ruff pass。詳細は
 [EPUB Stage A引き継ぎ](../development/epub-probe-handover.md)を参照する。
 
-公開リリースや既存binaryはこの進捗で更新していない。#67/#69はnative初回green後、最新M1mainで
-再検証中で、mergeは後続判断とする。
+Windows/Linuxの既存binaryはこのmacOSリリースで更新していない。#67/#69はnative初回green後、
+CI整備として未統合である。
 
 次の受入手順とWindows/Linux担当への作業境界は、
-[未リリースmain引き継ぎ](../development/next-features-handover.md)にまとめる。
+[次期機能引き継ぎ](../development/next-features-handover.md)にまとめる。

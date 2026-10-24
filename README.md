@@ -19,6 +19,8 @@ of the original RAIV project and now follows its own product direction.
 
 ![On-demand translucent reading controls with shortcut badges](docs/images/reader-controls.png)
 
+![Lazy page overview opened from the reader](docs/images/page-overview.png)
+
 <details>
 <summary>Reading settings and shortcut help</summary>
 
@@ -50,13 +52,12 @@ Trust only funding links published in this repository.
 
 The standalone build does not require Python, uv, or Terminal.
 
-### [Download MangaCrisp for macOS (Apple Silicon) — Beta 0.7.1b0.3](https://github.com/jydie5/MangaCrisp/releases/download/macos-beta-0.7.1b0.3/MangaCrisp-v0.7.1b0.3-macos-apple-silicon-standalone.zip)
+### [Download MangaCrisp for macOS (Apple Silicon) — Beta 0.7.1b0.4](https://github.com/jydie5/MangaCrisp/releases/download/macos-beta-0.7.1b0.4/MangaCrisp-v0.7.1b0.4-macos-apple-silicon-standalone.zip)
 
-This macOS beta refreshes the bookshelf, reading settings, and shortcut help.
-Center-click controls show navigation and keyboard shortcuts on demand. It also
-fixes false colors in high-quality correction and improves cache reuse during
-forward/back movement. See the
-[release notes](docs/releases/macos-beta-0.7.1b0.3.md).
+This macOS beta adds bookshelf search and sorting, physical page jumps,
+bookmarks, per-book settings restoration, zoom/pan controls, and a lazy page
+overview. It also keeps processed-page lookup lazy and isolates ZIP extraction
+by physical page. See the [release notes](docs/releases/macos-beta-0.7.1b0.4.md).
 
 1. Download the standalone ZIP from the link above.
 2. Unzip it and move `MangaCrisp.app` to Applications.
@@ -350,13 +351,12 @@ reading positions are preserved.
 
 ## Build from source
 
-### Unreleased source status
+### Current source and macOS beta status
 
-The following status applies to source development and does not update the
-downloadable releases or existing release screenshots. F03-F06 are integrated
-in `main`; F07/#70 and F08/#71 remain draft PRs awaiting lead verification.
-See the [next-features handover](docs/development/next-features-handover.md)
-for the current boundary.
+The following describes the current shared source and the macOS beta. Windows
+and Linux downloads above are unchanged. See the
+[next-features handover](docs/development/next-features-handover.md) for their
+target-OS verification work.
 
 - **F03 — Bookshelf discovery:** Search titles and sort by natural title,
   last opened, or added order. **Recently read** uses last-opened descending order.
@@ -366,13 +366,11 @@ for the current boundary.
   jump and delete. The same book/page is not added twice.
 - **F06 — Per-book reading state:** Layout and quality settings are restored per
   book. `O` original/enhanced comparison remains a temporary reader action.
-- **F07 / #70 — Viewport draft:** `+` / `-`, `0` fit, `W` width, `1` actual
-  size, `Ctrl`/`Meta` + wheel, and drag-to-pan are implemented in the draft,
-  pending lead verification and main integration.
-- **F08 / #71 — Page overview draft:** `T` requests visible thumbnails only;
-  it does not create source PNGs, extract the whole archive, or run AI correction.
-  The thumbnail LRU is 16 MiB and offscreen icons are released. Implementation
-  is complete, but the draft awaits lead verification and main integration.
+- **F07 — Viewport:** `+` / `-`, `0` fit, `W` width, `1` actual size,
+  `Ctrl`/`Meta` + wheel, and drag-to-pan. Zoom/pan are not saved per book.
+- **F08 — Page overview:** `T` requests visible thumbnails only; it does not
+  create source PNGs, extract the whole archive, or run AI correction. The
+  thumbnail-image LRU is 16 MiB and offscreen icons are released.
 - **F13 / #72 — EPUB Stage A:** The probe inspects metadata only. EPUB is not
   readable yet because the UI, importer, factory, and page source are unconnected.
   See the [EPUB Stage A handover](docs/development/epub-probe-handover.md).

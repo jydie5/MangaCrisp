@@ -7,7 +7,30 @@ the Windows work merged through PR #27. The receiving Mac must continue from
 the current `origin/main`; it must not restore an older macOS checkout over the
 shared files.
 
-## Current published checkpoint (2026-10-20)
+## Current published checkpoint (2026-10-24)
+
+Apple Silicon beta
+[`macos-beta-0.7.1b0.4`](../releases/macos-beta-0.7.1b0.4.md) is the current
+macOS download. Its release tag, rather than a copied working-tree SHA, is the
+authoritative source reference. It adds bookshelf discovery, physical page
+jumps, bookmarks, per-book reading-state restoration, zoom/pan, a lazy page
+overview, and lazy processed-page/isolated ZIP extraction fixes. Comic EPUB is
+not included.
+
+The integrated macOS source suite recorded **367 passed, 8 skipped, and 12
+subtests passed**. The local Apple Silicon candidate passed the distribution
+audit, startup smoke check, and interactive UI check; the user accepted it as
+generally satisfactory. This package is ad-hoc signed only and is not Developer
+ID signed or notarized.
+
+Windows and Linux downloads were not rebuilt for this macOS release. A future
+platform update must be built on its own OS and record high-DPI input,
+Ctrl+wheel behavior (Windows/Linux), real GPU coverage, and Linux Wayland/X11
+results. Start any follow-up from current `origin/main` and read the
+[next-features handover](next-features-handover.md) and
+[shared UX handover](ux-maintenance-handover.md).
+
+## Previous published checkpoint (2026-10-20)
 
 Apple Silicon beta `macos-beta-0.7.1b0.3` is published from `main` after PRs
 #53/#54. It includes the bookshelf/settings/center-controls/help redesign and
