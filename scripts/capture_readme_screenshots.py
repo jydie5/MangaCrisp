@@ -17,6 +17,7 @@ from PySide6.QtWidgets import QApplication
 from mangacrisp_app.bookshelf import BookshelfWindow
 from mangacrisp_app.i18n import set_language
 from mangacrisp_app.library import LibraryPaths, LibraryService, save_library_settings
+from mangacrisp_app.page_overview import PageOverviewDialog
 from mangacrisp_app.shortcut_help import ShortcutHelpDialog
 from mangacrisp_app.viewer import SpreadWindow, viewer_shortcuts_text
 
@@ -99,6 +100,32 @@ def capture(demo_dir: Path, output_dir: Path, language: str = "en") -> None:
             if not help_dialog.card.grab().save(str(output_dir / "shortcut-help.png")):
                 raise RuntimeError("failed to save shortcut-help screenshot")
             help_dialog.close()
+
+            overview = PageOverviewDialog(reader, pages, reader.index)
+            overview.show()
+            # Let the dialog position its initial tile and schedule the visible
+            # window before waiting for the single thumbnail worker.  Waiting
+            # for the worker makes the gallery prove that the grid contains
+            # actual page images rather than the loading placeholders.
+            process_events(app, 0.25)
+            overview.request_timer.stop()
+            overview.request_visible_thumbnails()
+            requested_indexes = set(overview._requested_indexes)
+            if not overview.controller.pool.waitForDone(10_000):
+                raise RuntimeError("page overview thumbnails did not finish")
+            process_events(app, 0.3)
+            loaded_indexes = {
+                index for index, tile in enumerate(overview.tiles) if not tile.icon().isNull()
+            }
+            missing_indexes = requested_indexes - loaded_indexes
+            if missing_indexes:
+                raise RuntimeError(
+                    "page overview thumbnails did not load: "
+                    + ", ".join(str(index + 1) for index in sorted(missing_indexes))
+                )
+            if not overview.card.grab().save(str(output_dir / "page-overview.png")):
+                raise RuntimeError("failed to save page-overview screenshot")
+            overview.close()
             reader.close()
             bookshelf.close()
             process_events(app, 0.2)
