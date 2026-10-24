@@ -2,8 +2,26 @@
 
 [English](ux-maintenance-handover.md)
 
+## macOS beta 0.7.1b0.4リリース後の引き継ぎ（2026-10-24）
+
+[`macos-beta-0.7.1b0.4`](../releases/macos-beta-0.7.1b0.4.md)が現行のApple Silicon配布版です。
+release tagをソース参照とし、最終main commitはこの引き継ぎではなくReleaseメタデータへ記録します。
+本棚検索、物理ページ番号ジャンプ、しおり、本ごとの状態復元、ズーム／パン、遅延ページ一覧、
+処理済みページ探索の遅延化とZIPページ分離を含みます。Comic EPUB読書は今回の対象外です。
+
+macOSの統合suiteは**367成功、8スキップ、12 subtests成功**でした。ローカルテスト版は配布監査、
+起動smoke、UI確認を通過し、利用者から一般的な受入を得ています。ただしWindows／Linuxの更新版を
+確認した証跡ではありません。両OSの現行ダウンロードは変更していません。将来の各OS版は対象OSで
+buildし、倍率、入力フォーカス、Windows／LinuxのCtrl＋ホイール、ドラッグパン、一覧のキャンセル、
+実GPU、LinuxのWayland／X11を確認してください。macOS版はad-hoc署名のみでnotarization未実施です。
+
+継続作業の詳細は[次期機能引き継ぎ](next-features-handover.md)、クリーンなページ一覧画像を含む
+ギャラリーの撮影条件は[撮影手順](../images/README.md)を参照してください。
+
+## 以前のUIリリース基準（2026-10-20）
+
 PR #53（補正・キャッシュ）とPR #54（本棚・読書UI）を`main`へ統合しました。UIのリリース系統は
-`35f2936`、現在のmain引き継ぎは`d7bbf50`です。Apple Silicon向け`macos-beta-0.7.1b0.3`も公開済みです。
+`35f2936`、当時のmain引き継ぎは`d7bbf50`でした。Apple Silicon向け`macos-beta-0.7.1b0.3`も公開済みです。
 UI実装チェックポイントは`97dc06f`、フォント差に対応したテストは`ed7fa11`です。PR #44の旧UX引き継ぎを更新しています。
 
 現行のクロスプラットフォームpreviewは、`d7bbf50`の`main`から作成したLinux

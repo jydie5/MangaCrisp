@@ -10,6 +10,8 @@
 
 ![中央クリックで開く半透明の読書操作パネル](docs/images/ja/reader-controls.png)
 
+![読書画面から開く遅延生成のページ一覧](docs/images/ja/page-overview.png)
+
 <details>
 <summary>読書設定とショートカット一覧の画面</summary>
 
@@ -43,11 +45,11 @@ MangaCrispは個人で開発している、MIT Licenseの無料ソフトウェ�
 
 一般ユーザーにPython、uv、ターミナル操作は不要です。
 
-### [MangaCrisp macOS版（Apple Silicon）Beta 0.7.1b0.3をダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/macos-beta-0.7.1b0.3/MangaCrisp-v0.7.1b0.3-macos-apple-silicon-standalone.zip)
+### [MangaCrisp macOS版（Apple Silicon）Beta 0.7.1b0.4をダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/macos-beta-0.7.1b0.4/MangaCrisp-v0.7.1b0.4-macos-apple-silicon-standalone.zip)
 
-本棚・読書設定・ヘルプを刷新したmacOSベータです。中央クリックで半透明の操作パネルと
-ショートカットを表示できます。高画質補正の偽色と、前後移動時の補正・キャッシュも改善しました。
-詳細は[リリース文書](docs/releases/macos-beta-0.7.1b0.3.md)を参照してください。
+本棚検索と並べ替え、物理ページ番号ジャンプ、しおり、本ごとの設定復元、ズーム／パン、
+必要な範囲だけ作るページ一覧を追加したmacOSベータです。処理済みページの探索を遅延化し、
+ZIP展開先も物理ページごとに分離しました。詳細は[リリース文書](docs/releases/macos-beta-0.7.1b0.4.md)を参照してください。
 
 1. 上のリンクからstandalone ZIPをダウンロードします。
 2. ZIPをダブルクリックして展開します。
@@ -303,12 +305,12 @@ PDF描画キャッシュとAI補正キャッシュは破棄可能です。それ
 
 ## 現在の制限
 
-- 正式macOS版はApple Silicon専用で、Intel Macには対応していません。
+- macOSベータ版はApple Silicon専用で、Intel Macには対応していません。
 - Windows x64版はDevelopment Previewで、Intel／AMD／別アカウントの
   リリース証跡が未完了です。
 - Linux版はUbuntu 24.04以降のx86_64向けプレビューです。他のディストリビューションと
   aarch64は検証していません。
-- 各OS版とも未署名で、macOS版はApple notarizationも未実施です。
+- Windows／Linux版は未署名です。macOS版はad-hoc署名のみで、Apple Developer ID署名・公証は未実施です。
 - β版のためUIと設定の互換性が変わる可能性があります。
 - RAR形式によってはmacOS側の展開機能との相性で開けない場合があります。
 - 自動アップデートは未実装です。新しいZIPをReleasesから取得してください。
@@ -316,6 +318,19 @@ PDF描画キャッシュとAI補正キャッシュは破棄可能です。それ
 ## ソースコードから起動する
 
 この項目は開発者向けです。一般ユーザーはstandalone版を利用してください。
+
+### 現在のsourceとmacOSベータの状態
+
+以下は現在の共通sourceとmacOSベータの状態です。上記のWindows／Linux配布物は今回更新していません。
+対象OSで必要な検証は[次期機能引き継ぎ](docs/development/next-features-handover.md)を参照してください。
+
+- **F03 — 本棚の検索・並べ替え:** タイトル検索、自然順、最終閲覧順、追加順に対応し、「最近読んだ本」は最終閲覧の降順で表示します。
+- **F04 — 物理ページ番号ジャンプ:** 右綴じ／左綴じと見開き境界を保ったまま、物理ページ番号へ移動します。
+- **F05 — しおり:** `B`で現在ページを追加し、`Shift+B`で一覧を開いて移動・削除します。同じ本の同じページは二重追加しません。
+- **F06 — 本ごとの読書状態:** レイアウトと画質設定を本ごとに復元します。`O`の原画／補正版比較は一時的な読書操作です。
+- **F07 — ビューポート:** `+` / `-`、`0`全体、`W`幅、`1`実寸、`Ctrl`／`Meta`＋ホイール、ドラッグパンに対応します。ズーム／パンは本ごとの設定として保存しません。
+- **F08 — ページ一覧:** `T`で可視範囲だけを要求し、source PNG生成、全体展開、AI補正を起こしません。thumbnail画像LRUは16MiB、画面外アイコンは解放します。
+- **F13 / #72 — EPUB Stage A（未統合・今回未収録）:** メタデータ検査の別PRで、mainと今回の配布物には含みません。EPUBはまだ読めません。[EPUB Stage A引き継ぎ](docs/development/epub-probe-handover.md)を参照してください。
 
 ```bash
 git clone https://github.com/jydie5/MangaCrisp.git

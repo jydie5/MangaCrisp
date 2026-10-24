@@ -2,8 +2,33 @@
 
 [日本語](ux-maintenance-handover.ja.md)
 
+## macOS beta 0.7.1b0.4 release follow-up (2026-10-24)
+
+[`macos-beta-0.7.1b0.4`](../releases/macos-beta-0.7.1b0.4.md) is the current
+Apple Silicon release. Its tag is the source reference; the exact final main
+commit belongs in the release metadata rather than this handover. It includes
+bookshelf discovery, physical page jumps, bookmarks, per-book state restore,
+zoom/pan, lazy page overview, and lazy processed-page lookup with ZIP-page
+isolation. Comic EPUB reading is outside this release.
+
+The integrated macOS suite recorded **367 passed, 8 skipped, 12 subtests**.
+The local test package passed its distribution audit, startup smoke, and UI
+check; the user gave general acceptance. This is not evidence for an updated
+Windows or Linux package. Their current downloads remain unchanged. Before a
+future platform release, build on the target OS and check scaling, keyboard
+focus, Ctrl+wheel (Windows/Linux), drag-pan, overview cancellation, real GPU,
+and on Linux both Wayland and X11. The macOS package remains ad-hoc signed and
+not notarized.
+
+The detailed continuation checklist is in the
+[next-features handover](next-features-handover.md). The clean screenshot
+gallery now includes the page overview and is documented in
+[the capture procedure](../images/README.md).
+
+## Previous UI release baseline (2026-10-20)
+
 PR #53 (correction/cache) and PR #54 (reader/bookshelf UI) are merged into
-`main`; the UI release line is `35f2936`, and the current main handover is
+`main`; the UI release line is `35f2936`, and that release used main handover
 `d7bbf50`. Apple Silicon beta `macos-beta-0.7.1b0.3` is published. The UI
 implementation checkpoint is `97dc06f`, with portable font-metric tests at
 `ed7fa11`. This supersedes the earlier PR #44 handover.

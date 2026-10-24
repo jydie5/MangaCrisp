@@ -19,6 +19,8 @@ of the original RAIV project and now follows its own product direction.
 
 ![On-demand translucent reading controls with shortcut badges](docs/images/reader-controls.png)
 
+![Lazy page overview opened from the reader](docs/images/page-overview.png)
+
 <details>
 <summary>Reading settings and shortcut help</summary>
 
@@ -50,13 +52,12 @@ Trust only funding links published in this repository.
 
 The standalone build does not require Python, uv, or Terminal.
 
-### [Download MangaCrisp for macOS (Apple Silicon) — Beta 0.7.1b0.3](https://github.com/jydie5/MangaCrisp/releases/download/macos-beta-0.7.1b0.3/MangaCrisp-v0.7.1b0.3-macos-apple-silicon-standalone.zip)
+### [Download MangaCrisp for macOS (Apple Silicon) — Beta 0.7.1b0.4](https://github.com/jydie5/MangaCrisp/releases/download/macos-beta-0.7.1b0.4/MangaCrisp-v0.7.1b0.4-macos-apple-silicon-standalone.zip)
 
-This macOS beta refreshes the bookshelf, reading settings, and shortcut help.
-Center-click controls show navigation and keyboard shortcuts on demand. It also
-fixes false colors in high-quality correction and improves cache reuse during
-forward/back movement. See the
-[release notes](docs/releases/macos-beta-0.7.1b0.3.md).
+This macOS beta adds bookshelf search and sorting, physical page jumps,
+bookmarks, per-book settings restoration, zoom/pan controls, and a lazy page
+overview. It also keeps processed-page lookup lazy and isolates ZIP extraction
+by physical page. See the [release notes](docs/releases/macos-beta-0.7.1b0.4.md).
 
 1. Download the standalone ZIP from the link above.
 2. Unzip it and move `MangaCrisp.app` to Applications.
@@ -183,7 +184,7 @@ messages all use the same language.
 
 ## AI enhancement
 
-The stable macOS standalone package bundles the official
+The macOS standalone package bundles the official
 `realcugan-ncnn-vulkan 20220728 macOS` executable and models. The Windows
 Development Preview bundles the pinned, audited Zig-built Windows engine and
 the same models. Both need no additional engine setup.
@@ -337,18 +338,43 @@ reading positions are preserved.
 
 ## Current limitations
 
-- The stable macOS beta supports Apple Silicon only; Intel Macs are not
+- The macOS beta supports Apple Silicon only; Intel Macs are not
   currently supported.
 - The Windows x64 build is a Development Preview with Intel, AMD, and clean
   account release evidence still pending.
 - The Linux build targets Ubuntu 24.04+ on x86_64 and is a preview; other
   distributions and aarch64 are not validated.
-- The builds are unsigned; the macOS beta is also not notarized.
+- Windows/Linux packages are unsigned. The macOS beta is ad-hoc signed,
+  without Apple Developer ID signing or notarization.
 - Some RAR variants may not be compatible with the available macOS extraction
   backend.
 - Updates are manual; download a newer build from Releases.
 
 ## Build from source
+
+### Current source and macOS beta status
+
+The following describes the current shared source and the macOS beta. Windows
+and Linux downloads above are unchanged. See the
+[next-features handover](docs/development/next-features-handover.md) for their
+target-OS verification work.
+
+- **F03 — Bookshelf discovery:** Search titles and sort by natural title,
+  last opened, or added order. **Recently read** uses last-opened descending order.
+- **F04 — Physical page jump:** Jump by physical page number while preserving
+  right/left binding and spread boundaries.
+- **F05 — Bookmarks:** `B` adds the current page; `Shift+B` opens the list for
+  jump and delete. The same book/page is not added twice.
+- **F06 — Per-book reading state:** Layout and quality settings are restored per
+  book. `O` original/enhanced comparison remains a temporary reader action.
+- **F07 — Viewport:** `+` / `-`, `0` fit, `W` width, `1` actual size,
+  `Ctrl`/`Meta` + wheel, and drag-to-pan. Zoom/pan are not saved per book.
+- **F08 — Page overview:** `T` requests visible thumbnails only; it does not
+  create source PNGs, extract the whole archive, or run AI correction. The
+  thumbnail-image LRU is 16 MiB and offscreen icons are released.
+- **F13 / #72 — EPUB Stage A (unmerged):** The separate metadata-probe PR is
+  excluded from main and this release. EPUB reading remains unsupported.
+  See the [EPUB Stage A handover](docs/development/epub-probe-handover.md).
 
 ```bash
 git clone https://github.com/jydie5/MangaCrisp.git

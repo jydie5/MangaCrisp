@@ -2,9 +2,27 @@
 
 [日本語](linux-handover.ja.md)
 
-## Current shared source checkpoint: PR #53/#54 (35f2936, main d7bbf50, 2026-10-20)
+## Incoming macOS beta 0.7.1b0.4 checkpoint (2026-10-24)
 
-Use this checkpoint for the current Linux preview and follow-up native verification. The current shared
+The current Apple Silicon download is
+[`macos-beta-0.7.1b0.4`](../releases/macos-beta-0.7.1b0.4.md). It carries the
+shared bookshelf discovery, physical page jump, bookmark, per-book state,
+zoom/pan, lazy page-overview, and processed-page/ZIP-isolation work. Comic
+EPUB reading is not in that package.
+
+The existing Linux preview is unchanged. Do not call it equivalent to the new
+macOS beta. Before a Linux update, build current `origin/main` on Ubuntu and
+record source and package results separately. Test both Wayland and X11,
+fractional scaling, Ctrl+wheel, drag-pan, `T` overview select/cancel/close,
+real GPU behavior, and the portal/capture flow. The macOS result of 367 passed,
+8 skipped, 12 subtests and general macOS acceptance are not Linux acceptance.
+Read the [next-features handover](next-features-handover.md) and
+[shared UX handover](ux-maintenance-handover.md) before integrating.
+
+## Source checkpoint of the existing Linux preview: PR #53/#54 (2026-10-20)
+
+This records the existing Linux preview, not the new shared-source baseline.
+For a new Linux build, use current `origin/main` as described above. This package
 source includes the reader, bookshelf, correction and cache work from PR #53/#54.
 The UI release line is [35f2936](https://github.com/jydie5/MangaCrisp/commit/35f2936),
 and the package source checkpoint is [d7bbf50](https://github.com/jydie5/MangaCrisp/commit/d7bbf50).
