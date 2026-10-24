@@ -7,9 +7,10 @@ import time
 from argparse import ArgumentParser, Namespace
 from collections import deque
 from collections.abc import Callable, Sequence
+from glob import escape as glob_escape
 from hashlib import sha1
 from html import escape
-from math import ceil
+from math import ceil, isfinite, sqrt
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -85,6 +86,7 @@ try:
         QWidget,
     )
 
+    from mangacrisp_app.image_viewport import SpreadViewport
     from mangacrisp_app.reader_widgets import (
         READER_STYLE_SHEET,
         ChoiceButton,
@@ -97,6 +99,7 @@ except ImportError as exc:
     QEvent = QObject = QRunnable = QSize = QThreadPool = QTimer = Qt = Signal = QCursor = QImage = QPixmap = None
     QApplication = QCheckBox = QComboBox = QDialog = QFormLayout = None
     QHBoxLayout = QInputDialog = QLabel = QMessageBox = QProgressBar = QPushButton = QScrollArea = QSpinBox = QVBoxLayout = QWidget = QFileDialog = None
+    SpreadViewport = None
     QMainWindow = object
     PYSIDE_IMPORT_ERROR = exc
 
@@ -121,6 +124,10 @@ CACHE_MAINTENANCE_DEBOUNCE_MS = 900
 PAGE_STATE_SAVE_DEBOUNCE_MS = 350
 CLICK_ZONE_EDGE_FRACTION = 0.4
 CLICK_DRAG_TOLERANCE_PX = 12
+MAX_DISPLAY_DECODE_PIXELS = 8 * 1024 * 1024
+ZOOM_STEP = 1.25
+MIN_ZOOM_FACTOR = 0.25
+MAX_ZOOM_FACTOR = 8.0
 MODEL_NOISE_OPTIONS = {
     "models-pro": ["3"],
     "models-se": ["-1", "0", "1", "2", "3"],
@@ -205,6 +212,8 @@ def viewer_shortcuts_text(reading_direction: str) -> str:
             tr("P: 右設定パネル表示/非表示"),
             tr("V: 見開き/単ページを切り替え"),
             tr("O: 原画/補正版を切り替え"),
+            tr("0: 全体に合わせる / W: 幅に合わせる / 1: 実寸"),
+            tr("+ / -: 表示倍率を変更 / Ctrl/⌘+ホイール: 表示倍率を変更"),
             tr("B: しおり追加"),
             tr("Shift+B: しおり一覧"),
             tr("画面左右クリック: 次へ/前へ（読書方向に連動）"),
@@ -409,6 +418,54 @@ def decode_scaled_display_image(
     )
 
 
+def display_decode_target(
+    target,
+    device_pixel_ratio: float,
+    source_size: tuple[int, int] | None = None,
+) -> tuple[int, int, float]:
+    """Return capped physical decode dimensions and their effective DPR.
+
+    Qt sizes widgets in device-independent pixels.  When a zoomed target
+    exceeds the display decode budget, lowering a pixmap's DPR preserves that
+    logical size while deliberately reducing only its available detail.
+    """
+    logical_width = max(1, target.width())
+    logical_height = max(1, target.height())
+    requested_dpr = max(0.1, float(device_pixel_ratio))
+    physical_width = max(1, round(logical_width * requested_dpr))
+    physical_height = max(1, round(logical_height * requested_dpr))
+    if source_size is not None and source_size[0] > 0 and source_size[1] > 0:
+        source_width, source_height = source_size
+        fit_scale = min(physical_width / source_width, physical_height / source_height)
+        physical_width = max(1, round(source_width * fit_scale))
+        physical_height = max(1, round(source_height * fit_scale))
+    requested_pixels = physical_width * physical_height
+    cap_scale = min(1.0, sqrt(MAX_DISPLAY_DECODE_PIXELS / requested_pixels))
+    physical_width = max(1, int(physical_width * cap_scale))
+    physical_height = max(1, int(physical_height * cap_scale))
+    return physical_width, physical_height, requested_dpr * cap_scale
+
+
+def display_pixmap_weight(pixmap: QPixmap) -> int:
+    """Estimate the resident Qt image backing-store size for the LRU budget."""
+    if pixmap.isNull():
+        return 1
+    return max(1, pixmap.width() * pixmap.height() * max(1, pixmap.depth() // 8))
+
+
+def target_device_pixel_ratio(target) -> float:
+    """Use widget DPR when available; QSize callers retain the DPR-1 contract."""
+    getter = getattr(target, "devicePixelRatioF", None)
+    return float(getter()) if callable(getter) else 1.0
+
+
+def actual_size_zoom_factor(image_width: int, fitted_width: float, device_pixel_ratio: float) -> float:
+    """Map one original source pixel to one physical screen pixel."""
+    if image_width <= 0 or fitted_width <= 0 or device_pixel_ratio <= 0:
+        return 1.0
+    return image_width / (fitted_width * device_pixel_ratio)
+
+
 class DisplayRenderTask(QRunnable if QRunnable is not None else object):
     def __init__(
         self,
@@ -530,10 +587,18 @@ class SpreadWindow(QMainWindow):
         self.reading_info_visible = False
         self.mouse_press_button = None
         self.mouse_press_global_position = None
+        self.mouse_last_global_position = None
+        self.mouse_dragging = False
         self.suppress_next_mouse_release = False
         self.reading_page_input_dirty = False
+        self.viewport_auto_mode_signature: tuple | None = None
+        self.pending_auto_page_focus: tuple[float, float] | None = None
         self.image_size_cache: dict[int, tuple[int, int]] = {}
-        self.display_pixmap_cache: DisplayCache[tuple, QPixmap] = DisplayCache(capacity=18)
+        self.display_pixmap_cache: DisplayCache[tuple, QPixmap] = DisplayCache(
+            capacity=18,
+            max_bytes=192 * 1024 * 1024,
+            weight=display_pixmap_weight,
+        )
         self.pending_display_renders: dict[tuple, int] = {}
         self.desired_display_keys: dict[int, tuple | None] = {}
         self.fallback_display_keys: dict[int, tuple | None] = {}
@@ -616,23 +681,16 @@ class SpreadWindow(QMainWindow):
         )
         self.next_book_banner.setVisible(False)
         self.next_book_banner.setCursor(Qt.ArrowCursor)
-        layout = QHBoxLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-        self.page_layout = layout
-        self.left = QLabel(alignment=Qt.AlignCenter)
-        self.right = QLabel(alignment=Qt.AlignCenter)
-        self.left.setObjectName("pagePane")
-        self.right.setObjectName("pagePane")
-        self.left.setMinimumSize(320, 320)
-        self.right.setMinimumSize(320, 320)
-        self.left.setMouseTracking(True)
-        self.right.setMouseTracking(True)
-        layout.addWidget(self.left, 1)
-        layout.addWidget(self.right, 1)
+        self.viewport = SpreadViewport(image_host)
+        self.page_layout = self.viewport.page_layout
+        # Keep the established pane attributes as compatibility aliases for
+        # rendering, input filters and extension code while the viewport owns
+        # only their geometry.
+        self.left = self.viewport.left
+        self.right = self.viewport.right
         self.left.installEventFilter(self)
         self.right.installEventFilter(self)
-        image_host_layout.addLayout(layout, 1)
+        image_host_layout.addWidget(self.viewport, 1)
         self.build_reading_overlay(image_host)
         root_layout.addWidget(image_host, 1)
         self.controls_panel = self.build_controls()
@@ -927,9 +985,9 @@ class SpreadWindow(QMainWindow):
     def build_reading_overlay(self, parent: QWidget) -> None:
         self.reading_info_panel = OverlayPane(parent)
         self.reading_info_panel.dismissed.connect(self.dismiss_reading_overlay)
-        layout = QVBoxLayout(self.reading_info_panel)
-        layout.setContentsMargins(20, 18, 20, 18)
-        layout.setSpacing(12)
+        panel_layout = QVBoxLayout(self.reading_info_panel)
+        panel_layout.setContentsMargins(20, 18, 20, 18)
+        panel_layout.setSpacing(10)
         header = QHBoxLayout()
         title = QLabel(tr("読書コントロール"), self.reading_info_panel)
         title.setStyleSheet("font-size: 19px; font-weight: bold; background: transparent;")
@@ -939,17 +997,30 @@ class SpreadWindow(QMainWindow):
         close.setFixedWidth(44)
         close.clicked.connect(self.dismiss_reading_overlay)
         header.addWidget(close)
-        layout.addLayout(header)
-        self.reading_info_label = QLabel(self.reading_info_panel)
+        panel_layout.addLayout(header)
+        self.reading_info_scroll = QScrollArea(self.reading_info_panel)
+        self.reading_info_scroll.setObjectName("readingControlsScroll")
+        self.reading_info_scroll.setWidgetResizable(True)
+        self.reading_info_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.reading_info_scroll.setFrameShape(QScrollArea.NoFrame)
+        self.reading_info_content = QWidget(self.reading_info_scroll)
+        self.reading_info_content.setObjectName("readingControlsContent")
+        self.reading_info_scroll.setWidget(self.reading_info_content)
+        self.reading_info_scroll.viewport().setObjectName("readingControlsScrollViewport")
+        panel_layout.addWidget(self.reading_info_scroll)
+        layout = QVBoxLayout(self.reading_info_content)
+        layout.setContentsMargins(20, 18, 20, 18)
+        layout.setSpacing(12)
+        self.reading_info_label = QLabel(self.reading_info_content)
         self.reading_info_label.setWordWrap(True)
         layout.addWidget(self.reading_info_label)
-        self.reading_progress = QProgressBar(self.reading_info_panel)
+        self.reading_progress = QProgressBar(self.reading_info_content)
         self.reading_progress.setFixedHeight(18)
         layout.addWidget(self.reading_progress)
         page_jump_row = QHBoxLayout()
-        page_label = QLabel(tr("ページ"), self.reading_info_panel)
+        page_label = QLabel(tr("ページ"), self.reading_info_content)
         page_jump_row.addWidget(page_label)
-        self.reading_page_spin = QSpinBox(self.reading_info_panel)
+        self.reading_page_spin = QSpinBox(self.reading_info_content)
         self.reading_page_spin.setRange(1, max(1, len(self.pages)))
         self.reading_page_spin.setKeyboardTracking(False)
         self.reading_page_spin.setMinimumWidth(92)
@@ -962,33 +1033,226 @@ class SpreadWindow(QMainWindow):
             page_line_edit.returnPressed.connect(self.confirm_page_jump)
         self.reading_page_spin.valueChanged.connect(self.mark_page_jump_value_dirty)
         page_jump_row.addWidget(self.reading_page_spin, 1)
-        self.reading_page_jump_button = QPushButton(tr("移動"), self.reading_info_panel)
+        self.reading_page_jump_button = QPushButton(tr("移動"), self.reading_info_content)
         self.reading_page_jump_button.setAccessibleName(tr("ページ番号を入力して移動"))
         self.reading_page_jump_button.setToolTip(tr("ページ番号を入力して移動"))
         self.reading_page_jump_button.clicked.connect(self.confirm_page_jump)
         page_jump_row.addWidget(self.reading_page_jump_button)
         layout.addLayout(page_jump_row)
+        zoom_controls = QVBoxLayout()
+        zoom_controls.setSpacing(6)
+        zoom_row = QHBoxLayout()
+        zoom_label = QLabel(tr("表示倍率"), self.reading_info_content)
+        zoom_row.addWidget(zoom_label)
+        self.zoom_mode_combo = QComboBox(self.reading_info_content)
+        self.zoom_mode_combo.setObjectName("zoomModeSelector")
+        self.zoom_mode_combo.setAccessibleName(tr("表示倍率"))
+        self.zoom_mode_combo.addItem(tr("全体に合わせる  0"), "fit")
+        self.zoom_mode_combo.addItem(tr("幅に合わせる  W"), "width")
+        self.zoom_mode_combo.addItem(tr("実寸  1"), "actual")
+        self.zoom_mode_combo.addItem(tr("カスタム"), "custom")
+        self.zoom_mode_combo.currentIndexChanged.connect(self.on_zoom_mode_changed)
+        zoom_label.setBuddy(self.zoom_mode_combo)
+        zoom_row.addWidget(self.zoom_mode_combo, 1)
+        zoom_controls.addLayout(zoom_row)
+        zoom_adjust_row = QHBoxLayout()
+        zoom_adjust_row.addStretch(1)
+        self.zoom_out_button = QPushButton("−", self.reading_info_content)
+        self.zoom_out_button.setAccessibleName(tr("縮小"))
+        self.zoom_out_button.setToolTip(tr("縮小"))
+        self.zoom_out_button.clicked.connect(self.zoom_out)
+        zoom_adjust_row.addWidget(self.zoom_out_button)
+        self.zoom_value_label = QLabel(
+            tr("全体比 ×{factor}", factor="1.00"), self.reading_info_content
+        )
+        self.zoom_value_label.setMinimumWidth(48)
+        self.zoom_value_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.zoom_value_label.setToolTip(
+            tr("全体表示を1倍とする倍率。実寸は原画1pxを画面の物理1pxで表示します。")
+        )
+        zoom_adjust_row.addWidget(self.zoom_value_label)
+        self.zoom_in_button = QPushButton("＋", self.reading_info_content)
+        self.zoom_in_button.setAccessibleName(tr("拡大"))
+        self.zoom_in_button.setToolTip(tr("拡大"))
+        self.zoom_in_button.clicked.connect(self.zoom_in)
+        zoom_adjust_row.addWidget(self.zoom_in_button)
+        zoom_adjust_row.addStretch(1)
+        zoom_controls.addLayout(zoom_adjust_row)
+        layout.addLayout(zoom_controls)
         grid = QGridLayout()
         grid.setSpacing(8)
         navigation = ("next", "previous", "forward_one", "back_one") if self.is_right_bound() else ("previous", "next", "back_one", "forward_one")
         actions = (*navigation, "original", "settings", "fullscreen", "layout", "help")
         for index, action in enumerate(actions):
-            grid.addWidget(self.make_reader_action(action, self.reading_info_panel), index // 2, index % 2)
+            grid.addWidget(self.make_reader_action(action, self.reading_info_content), index // 2, index % 2)
         if self.bookmark_callback is not None:
-            grid.addWidget(self.make_reader_action("bookmark", self.reading_info_panel), 4, 1)
+            grid.addWidget(self.make_reader_action("bookmark", self.reading_info_content), 4, 1)
         if self.bookmarks_provider is not None:
             row = 5 if self.bookmark_callback is not None else 4
-            grid.addWidget(self.make_reader_action("bookmarks", self.reading_info_panel), row, 0)
+            grid.addWidget(self.make_reader_action("bookmarks", self.reading_info_content), row, 0)
         layout.addLayout(grid)
         self.reading_info_bookshelf_button = QPushButton(tr("本棚へ戻る"), self.reading_info_panel)
         self.reading_info_bookshelf_button.clicked.connect(self.return_to_bookshelf)
-        layout.addWidget(self.reading_info_bookshelf_button)
-        hint = QLabel(tr("ペインの外をクリックして閉じる"), self.reading_info_panel)
-        hint.setAlignment(Qt.AlignCenter)
-        hint.setStyleSheet("color: #aeb8c2; background: transparent; font-size: 12px;")
-        layout.addWidget(hint)
+        panel_layout.addWidget(self.reading_info_bookshelf_button)
+        self.reading_info_hint = QLabel(tr("ペインの外をクリックして閉じる"), self.reading_info_panel)
+        self.reading_info_hint.setAlignment(Qt.AlignCenter)
+        self.reading_info_hint.setStyleSheet("color: #aeb8c2; background: transparent; font-size: 12px;")
+        panel_layout.addWidget(self.reading_info_hint)
         self.reading_info_panel.hide()
         self.reading_info_panel.setCursor(Qt.ArrowCursor)
+
+    def current_page_label(self) -> QLabel:
+        return self.right if getattr(self, "pane_page_indexes", {}).get("right") == self.index else self.left
+
+    def page_fit_width(self, index: int, label: QLabel) -> float:
+        image_width, image_height = self.image_size(index)
+        if image_width <= 0 or image_height <= 0:
+            return float(max(1, label.width()))
+        return min(label.width(), label.height() * image_width / image_height)
+
+    def current_page_image_rect(self) -> tuple[float, float, float, float]:
+        """Current page's actual image rectangle in movable-content coordinates."""
+        label = self.current_page_label()
+        image_width, image_height = self.image_size(self.index)
+        if image_width <= 0 or image_height <= 0:
+            return float(label.x()), float(label.y()), float(label.width()), float(label.height())
+        scale = min(label.width() / image_width, label.height() / image_height)
+        width = image_width * scale
+        height = image_height * scale
+        alignment = label.alignment()
+        if alignment & Qt.AlignRight:
+            x = label.x() + label.width() - width
+        elif alignment & Qt.AlignLeft:
+            x = label.x()
+        else:
+            x = label.x() + (label.width() - width) / 2
+        if alignment & Qt.AlignTop:
+            y = label.y()
+        elif alignment & Qt.AlignBottom:
+            y = label.y() + label.height() - height
+        else:
+            y = label.y() + (label.height() - height) / 2
+        return x, y, width, height
+
+    def viewport_zoom_for_mode(self, mode: str) -> float:
+        self.viewport.reset_view()
+        if mode == "fit" or not self.pages:
+            return 1.0
+        label = self.current_page_label()
+        fitted_width = self.page_fit_width(self.index, label)
+        if fitted_width <= 0:
+            return 1.0
+        image_width, _image_height = self.image_size(self.index)
+        if mode == "actual" and image_width > 0:
+            return actual_size_zoom_factor(
+                image_width, fitted_width, self.viewport.devicePixelRatioF()
+            )
+        return self.viewport.width() / fitted_width
+
+    def set_viewport_zoom(
+        self,
+        zoom: float,
+        *,
+        mode: str = "custom",
+        top: bool = False,
+        focus_page: bool = False,
+        anchor=None,
+        normal_range: bool = True,
+    ) -> None:
+        if not isfinite(zoom):
+            return
+        zoom = max(0.01, float(zoom))
+        if normal_range:
+            zoom = min(MAX_ZOOM_FACTOR, max(MIN_ZOOM_FACTOR, zoom))
+        self.viewport.set_zoom_factor(zoom, anchor=anchor, top=top)
+        if focus_page:
+            self.viewport.focus_content_rect(self.current_page_image_rect(), top=top)
+        self.clear_queued_display_requests()
+        self.refresh_visible_display(high_quality=not self.fast_resize_render)
+        if hasattr(self, "zoom_value_label"):
+            self.zoom_value_label.setText(tr("全体比 ×{factor}", factor=f"{zoom:.2f}"))
+        if hasattr(self, "zoom_mode_combo"):
+            blocked = self.zoom_mode_combo.blockSignals(True)
+            try:
+                self.zoom_mode_combo.setCurrentIndex(self.zoom_mode_combo.findData(mode))
+            finally:
+                self.zoom_mode_combo.blockSignals(blocked)
+        self.viewport_auto_mode_signature = (
+            self.viewport_mode_signature(mode) if mode in {"width", "actual"} else None
+        )
+
+    def on_zoom_mode_changed(self) -> None:
+        mode = self.zoom_mode_combo.currentData()
+        if not isinstance(mode, str) or mode == "custom":
+            return
+        self.set_viewport_zoom(
+            self.viewport_zoom_for_mode(mode),
+            mode=mode,
+            top=mode == "width",
+            focus_page=mode in {"width", "actual"},
+            normal_range=mode != "actual",
+        )
+
+    def zoom_in(self) -> None:
+        self.set_viewport_zoom(self.viewport.zoom_factor * ZOOM_STEP, mode="custom")
+
+    def zoom_out(self) -> None:
+        self.set_viewport_zoom(self.viewport.zoom_factor / ZOOM_STEP, mode="custom")
+
+    def viewport_mode_signature(self, mode: str) -> tuple:
+        image_size = self.image_size(self.index) if 0 <= self.index < len(self.pages) else (0, 0)
+        return (
+            mode,
+            self.index,
+            self.page_layout_mode,
+            self.reading_direction,
+            self.spread_order,
+            self.cover_single,
+            self.viewport.width(),
+            self.viewport.height(),
+            round(self.viewport.devicePixelRatioF(), 4),
+            image_size,
+        )
+
+    def reapply_auto_viewport_mode_if_needed(self) -> None:
+        """Keep W/actual tied to the visible original page, not a prior one."""
+        if not hasattr(self, "zoom_mode_combo"):
+            return
+        mode = self.zoom_mode_combo.currentData()
+        if mode not in {"width", "actual"}:
+            return
+        signature = self.viewport_mode_signature(mode)
+        if signature == self.viewport_auto_mode_signature:
+            return
+        pending_focus = self.pending_auto_page_focus
+        self.pending_auto_page_focus = None
+        self.set_viewport_zoom(
+            self.viewport_zoom_for_mode(mode),
+            mode=mode,
+            top=mode == "width",
+            focus_page=True,
+            normal_range=mode != "actual",
+        )
+        if pending_focus is not None:
+            image_x, image_y, image_width, image_height = self.current_page_image_rect()
+            self.viewport.center_content_point(
+                (image_x + image_width * pending_focus[0], image_y + image_height * pending_focus[1])
+            )
+
+    def capture_auto_page_focus_for_resize(self) -> None:
+        """Remember the visible point in an auto-sized page before a resize."""
+        if not hasattr(self, "zoom_mode_combo") or self.zoom_mode_combo.currentData() not in {"width", "actual"}:
+            return
+        image_x, image_y, image_width, image_height = self.current_page_image_rect()
+        if image_width <= 0 or image_height <= 0:
+            return
+        content = self.viewport.content.geometry()
+        relative_x = (self.viewport.width() / 2 - content.x() - image_x) / image_width
+        relative_y = (self.viewport.height() / 2 - content.y() - image_y) / image_height
+        self.pending_auto_page_focus = (
+            min(1.0, max(0.0, relative_x)),
+            min(1.0, max(0.0, relative_y)),
+        )
 
     def dismiss_reading_overlay(self) -> None:
         self.cancel_page_jump_input()
@@ -1113,7 +1377,7 @@ class SpreadWindow(QMainWindow):
     def _sync_initial_page_layout_controls(self) -> None:
         """Reflect the constructor layout choice without scheduling a render."""
         mode = self.page_layout_mode
-        self.right.setVisible(mode == "spread")
+        self.viewport.set_spread_visible(mode == "spread")
         for button in (
             self.shift_back_button,
             self.shift_forward_button,
@@ -1495,13 +1759,47 @@ class SpreadWindow(QMainWindow):
     def eventFilter(self, watched, event) -> bool:
         self.track_cursor_activity(watched, event)
         if watched in {getattr(self, "left", None), getattr(self, "right", None)}:
+            if event.type() == QEvent.Wheel:
+                modifiers = event.modifiers()
+                if (
+                    modifiers & (Qt.ControlModifier | Qt.MetaModifier)
+                    and self.reader_may_handle_viewport_input(watched)
+                    and event.angleDelta().y()
+                ):
+                    factor = ZOOM_STEP if event.angleDelta().y() > 0 else 1 / ZOOM_STEP
+                    anchor = self.viewport.mapFromGlobal(event.globalPosition().toPoint())
+                    self.set_viewport_zoom(self.viewport.zoom_factor * factor, anchor=anchor)
+                    return True
             if event.type() == QEvent.MouseButtonDblClick and event.button() in {Qt.LeftButton, Qt.RightButton}:
                 self.suppress_next_mouse_release = True
+                self.clear_mouse_press()
                 return True
             if event.type() == QEvent.MouseButtonPress and event.button() in {Qt.LeftButton, Qt.RightButton}:
+                # Some Qt platform event sequences omit the double-click
+                # release. Never let its suppression consume a later click.
+                self.suppress_next_mouse_release = False
                 self.setFocus(Qt.MouseFocusReason)
                 self.mouse_press_button = event.button()
                 self.mouse_press_global_position = event.globalPosition()
+                self.mouse_last_global_position = event.globalPosition()
+                self.mouse_dragging = False
+                return True
+            if event.type() == QEvent.MouseMove and self.mouse_press_button is not None:
+                current_position = event.globalPosition()
+                if self.mouse_press_global_position is not None:
+                    moved = (
+                        abs(current_position.x() - self.mouse_press_global_position.x())
+                        + abs(current_position.y() - self.mouse_press_global_position.y())
+                    )
+                    if moved > CLICK_DRAG_TOLERANCE_PX:
+                        self.mouse_dragging = True
+                if self.mouse_dragging and self.mouse_press_button == Qt.LeftButton:
+                    previous_position = self.mouse_last_global_position or current_position
+                    self.viewport.pan_by(
+                        round(current_position.x() - previous_position.x()),
+                        round(current_position.y() - previous_position.y()),
+                    )
+                self.mouse_last_global_position = current_position
                 return True
             if event.type() == QEvent.MouseButtonRelease and event.button() in {Qt.LeftButton, Qt.RightButton}:
                 if self.suppress_next_mouse_release:
@@ -1516,8 +1814,9 @@ class SpreadWindow(QMainWindow):
                     abs(release_position.x() - self.mouse_press_global_position.x())
                     + abs(release_position.y() - self.mouse_press_global_position.y())
                 )
+                dragged = self.mouse_dragging
                 self.clear_mouse_press()
-                if moved > CLICK_DRAG_TOLERANCE_PX:
+                if dragged or moved > CLICK_DRAG_TOLERANCE_PX:
                     return True
                 image_position = self.image_host.mapFromGlobal(release_position.toPoint())
                 button = "right" if event.button() == Qt.RightButton else "left"
@@ -1550,9 +1849,21 @@ class SpreadWindow(QMainWindow):
             return False
         return not bool(event.modifiers() & (Qt.ControlModifier | Qt.MetaModifier | Qt.AltModifier))
 
+    def reader_may_handle_viewport_input(self, watched=None) -> bool:
+        if not self.isVisible() or not should_handle_global_shortcut(QApplication.activeModalWidget()):
+            return False
+        if QApplication.activePopupWidget() is not None:
+            return False
+        if watched not in {getattr(self, "left", None), getattr(self, "right", None)}:
+            return False
+        focus = QApplication.focusWidget()
+        return not isinstance(focus, (QLineEdit, QAbstractSpinBox, QComboBox))
+
     def clear_mouse_press(self) -> None:
         self.mouse_press_button = None
         self.mouse_press_global_position = None
+        self.mouse_last_global_position = None
+        self.mouse_dragging = False
 
     def handle_reader_click(self, action: str | None, one_page: bool = False) -> bool:
         if self.reading_info_visible:
@@ -1570,6 +1881,7 @@ class SpreadWindow(QMainWindow):
         return False
 
     def resizeEvent(self, event) -> None:
+        self.capture_auto_page_focus_for_resize()
         super().resizeEvent(event)
         self.position_reading_info_overlay()
         self.position_next_book_overlay()
@@ -1591,6 +1903,32 @@ class SpreadWindow(QMainWindow):
         return self.handle_navigation_key(event.key(), event.modifiers())
 
     def handle_navigation_key(self, key: int, modifiers=Qt.NoModifier) -> bool:
+        if key in {Qt.Key_Plus, Qt.Key_Equal} and modifiers in {Qt.NoModifier, Qt.ShiftModifier}:
+            self.zoom_in()
+            return True
+        if key == Qt.Key_Minus and modifiers == Qt.NoModifier:
+            self.zoom_out()
+            return True
+        if modifiers == Qt.NoModifier:
+            if key == Qt.Key_0:
+                self.set_viewport_zoom(1.0, mode="fit")
+                return True
+            if key == Qt.Key_W:
+                self.set_viewport_zoom(
+                    self.viewport_zoom_for_mode("width"),
+                    mode="width",
+                    top=True,
+                    focus_page=True,
+                )
+                return True
+            if key == Qt.Key_1:
+                self.set_viewport_zoom(
+                    self.viewport_zoom_for_mode("actual"),
+                    mode="actual",
+                    focus_page=True,
+                    normal_range=False,
+                )
+                return True
         next_key = Qt.Key_Left if self.is_right_bound() else Qt.Key_Right
         previous_key = Qt.Key_Right if self.is_right_bound() else Qt.Key_Left
         if modifiers & Qt.ShiftModifier:
@@ -1660,9 +1998,7 @@ class SpreadWindow(QMainWindow):
         self.page_layout_mode = mode
         if mode == "spread":
             self.index = standard_spread_index(self.index, self.cover_single)
-        self.right.setVisible(mode == "spread")
-        self.page_layout.invalidate()
-        self.page_layout.activate()
+        self.viewport.set_spread_visible(mode == "spread")
         for button in (
             self.shift_back_button,
             self.shift_forward_button,
@@ -1841,7 +2177,11 @@ class SpreadWindow(QMainWindow):
         if hasattr(self, "image_host") and QCursor is not None:
             local = self.image_host.mapFromGlobal(QCursor.pos())
             child = self.image_host.childAt(local)
-            pointer_over_overlay = child is not None and child not in {self.left, self.right}
+            pointer_over_overlay = child is not None and child not in {
+                self.left,
+                self.right,
+                self.viewport,
+            }
         return CursorAutoHideState(
             fullscreen=self.is_fullscreen,
             window_active=window.isActiveWindow(),
@@ -1918,23 +2258,10 @@ class SpreadWindow(QMainWindow):
             high_quality = not self.fast_resize_render
         visible_indexes = self.visible_page_indexes()
         self.load_cached_outputs(visible_indexes)
-        if self.page_layout_mode == "single":
-            left_index, right_index = self.index, -1
-        elif self.cover_single and self.index == 0:
-            if self.is_right_bound():
-                left_index, right_index = -1, 0
-            else:
-                left_index, right_index = 0, -1
-        elif self.index + 1 >= len(self.pages):
-            if self.is_right_bound():
-                left_index, right_index = -1, self.index
-            else:
-                left_index, right_index = self.index, -1
-        elif self.is_spread_reversed():
-            left_index, right_index = self.index + 1, self.index
-        else:
-            left_index, right_index = self.index, self.index + 1
+        left_index, right_index = self.spread_pane_indexes()
+        self.pane_page_indexes = {"left": left_index, "right": right_index}
         self.update_page_pane_alignment(left_index, right_index)
+        self.reapply_auto_viewport_mode_if_needed()
         self.render_label(self.left, left_index, high_quality=high_quality)
         self.render_label(self.right, right_index, high_quality=high_quality)
         self.apply_ready_spread_pixmaps()
@@ -1952,18 +2279,36 @@ class SpreadWindow(QMainWindow):
             self.request_prefetch()
         self.update_next_book_action()
 
+    def spread_pane_indexes(self) -> tuple[int, int]:
+        if self.page_layout_mode == "single":
+            return self.index, -1
+        if self.cover_single and self.index == 0:
+            return (-1, 0) if self.is_right_bound() else (0, -1)
+        if self.index + 1 >= len(self.pages):
+            return (-1, self.index) if self.is_right_bound() else (self.index, -1)
+        if self.is_spread_reversed():
+            return self.index + 1, self.index
+        return self.index, self.index + 1
+
+    def refresh_visible_display(self, *, high_quality: bool) -> None:
+        """Repaint a zoom/pan resize without touching correction scheduling."""
+        pane_indexes = getattr(self, "pane_page_indexes", {})
+        self.render_label(self.left, pane_indexes.get("left", -1), high_quality=high_quality)
+        self.render_label(self.right, pane_indexes.get("right", -1), high_quality=high_quality)
+        self.apply_ready_spread_pixmaps()
+
     def update_page_pane_alignment(self, left_index: int, right_index: int) -> None:
         if self.page_layout_mode == "single":
-            self.left.setAlignment(Qt.AlignCenter)
-            self.right.setAlignment(Qt.AlignCenter)
+            self.viewport.set_pane_alignments(Qt.AlignCenter, Qt.AlignCenter)
             return
         is_pair = 0 <= left_index < len(self.pages) and 0 <= right_index < len(self.pages)
         if is_pair:
-            self.left.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-            self.right.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+            self.viewport.set_pane_alignments(
+                Qt.AlignRight | Qt.AlignVCenter,
+                Qt.AlignLeft | Qt.AlignVCenter,
+            )
             return
-        self.left.setAlignment(Qt.AlignCenter)
-        self.right.setAlignment(Qt.AlignCenter)
+        self.viewport.set_pane_alignments(Qt.AlignCenter, Qt.AlignCenter)
 
     def render_label(self, label: QLabel, index: int, high_quality: bool = True) -> None:
         if index < 0 or index >= len(self.pages):
@@ -1974,21 +2319,24 @@ class SpreadWindow(QMainWindow):
             return
         display_path, normalize_color = self.display_source_for_index(index)
         original_path = self.pages[index]
+        source_size = self.image_size(index)
         fallback_key = None
         if display_path != original_path:
             _fallback, fallback_key = self.request_display_pixmap(
                 original_path,
-                label.size(),
+                label,
                 high_quality=high_quality,
                 normalize_color=False,
                 visible=True,
+                source_size=source_size,
             )
         _cached, cache_key = self.request_display_pixmap(
             display_path,
-            label.size(),
+            label,
             high_quality=high_quality,
             normalize_color=normalize_color,
             visible=True,
+            source_size=source_size,
         )
         self.desired_display_keys[id(label)] = cache_key
         self.fallback_display_keys[id(label)] = fallback_key or cache_key
@@ -2021,10 +2369,22 @@ class SpreadWindow(QMainWindow):
         target,
         high_quality: bool,
         normalize_color: bool,
+        source_size: tuple[int, int] | None = None,
     ) -> tuple | None:
-        return display_image_key(
+        key = display_image_key(
             display_path, target.width(), target.height(), high_quality, normalize_color
         )
+        if key is None:
+            return None
+        device_pixel_ratio = target_device_pixel_ratio(target)
+        _physical_width, _physical_height, effective_dpr = display_decode_target(
+            target, device_pixel_ratio, source_size
+        )
+        # Keep the established key shape in the common fit/DPR-1 case.  The
+        # tail separates capped or high-DPI images that share a logical size.
+        if abs(device_pixel_ratio - 1.0) < 0.001 and abs(effective_dpr - 1.0) < 0.001:
+            return key
+        return (*key, _physical_width, _physical_height, round(effective_dpr * 1_000_000))
 
     def request_display_pixmap(
         self,
@@ -2034,8 +2394,11 @@ class SpreadWindow(QMainWindow):
         high_quality: bool = True,
         normalize_color: bool = False,
         visible: bool = False,
+        source_size: tuple[int, int] | None = None,
     ) -> tuple[QPixmap | None, tuple | None]:
-        key = self.display_cache_key(display_path, target, high_quality, normalize_color)
+        key = self.display_cache_key(
+            display_path, target, high_quality, normalize_color, source_size
+        )
         if key is None:
             return None, None
         cached = self.display_pixmap_cache.get(key)
@@ -2045,12 +2408,15 @@ class SpreadWindow(QMainWindow):
         pending_priority = self.pending_display_renders.get(key, -1)
         if pending_priority < priority or key not in self.pending_display_renders:
             self.pending_display_renders[key] = priority
+            target_width, target_height, _effective_dpr = display_decode_target(
+                target, target_device_pixel_ratio(target), source_size
+            )
             task = DisplayRenderTask(
                 self.signals,
                 key,
                 display_path,
-                target.width(),
-                target.height(),
+                target_width,
+                target_height,
                 high_quality,
                 normalize_color,
             )
@@ -2087,6 +2453,8 @@ class SpreadWindow(QMainWindow):
             return
         self.display_decode_times_ms.append(elapsed_ms)
         pixmap = QPixmap.fromImage(image)
+        if len(key) >= 10:
+            pixmap.setDevicePixelRatio(key[-1] / 1_000_000)
         self.cache_display_pixmap(key, pixmap)
         self.apply_ready_spread_pixmaps()
 
@@ -2143,18 +2511,23 @@ class SpreadWindow(QMainWindow):
         if not indexes:
             return
         targets = []
-        seen_sizes: set[tuple[int, int]] = set()
+        seen_targets: set[tuple[int, int, float]] = set()
         labels = (self.left,) if self.page_layout_mode == "single" else (self.left, self.right)
-        for target in (label.size() for label in labels):
-            dimensions = (target.width(), target.height())
-            if dimensions in seen_sizes:
+        for target in labels:
+            dimensions = (
+                target.width(),
+                target.height(),
+                target_device_pixel_ratio(target),
+            )
+            if dimensions in seen_targets:
                 continue
-            seen_sizes.add(dimensions)
+            seen_targets.add(dimensions)
             targets.append(target)
         for index in indexes:
             if index < 0 or index >= len(self.pages):
                 continue
             display_path, normalize_color = self.display_source_for_index(index)
+            source_size = self.image_size(index)
             for target in targets:
                 self.request_display_pixmap(
                     display_path,
@@ -2162,6 +2535,7 @@ class SpreadWindow(QMainWindow):
                     high_quality=True,
                     normalize_color=normalize_color,
                     visible=False,
+                    source_size=source_size,
                 )
 
     def warm_nearby_display_cache(self) -> None:
@@ -2207,13 +2581,47 @@ class SpreadWindow(QMainWindow):
         if not hasattr(self, "reading_info_panel") or not hasattr(self, "image_host"):
             return
         margin = 12
-        width = min(580, max(320, self.image_host.width() - margin * 2))
-        height = self.reading_info_panel.sizeHint().height()
+        width = min(580, max(1, self.image_host.width() - margin * 2))
+        height = min(
+            self.reading_overlay_preferred_height(width),
+            max(1, self.image_host.height() - margin * 2),
+        )
         x = max(0, (self.image_host.width() - width) // 2)
         y = max(0, (self.image_host.height() - height) // 2)
         self.reading_info_panel.setGeometry(x, y, width, height)
         if self.reading_info_panel.isVisible():
             self.reading_info_panel.raise_()
+
+    def reading_overlay_preferred_height(self, width: int) -> int:
+        """Measure fixed header/footer and scroll body before clamping the pane."""
+        panel_layout = self.reading_info_panel.layout()
+        if panel_layout is None or not hasattr(self, "reading_info_content"):
+            return self.reading_info_panel.sizeHint().height()
+        margins = panel_layout.contentsMargins()
+        body_width = max(1, width - margins.left() - margins.right())
+        body_layout = self.reading_info_content.layout()
+        body_height = (
+            body_layout.totalHeightForWidth(body_width)
+            if body_layout is not None
+            else self.reading_info_content.sizeHint().height()
+        )
+        header_height = panel_layout.itemAt(0).sizeHint().height()
+        footer_height = (
+            self.reading_info_bookshelf_button.sizeHint().height()
+            + self.reading_info_hint.sizeHint().height()
+        )
+        return (
+            margins.top()
+            + header_height
+            + body_height
+            + footer_height
+            + margins.bottom()
+            + panel_layout.spacing() * 3
+            # A vertical scrollbar reduces the body's effective width and can
+            # add one wrapped line. Reserve its small style-dependent slack
+            # so a pane that otherwise fits does not create a needless scroll.
+            + 16
+        )
 
     def position_next_book_overlay(self) -> None:
         if not hasattr(self, "next_book_banner") or not hasattr(self, "image_host"):
@@ -2757,12 +3165,19 @@ def default_processed_dir(source: Path) -> Path:
     return DEFAULT_UPSCALE_DIR / source.stem / "realcugan"
 
 
-def collect_processed_pages(source_pages: list[Path], processed_dir: Path | None) -> list[Path | None]:
+def collect_processed_pages(source_pages: Sequence[Path], processed_dir: Path | None) -> list[Path | None]:
     if processed_dir is None or not processed_dir.is_dir():
         return [None] * len(source_pages)
     processed: list[Path | None] = []
-    for index, source_page in enumerate(source_pages, start=1):
-        candidates = sorted(processed_dir.glob(f"{index:04d}_{source_page.stem}_*.png"))
+    page_stem = getattr(source_pages, "page_stem", None)
+    for zero_index in range(len(source_pages)):
+        source_stem = (
+            page_stem(zero_index)
+            if callable(page_stem)
+            else Path(source_pages[zero_index]).stem
+        )
+        pattern_stem = glob_escape(source_stem)
+        candidates = sorted(processed_dir.glob(f"{zero_index + 1:04d}_{pattern_stem}_*.png"))
         processed.append(candidates[0].resolve() if candidates else None)
     return processed
 
