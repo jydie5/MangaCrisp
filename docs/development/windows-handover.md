@@ -61,7 +61,7 @@ Do not redesign these workflows during the first Windows port.
 Windows on ARM, a native installer, file associations, CUDA-specific builds,
 and automatic updates are later work.
 
-## Current Windows checkpoint (2026-07-27)
+## Historical Windows checkpoint (2026-07-27)
 
 - Phase 1 source compatibility is implemented on Windows 11 x64; all 46 shared
   and platform tests pass.
@@ -316,7 +316,7 @@ Source and documents are updated on GitHub, not the existing release ZIPs.
 Linux Wayland/X11 is not verified from this Windows PC, and no Linux adapter
 changes were made. Continue with [the Linux handover](linux-handover.md).
 
-## Current reader UI and correction-cache handover (2026-10-20)
+## Previous reader UI and correction-cache handover (2026-10-20)
 
 The current PR #53/#54 release line is UI merge `35f2936` on current `main`
 `d7bbf50`; its implementation checkpoints are `32d569e`, `1c1a8a6`,

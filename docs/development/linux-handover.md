@@ -19,9 +19,10 @@ real GPU behavior, and the portal/capture flow. The macOS result of 367 passed,
 Read the [next-features handover](next-features-handover.md) and
 [shared UX handover](ux-maintenance-handover.md) before integrating.
 
-## Current shared source checkpoint: PR #53/#54 (35f2936, main d7bbf50, 2026-10-20)
+## Source checkpoint of the existing Linux preview: PR #53/#54 (2026-10-20)
 
-Use this checkpoint for the current Linux preview and follow-up native verification. The current shared
+This records the existing Linux preview, not the new shared-source baseline.
+For a new Linux build, use current `origin/main` as described above. This package
 source includes the reader, bookshelf, correction and cache work from PR #53/#54.
 The UI release line is [35f2936](https://github.com/jydie5/MangaCrisp/commit/35f2936),
 and the package source checkpoint is [d7bbf50](https://github.com/jydie5/MangaCrisp/commit/d7bbf50).

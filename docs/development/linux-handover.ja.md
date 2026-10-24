@@ -16,10 +16,10 @@ portal／captureを確認します。macOSの367成功・8スキップ・12 subt
 Linuxの受入証跡ではありません。[次期機能引き継ぎ](next-features-handover.md)と
 [共通UX引き継ぎ](ux-maintenance-handover.ja.md)を読んでから統合してください。
 
-## 現行共通ソースのチェックポイント: PR #53/#54（35f2936、mainはd7bbf50、2026-10-20）
+## 既存Linux previewのソース記録: PR #53/#54（2026-10-20）
 
-現行Linux previewと今後のネイティブ検証は、このチェックポイントを使用します。現行の共通ソースには
-PR #53/#54までの読書画面、本棚、補正、キャッシュの変更が入っています。UIのリリース系統は
+この節は既存Linux previewの記録です。新しいLinux版のビルド・検証には、上記の最新`origin/main`を使用します。
+この既存配布物のソースにはPR #53/#54までの読書画面、本棚、補正、キャッシュの変更が入っています。UIのリリース系統は
 [35f2936](https://github.com/jydie5/MangaCrisp/commit/35f2936)、配布物のソースチェックポイントは
 [d7bbf50](https://github.com/jydie5/MangaCrisp/commit/d7bbf50)です。
 現行Linux Development Previewは、`d7bbf50`の`main`から作成した

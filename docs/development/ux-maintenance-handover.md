@@ -25,8 +25,10 @@ The detailed continuation checklist is in the
 gallery now includes the page overview and is documented in
 [the capture procedure](../images/README.md).
 
+## Previous UI release baseline (2026-10-20)
+
 PR #53 (correction/cache) and PR #54 (reader/bookshelf UI) are merged into
-`main`; the UI release line is `35f2936`, and the current main handover is
+`main`; the UI release line is `35f2936`, and that release used main handover
 `d7bbf50`. Apple Silicon beta `macos-beta-0.7.1b0.3` is published. The UI
 implementation checkpoint is `97dc06f`, with portable font-metric tests at
 `ed7fa11`. This supersedes the earlier PR #44 handover.

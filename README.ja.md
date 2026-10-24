@@ -305,12 +305,12 @@ PDF描画キャッシュとAI補正キャッシュは破棄可能です。それ
 
 ## 現在の制限
 
-- 正式macOS版はApple Silicon専用で、Intel Macには対応していません。
+- macOSベータ版はApple Silicon専用で、Intel Macには対応していません。
 - Windows x64版はDevelopment Previewで、Intel／AMD／別アカウントの
   リリース証跡が未完了です。
 - Linux版はUbuntu 24.04以降のx86_64向けプレビューです。他のディストリビューションと
   aarch64は検証していません。
-- 各OS版とも未署名で、macOS版はApple notarizationも未実施です。
+- Windows／Linux版は未署名です。macOS版はad-hoc署名のみで、Apple Developer ID署名・公証は未実施です。
 - β版のためUIと設定の互換性が変わる可能性があります。
 - RAR形式によってはmacOS側の展開機能との相性で開けない場合があります。
 - 自動アップデートは未実装です。新しいZIPをReleasesから取得してください。
@@ -330,7 +330,7 @@ PDF描画キャッシュとAI補正キャッシュは破棄可能です。それ
 - **F06 — 本ごとの読書状態:** レイアウトと画質設定を本ごとに復元します。`O`の原画／補正版比較は一時的な読書操作です。
 - **F07 — ビューポート:** `+` / `-`、`0`全体、`W`幅、`1`実寸、`Ctrl`／`Meta`＋ホイール、ドラッグパンに対応します。ズーム／パンは本ごとの設定として保存しません。
 - **F08 — ページ一覧:** `T`で可視範囲だけを要求し、source PNG生成、全体展開、AI補正を起こしません。thumbnail画像LRUは16MiB、画面外アイコンは解放します。
-- **F13 / #72 — EPUB Stage A:** metadata検査だけで、UI/importer/factory/page sourceは未接続です。EPUBはまだ読めません。[EPUB Stage A引き継ぎ](docs/development/epub-probe-handover.md)を参照してください。
+- **F13 / #72 — EPUB Stage A（未統合・今回未収録）:** メタデータ検査の別PRで、mainと今回の配布物には含みません。EPUBはまだ読めません。[EPUB Stage A引き継ぎ](docs/development/epub-probe-handover.md)を参照してください。
 
 ```bash
 git clone https://github.com/jydie5/MangaCrisp.git

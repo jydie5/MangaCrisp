@@ -18,8 +18,10 @@ buildし、倍率、入力フォーカス、Windows／LinuxのCtrl＋ホイー�
 継続作業の詳細は[次期機能引き継ぎ](next-features-handover.md)、クリーンなページ一覧画像を含む
 ギャラリーの撮影条件は[撮影手順](../images/README.md)を参照してください。
 
+## 以前のUIリリース基準（2026-10-20）
+
 PR #53（補正・キャッシュ）とPR #54（本棚・読書UI）を`main`へ統合しました。UIのリリース系統は
-`35f2936`、現在のmain引き継ぎは`d7bbf50`です。Apple Silicon向け`macos-beta-0.7.1b0.3`も公開済みです。
+`35f2936`、当時のmain引き継ぎは`d7bbf50`でした。Apple Silicon向け`macos-beta-0.7.1b0.3`も公開済みです。
 UI実装チェックポイントは`97dc06f`、フォント差に対応したテストは`ed7fa11`です。PR #44の旧UX引き継ぎを更新しています。
 
 現行のクロスプラットフォームpreviewは、`d7bbf50`の`main`から作成したLinux

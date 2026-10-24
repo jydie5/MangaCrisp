@@ -19,7 +19,7 @@
 | main統合済み | #68 | ビューポート境界 |
 | main統合済み | #70 | ズーム・パン・幅/全体合わせ・実寸（F07） |
 | main統合済み | #74 | 処理済みページ探索の遅延化、ZIP物理ページごとの展開先分離 |
-| macOS beta 0.7.1b0.4の対象・Windows CI確認待ち | #71 | 可視ページ一覧・遅延サムネイル（F08） |
+| main統合済み・3OS native pass | #71 | 可視ページ一覧・遅延サムネイル（F08） |
 | 今回の配布対象外 | #72 | F13 Stage A EPUBメタデータprobe（読書接続なし） |
 | 未統合のCI整備 | #67 | macOS同梱エンジン監査CI |
 | 未統合のCI整備 | #69 | Linux clean install CI |
@@ -72,7 +72,11 @@ Windows/Linuxの既存ダウンロードはこのmacOS betaによって更新さ
 visible範囲だけを要求する。画面外のsource PNG生成、archive全体extract、AI補正を起こさず、
 thumbnail LRUは16MiB、offscreen iconは解放する。ページ一覧を開いただけで大冊PDFを全ページ描画しない。
 overview選択からの物理ページjump、キャンセル、close後のworker停止を対象OSで確認する。
-macOSとLinuxのsource/package CIは通過しているが、Windows engine/build確認は別途完了させる。
+最終統合候補のmacOS/Linux source・package、Windows portable build・配布監査・展開起動CIはすべて通過した。
+CI記録: [macOS](https://github.com/jydie5/MangaCrisp/actions/runs/40057157561)、
+[Windows](https://github.com/jydie5/MangaCrisp/actions/runs/40057157576)、
+[Linux](https://github.com/jydie5/MangaCrisp/actions/runs/40057157588)。
+これはWindows/Linuxの実GPU・デスクトップ操作の受入を代替しない。
 
 ## 検証手順
 
@@ -120,7 +124,7 @@ stdout/stderrと依存状態を証跡にする。既存のLinux移植方針と�
 
 ## 残課題と境界
 
-- #71のWindows native CI、overview選択・キャンセル・可視範囲の確認。
+- Windows/Linux実機でのoverview選択・キャンセル・可視範囲・倍率・入力操作の確認。
 - #72のStage B設計。EPUBの読書接続は後続で、現時点のStage Aを読書対応と宣伝しない。
 - #67/#69はCI整備として未統合。macOS CIは署名・公証を、Linux CIは実GPU・実デスクトップを保証しない。
 - F12の署名・公証・各GPU/操作ゲート。

@@ -184,7 +184,7 @@ messages all use the same language.
 
 ## AI enhancement
 
-The stable macOS standalone package bundles the official
+The macOS standalone package bundles the official
 `realcugan-ncnn-vulkan 20220728 macOS` executable and models. The Windows
 Development Preview bundles the pinned, audited Zig-built Windows engine and
 the same models. Both need no additional engine setup.
@@ -338,13 +338,14 @@ reading positions are preserved.
 
 ## Current limitations
 
-- The stable macOS beta supports Apple Silicon only; Intel Macs are not
+- The macOS beta supports Apple Silicon only; Intel Macs are not
   currently supported.
 - The Windows x64 build is a Development Preview with Intel, AMD, and clean
   account release evidence still pending.
 - The Linux build targets Ubuntu 24.04+ on x86_64 and is a preview; other
   distributions and aarch64 are not validated.
-- The builds are unsigned; the macOS beta is also not notarized.
+- Windows/Linux packages are unsigned. The macOS beta is ad-hoc signed,
+  without Apple Developer ID signing or notarization.
 - Some RAR variants may not be compatible with the available macOS extraction
   backend.
 - Updates are manual; download a newer build from Releases.
@@ -371,8 +372,8 @@ target-OS verification work.
 - **F08 — Page overview:** `T` requests visible thumbnails only; it does not
   create source PNGs, extract the whole archive, or run AI correction. The
   thumbnail-image LRU is 16 MiB and offscreen icons are released.
-- **F13 / #72 — EPUB Stage A:** The probe inspects metadata only. EPUB is not
-  readable yet because the UI, importer, factory, and page source are unconnected.
+- **F13 / #72 — EPUB Stage A (unmerged):** The separate metadata-probe PR is
+  excluded from main and this release. EPUB reading remains unsupported.
   See the [EPUB Stage A handover](docs/development/epub-probe-handover.md).
 
 ```bash

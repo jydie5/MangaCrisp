@@ -65,6 +65,9 @@ under CC BY 4.0. See [attribution](../../demo/ATTRIBUTION.md) and the
   smoke check, and interactive UI check. The user accepted the integrated
   candidate as generally satisfactory; this is not a replacement for separate
   Windows or Linux package checks.
+- Final integration CI passed on [macOS](https://github.com/jydie5/MangaCrisp/actions/runs/40057157561),
+  [Windows](https://github.com/jydie5/MangaCrisp/actions/runs/40057157576), and
+  [Linux](https://github.com/jydie5/MangaCrisp/actions/runs/40057157588), including native package checks.
 - Windows and Linux downloads are unchanged for this release. Their maintainers
   must build on the target OS and verify scaling, Ctrl+wheel input, GPU behavior,
   and Wayland/X11 (Linux) before publishing a matching platform update.
@@ -136,6 +139,7 @@ release tag `macos-beta-0.7.1b0.4`をこの配布物のソース参照としま�
 - macOS上の統合共有suiteは**367成功、8スキップ、12 subtests成功**でした。
 - Apple Siliconのローカルテスト版で、配布監査、起動smoke、対話UI確認を通過しました。利用者は統合candidateを
   おおむね問題ないと確認しています。ただし、これはWindows／Linux個別の配布版確認の代わりにはなりません。
+- 最終統合候補はmacOS・Windows・LinuxのネイティブCI（上記リンク）を通過しました。
 - Windows／Linuxのダウンロード配布物は今回更新していません。対応する更新を公開する前に、各OSでbuildし、倍率、
   Ctrl＋ホイール、GPU、LinuxのWayland／X11を確認してください。
 - macOS版はApple Silicon専用で、ad-hoc署名済み、Developer ID署名・notarization未実施です。
