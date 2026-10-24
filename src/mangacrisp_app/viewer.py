@@ -7,6 +7,7 @@ import time
 from argparse import ArgumentParser, Namespace
 from collections import deque
 from collections.abc import Callable, Sequence
+from glob import escape as glob_escape
 from hashlib import sha1
 from html import escape
 from math import ceil, isfinite, sqrt
@@ -3182,12 +3183,19 @@ def default_processed_dir(source: Path) -> Path:
     return DEFAULT_UPSCALE_DIR / source.stem / "realcugan"
 
 
-def collect_processed_pages(source_pages: list[Path], processed_dir: Path | None) -> list[Path | None]:
+def collect_processed_pages(source_pages: Sequence[Path], processed_dir: Path | None) -> list[Path | None]:
     if processed_dir is None or not processed_dir.is_dir():
         return [None] * len(source_pages)
     processed: list[Path | None] = []
-    for index, source_page in enumerate(source_pages, start=1):
-        candidates = sorted(processed_dir.glob(f"{index:04d}_{source_page.stem}_*.png"))
+    page_stem = getattr(source_pages, "page_stem", None)
+    for zero_index in range(len(source_pages)):
+        source_stem = (
+            page_stem(zero_index)
+            if callable(page_stem)
+            else Path(source_pages[zero_index]).stem
+        )
+        pattern_stem = glob_escape(source_stem)
+        candidates = sorted(processed_dir.glob(f"{zero_index + 1:04d}_{pattern_stem}_*.png"))
         processed.append(candidates[0].resolve() if candidates else None)
     return processed
 
