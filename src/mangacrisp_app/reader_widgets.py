@@ -33,6 +33,46 @@ QWidget#readerRoot QWidget#readingControlsOverlay {
     border: 1px solid rgba(255, 255, 255, 68);
     border-radius: 16px;
 }
+QWidget#readerRoot QScrollArea#readingControlsScroll,
+QWidget#readerRoot QWidget#readingControlsScrollViewport,
+QWidget#readerRoot QWidget#readingControlsContent {
+    background: transparent;
+    border: 0;
+}
+QWidget#readerRoot QScrollArea#readingControlsScroll QScrollBar:vertical {
+    background: transparent;
+    width: 8px;
+}
+QWidget#readerRoot QScrollArea#readingControlsScroll QScrollBar::handle:vertical {
+    background: #516172;
+    border-radius: 4px;
+    min-height: 30px;
+}
+QWidget#readerRoot QScrollArea#readingControlsScroll QScrollBar::add-line:vertical,
+QWidget#readerRoot QScrollArea#readingControlsScroll QScrollBar::sub-line:vertical {
+    height: 0;
+}
+QWidget#readerRoot QScrollArea#readingControlsScroll QScrollBar::add-page:vertical,
+QWidget#readerRoot QScrollArea#readingControlsScroll QScrollBar::sub-page:vertical {
+    background: transparent;
+}
+QWidget#readerRoot QComboBox#zoomModeSelector {
+    color: #eef5f3;
+    background: #0b1320;
+    border: 1px solid #414b5c;
+    border-radius: 8px;
+    min-height: 32px;
+    padding: 6px 10px;
+}
+QWidget#readerRoot QComboBox#zoomModeSelector:focus {
+    border: 2px solid #66d9c4;
+}
+QWidget#readerRoot QComboBox#zoomModeSelector QAbstractItemView {
+    color: #eef5f3;
+    background: #151f2e;
+    selection-color: #66d9c4;
+    selection-background-color: #183d3b;
+}
 QWidget#readerRoot QLabel {
     background: transparent;
     border: 0;
