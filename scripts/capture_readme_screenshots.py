@@ -14,6 +14,7 @@ sys.path.insert(0, str(REPOSITORY_ROOT / "src"))
 
 from PySide6.QtWidgets import QApplication
 
+import mangacrisp_app.viewer as viewer_module
 from mangacrisp_app.bookshelf import BookshelfWindow
 from mangacrisp_app.i18n import set_language
 from mangacrisp_app.library import LibraryPaths, LibraryService, save_library_settings
@@ -71,6 +72,11 @@ def capture(demo_dir: Path, output_dir: Path, language: str = "en") -> None:
                 for path in Path(selected.local_path).glob("*")
                 if path.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp"}
             )
+            # Keep this gallery run completely independent from the developer's
+            # normal correction and display caches.  SpreadWindow looks up
+            # these module globals when it creates its disk caches.
+            viewer_module.DEFAULT_UPSCALE_DIR = paths.cache_dir / "upscale"
+            viewer_module.DISPLAY_CACHE_DIR = viewer_module.DEFAULT_UPSCALE_DIR / "display_cache"
             reader = SpreadWindow(
                 pages=pages,
                 title=selected.title,
@@ -78,6 +84,11 @@ def capture(demo_dir: Path, output_dir: Path, language: str = "en") -> None:
                 spread_order="ltr",
                 cover_single=False,
                 auto_prefetch=False,
+                bookmark_callback=lambda page_index: bookshelf.add_bookmark(selected.id, page_index),
+                bookmarks_provider=lambda: library.bookmarks.list_for_book(selected.id),
+                bookmark_delete_callback=lambda bookmark_id: bookshelf.delete_bookmark(
+                    selected.id, bookmark_id
+                ),
                 settings_path=paths.settings_path,
             )
             reader.index = min(1, max(0, len(pages) - 2))
