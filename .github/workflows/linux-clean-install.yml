@@ -1,0 +1,158 @@
+name: Linux clean install audit
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/linux-clean-install.yml"
+      - ".github/workflows/linux-ci.yml"
+      - "scripts/build_linux_app.py"
+      - "scripts/fetch_*_linux.py"
+      - "packaging/linux/**"
+      - "INSTALL.linux*"
+      - "assets/mangacrisp-app-icon.png"
+      - "LICENSE"
+      - "THIRD_PARTY_NOTICES.md"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "demo/**"
+      - "src/mangacrisp_app/archive_utils.py"
+      - "src/mangacrisp_app/engine_utils.py"
+      - "src/mangacrisp_app/platform/*linux*.py"
+      - "src/mangacrisp_app/platform/__init__.py"
+      - "src/mangacrisp_app/platform/common.py"
+  workflow_dispatch:
+
+concurrency:
+  group: linux-clean-install-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Ubuntu package
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      UV_FROZEN: "1"
+      MANGACRISP_LANGUAGE: "en"
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Qt runtime libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3 libxcb-cursor0
+
+      - name: Install uv
+        run: python -m pip install --disable-pip-version-check uv==0.11.15
+
+      - name: Restore verified Linux vendor cache
+        id: vendor-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: build/vendor
+          key: linux-vendor-v1-${{ hashFiles('scripts/fetch_7zip_linux.py', 'scripts/fetch_realcugan_linux.py') }}
+
+      - name: Install project dependencies
+        run: uv sync --extra dev --extra app
+
+      - name: Build bundled Linux application
+        run: uv run python scripts/build_linux_app.py
+
+      - name: Record archive checksum and manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive_path="$(find dist -maxdepth 1 -type f -name 'MangaCrisp-*-linux-x86_64.tar.gz' -print -quit)"
+          test -n "$archive_path"
+          sha256sum "$archive_path" | tee dist/SHA256SUMS.txt
+          tar -tzf "$archive_path" > dist/MangaCrisp-linux-x86_64.manifest.txt
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mangacrisp-linux-clean-package
+          if-no-files-found: error
+          retention-days: 7
+          path: |
+            dist/MangaCrisp-*-linux-x86_64.tar.gz
+            dist/SHA256SUMS.txt
+            dist/MangaCrisp-linux-x86_64.manifest.txt
+
+      - name: Save verified Linux vendor cache
+        if: success() && steps.vendor-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: build/vendor
+          key: ${{ steps.vendor-cache.outputs.cache-primary-key }}
+
+  clean-container:
+    name: Validate ${{ matrix.name }} container
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ubuntu-24.04
+            image: ubuntu:24.04
+          - name: ubuntu-26.04
+            image: ubuntu:26.04
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Download package artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mangacrisp-linux-clean-package
+          path: dist
+
+      - name: Verify archive checksum
+        run: sha256sum --check dist/SHA256SUMS.txt
+
+      - name: Check Docker daemon
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker info 2>&1 | tee "$RUNNER_TEMP/docker-info-${{ matrix.name }}.log"
+
+      - name: Validate clean Ubuntu container
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive_path="$(find dist -maxdepth 1 -type f -name 'MangaCrisp-*-linux-x86_64.tar.gz' -print -quit)"
+          test -n "$archive_path"
+          log_path="$RUNNER_TEMP/mangacrisp-clean-${{ matrix.name }}.log"
+          set +e
+          packaging/linux/validate-clean-ubuntu.sh "$archive_path" "${{ matrix.image }}" 2>&1 | tee "$log_path"
+          validation_exit_code=${PIPESTATUS[0]}
+          set -e
+          exit "$validation_exit_code"
+
+      - name: Upload clean validation logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mangacrisp-linux-clean-${{ matrix.name }}
+          if-no-files-found: warn
+          retention-days: 7
+          path: |
+            ${{ runner.temp }}/docker-info-${{ matrix.name }}.log
+            ${{ runner.temp }}/mangacrisp-clean-${{ matrix.name }}.log
+            dist/SHA256SUMS.txt
+            dist/MangaCrisp-linux-x86_64.manifest.txt
