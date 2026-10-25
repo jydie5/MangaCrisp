@@ -2,6 +2,59 @@
 
 [日本語](linux-handover.ja.md)
 
+## Linux-only continuation after Windows Preview b0.6 (2026-10-25)
+
+[Windows Preview 0.7.1b0.6](https://github.com/jydie5/MangaCrisp/releases/tag/windows-preview-0.7.1b0.6)
+is published. Its tag targets main `742e6b4`; it reuses the unchanged native
+Windows CI ZIP from [run 40057157576](https://github.com/jydie5/MangaCrisp/actions/runs/40057157576),
+tested merge `47f0c2c388de6c87e89fef76100c04f82838779d`. Runtime sources,
+dependencies and Windows packaging match the macOS b0.4/main baseline
+`cdab340`; subsequent changes are release/download documentation only.
+Windows ZIP SHA-256 is
+`54596edeec782990b18fc95bdd0b0087145c0595afc9c1b38944f50a544a6187`.
+It is a reference for provenance, never a Linux executable to distribute.
+
+The Windows user confirmed startup, `T` overview selection/page navigation,
+`+` zoom and `0` fit, then approved publication. Sanitized extracted startup
+was repeated locally. These are bounded Windows checks, not Linux acceptance,
+an agent visual inspection, all-GPU coverage, or a clean-account certification.
+Windows remains unsigned with Intel/AMD and separate clean-account gates open.
+
+Only the Linux handover is being continued after this Windows release; no
+macOS or Windows handover rewrite and no Linux release is part of this update.
+The Linux download remains **linux-preview-0.7.1b0.4**, from the older
+`d7bbf50` baseline; it does not contain the newest navigation/overview work.
+
+### Receiving Linux work
+
+1. Preserve local changes; once clean, switch to main, run
+   `git pull --ff-only origin main`, then create a fresh `linux/<topic>` branch.
+   Do not cherry-pick the Windows documentation branch.
+2. Native Ubuntu [CI run 40057157588](https://github.com/jydie5/MangaCrisp/actions/runs/40057157588)
+   already passed source and package jobs for the same integrated candidate.
+   Its `mangacrisp-linux-x86_64` artifact was still available on 2026-10-25.
+   Compare its tested source with the new main, verify its checksums and
+   provenance, and reuse it if there is no runtime/packaging difference.
+   Rebuild on Ubuntu 24.04 x86_64 if relevant source differs or it has expired;
+   do not recompile merely because the handover changed.
+3. With demos/generated data, check bookshelf search/sort, page-number jump,
+   `B`/`Shift+B`, per-book settings restore, `+`/`-`/`0`/`W`/`1`, Ctrl+wheel
+   and drag-pan without an unintended page turn. Check `T` open, visible
+   thumbnails, select, cancel and close; preserve lazy PDF/ZIP behavior.
+4. Record GNOME Wayland and X11 separately, scaling, Qt, Ubuntu, GPU/driver,
+   source commit and artifact hash. Recheck cursor/focus/modal behavior,
+   original/enhanced color, correction cache cleanup and capture/portal recovery.
+   A CI/headless result is not desktop or real-GPU acceptance.
+5. Run the source suite and native package/startup checks, plus clean Ubuntu
+   24.04/26.04 validation as described in the Linux packaging README. Keep
+   Intel/AMD, unavailable sessions and other gaps explicit.
+6. Stop for the Linux human check. Record its actual scope here, then publish
+   a **new Linux preview tag** only with release authorization. Retain old
+   releases, attach checksums and update Linux download links after publication.
+
+The earlier dated checkpoints below remain historical evidence; they do not
+replace this Linux acceptance work. EPUB reading is still outside the release.
+
 ## Incoming macOS beta 0.7.1b0.4 checkpoint (2026-10-24)
 
 The current Apple Silicon download is

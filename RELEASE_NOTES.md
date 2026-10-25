@@ -1,3 +1,18 @@
+# Windows Preview 0.7.1b0.6 — navigation and page overview (2026-10-25)
+
+Bookshelf discovery, page jumps, bookmarks, per-book settings, zoom/pan and lazy
+page overview now ship on Windows, with processed-page and ZIP cache fixes.
+The unchanged Windows-native CI artifact was checksum-verified and its
+sanitized startup repeated; the user confirmed startup, overview selection,
+zoom and fit. This is an unsigned Development Preview, not stable certification.
+
+Windows版へ本棚検索・ページ移動・しおり・状態復元・ズーム／パン・遅延ページ一覧を収録しました。
+CI成果物をそのまま配布し、利用者から起動・一覧選択・拡大と全体復帰の確認を受領しています。
+Linux配布物は未更新です。
+
+[Windows release notes / 詳細](docs/releases/windows-preview-0.7.1b0.6.md) ·
+[Linux handover / Linux引継ぎ](docs/development/linux-handover.ja.md)
+
 # UI/UX and minor fixes — platform previews (2026-10-20)
 
 The updated UI is available in macOS Beta 0.7.1b0.3, Windows Development Preview
