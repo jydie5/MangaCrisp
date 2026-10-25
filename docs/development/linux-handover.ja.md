@@ -2,6 +2,23 @@
 
 [English](linux-handover.md)
 
+## macOS beta 0.7.1b0.5 公開チェックポイント（2026-10-25）
+
+利用者はApple Silicon向けmacOS候補の公開を承認しました。現在のmain `b062dda`から、
+新しい[`macos-beta-0.7.1b0.5`](../releases/macos-beta-0.7.1b0.5.md)タグ／Releaseを
+公開しました。共有runtimeは`7605b64`の読書記録機能（読書状態フィルター／一括操作、
+同一本棚向けJSON書出し／復元、しおりラベル／メモ、同一ID再登録時の履歴維持、
+宣言的なreaderショートカット定義）と同じで、以後はrelease文書の更新です。Comic EPUBは
+未接続のままで、読書対応として案内しません。
+
+macOSのsource suiteは**414成功・8スキップ・12 subtests成功**でした。対象Macの配布候補では
+ad-hoc署名、起動、カラーPDF smoke、実GPUでのカラー補正、実アプリでの移動・一覧・
+Help（`H`）・全画面（`F`）を確認しています。既存候補では読書状態の一括操作、
+バックアップの確認／取消／復元、しおりメモ編集、同一ID再登録時の履歴維持も確認済みです。
+これはLinuxのデスクトップ／ハードウェア受入の証跡ではありません。Linux b0.4は未更新のまま残し、
+Linux版は対象OSでbuildした上でWayland／X11、倍率、ネイティブdialog／focus、portal、
+実GPU、clean installを別途確認してから公開します。
+
 ## 読書記録版Windows b0.7公開後のLinux引継ぎ（2026-10-25）
 
 PR #77〜#81を依存順にmainへ統合しました。利用者のWindows実機確認を受領し、

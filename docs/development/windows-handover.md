@@ -4,6 +4,28 @@ This document is the starting point for continuing MangaCrisp on a Windows PC.
 The Windows version must preserve the completed macOS product behavior rather
 than become a separate implementation.
 
+## macOS beta 0.7.1b0.5 release checkpoint (2026-10-25)
+
+The user accepted the Apple Silicon macOS candidate for release. A new
+[`macos-beta-0.7.1b0.5`](../releases/macos-beta-0.7.1b0.5.md) tag/release is
+published from main `b062dda`; do not treat this publication as a
+Windows release or as a substitute for Windows evidence. Its shared runtime is
+the same `7605b64` reading-records checkpoint plus release documentation:
+reading-status filters and bulk actions, same-library record backup/restore,
+bookmark labels/notes, reimport-history preservation, and the declarative
+reader shortcut registry are included. Comic EPUB remains unconnected and is
+not a reading feature.
+
+The macOS source suite recorded **414 passed, 8 skipped, and 12 subtests
+passed**. On the target Mac, the packaged candidate passed ad-hoc signing,
+startup and color-PDF smoke checks; real-GPU color correction; and actual-app
+navigation, overview, Help (`H`) and fullscreen (`F`) checks. Existing candidate
+coverage also includes reading-status bulk actions, backup preview/cancel/restore,
+bookmark-note editing, and same-ID reimport history preservation. This is
+macOS-only evidence. Keep Windows Preview 0.7.1b0.7 unchanged, build any future
+Windows package on Windows, and retain the Windows clean-account, Intel/AMD GPU,
+high-DPI, keyboard-focus and `Ctrl`+wheel gates.
+
 ## Incoming macOS beta 0.7.1b0.4 checkpoint (2026-10-24)
 
 The current Apple Silicon download is

@@ -19,6 +19,8 @@
 
 ![Escとパネル外クリックで閉じられるショートカット一覧](docs/images/ja/shortcut-help.png)
 
+![しおりのラベルとメモ編集](docs/images/ja/bookmark-edit.png)
+
 </details>
 
 画像はmacOS上の共通UIを、デモ専用の一時本棚で撮影しています。作品はDavid Revoyの
@@ -45,11 +47,11 @@ MangaCrispは個人で開発している、MIT Licenseの無料ソフトウェ�
 
 一般ユーザーにPython、uv、ターミナル操作は不要です。
 
-### [MangaCrisp macOS版（Apple Silicon）Beta 0.7.1b0.4をダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/macos-beta-0.7.1b0.4/MangaCrisp-v0.7.1b0.4-macos-apple-silicon-standalone.zip)
+### [MangaCrisp macOS版（Apple Silicon）Beta 0.7.1b0.5をダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/macos-beta-0.7.1b0.5/MangaCrisp-v0.7.1b0.5-macos-apple-silicon-standalone.zip)
 
-本棚検索と並べ替え、物理ページ番号ジャンプ、しおり、本ごとの設定復元、ズーム／パン、
-必要な範囲だけ作るページ一覧を追加したmacOSベータです。処理済みページの探索を遅延化し、
-ZIP展開先も物理ページごとに分離しました。詳細は[リリース文書](docs/releases/macos-beta-0.7.1b0.4.md)を参照してください。
+読了状態の絞り込み・一括変更、同じ本棚の読書記録バックアップ、しおりラベル／メモ編集を
+追加しました。同じ原本の再登録で履歴が消える不具合と、バックアップ保存先の上書き確認も修正しています。
+検索・ズーム／パン・遅延ページ一覧も含みます。[リリース文書](docs/releases/macos-beta-0.7.1b0.5.md)を参照してください。
 
 1. 上のリンクからstandalone ZIPをダウンロードします。
 2. ZIPをダブルクリックして展開します。
@@ -339,8 +341,8 @@ Windows previewでは、本棚を「未読・読書中・読了」で絞り込�
 復元の仕様と各OSの確認項目は
 [開発引き継ぎ](docs/development/reading-records-handover.md)を参照してください。
 キー処理・ボタンのキー表示・ヘルプの定義も共通モジュールへ整理します。
-キー割当の編集UIは今回含めません。これらはmainへ統合済みですが、
-上記のmacOS／Linux配布物にはまだ含みません。
+キー割当の編集UIは今回含めません。これらは上記のmacOS b0.5とWindows b0.7へ収録済みです。
+Linux b0.4の配布物にはまだ含みません。
 
 ## ソースコードから起動する
 
@@ -348,7 +350,7 @@ Windows previewでは、本棚を「未読・読書中・読了」で絞り込�
 
 ### 現在のsourceとmacOSベータの状態
 
-以下はmacOS Beta 0.7.1b0.4とWindows Preview 0.7.1b0.7に含まれます。
+以下はmacOS Beta 0.7.1b0.5とWindows Preview 0.7.1b0.7に含まれます。
 Linuxの配布物は従来版のままです。Linux実機確認と次の公開手順は
 [Linux引継ぎ書](docs/development/linux-handover.ja.md)を参照してください。
 

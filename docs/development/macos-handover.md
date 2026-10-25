@@ -7,7 +7,20 @@ the Windows work merged through PR #27. The receiving Mac must continue from
 the current `origin/main`; it must not restore an older macOS checkout over the
 shared files.
 
-## Current published checkpoint (2026-10-24)
+## Current published checkpoint (2026-10-25)
+
+[macOS Beta 0.7.1b0.5](../releases/macos-beta-0.7.1b0.5.md) ships the accepted
+`main` build at `b062dda`: reading status and bulk actions, same-library record
+backup, bookmark labels/notes, shared action definitions and same-ID reimport
+history preservation. It passed 414 tests, 8 skips and 12 subtests, distribution
+and extracted-startup checks, generated color PDF, real-GPU color enhancement,
+and native reader controls. The user accepted the integrated Mac candidate.
+The package remains ad-hoc signed and non-notarized. Windows b0.7 is already
+published; Linux b0.4 still predates these shared features. Comic EPUB is excluded.
+The English/Japanese gallery uses only temporary demo data and generated notes.
+See the [reading-records handover](reading-records-handover.md).
+
+## Previous published checkpoint (2026-10-24)
 
 Apple Silicon beta
 [`macos-beta-0.7.1b0.4`](../releases/macos-beta-0.7.1b0.4.md) is the current
