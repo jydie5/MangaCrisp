@@ -49,6 +49,13 @@ from mangacrisp_app.quality_settings import (
     save_quality_preferences,
     validate_quality_preset,
 )
+from mangacrisp_app.reader_actions import (
+    action_keycap,
+    action_label,
+    help_entries,
+    overlay_action_ids,
+    resolve_action,
+)
 
 try:
     from PySide6.QtCore import (
@@ -185,45 +192,14 @@ NOISE_LABELS = {
 }
 
 
-def navigation_help_text(reading_direction: str) -> str:
-    if reading_direction == "rtl":
-        return "Left/Space: next | Right: previous | Shift+Left/Right: +/-1p | V: spread/single | O: original/enhanced | F: fullscreen | P: panel | Shift+B: bookmarks | H: help"
-    return "Right/Space: next | Left: previous | Shift+Right/Left: +/-1p | V: spread/single | O: original/enhanced | F: fullscreen | P: panel | Shift+B: bookmarks | H: help"
-
-
-def viewer_shortcuts_text(reading_direction: str) -> str:
-    if reading_direction == "rtl":
-        next_keys = "← / ↓ / Space"
-        previous_keys = "→ / ↑ / Backspace"
-        one_page_next = "Shift+← / Shift+↓ / E"
-        one_page_previous = "Shift+→ / Shift+↑ / Q"
-    else:
-        next_keys = "→ / ↓ / Space"
-        previous_keys = "← / ↑ / Backspace"
-        one_page_next = "Shift+→ / Shift+↓ / E"
-        one_page_previous = "Shift+← / Shift+↑ / Q"
+def viewer_shortcuts_text(
+    reading_direction: str,
+    available_actions: frozenset[str] = frozenset({"always", "bookmark_add", "bookmark_list"}),
+) -> str:
+    """Render the registry's help rows using the current application language."""
     return "\n".join(
-        [
-            tr("{keys}: 次へ", keys=next_keys),
-            tr("{keys}: 前へ", keys=previous_keys),
-            tr("{keys}: 1ページ進める", keys=one_page_next),
-            tr("{keys}: 1ページ戻す", keys=one_page_previous),
-            tr("F: 全画面表示/解除"),
-            tr("P: 右設定パネル表示/非表示"),
-            tr("V: 見開き/単ページを切り替え"),
-            tr("O: 原画/補正版を切り替え"),
-            tr("0: 全体に合わせる / W: 幅に合わせる / 1: 実寸"),
-            tr("+ / -: 表示倍率を変更 / Ctrl/⌘+ホイール: 表示倍率を変更"),
-            tr("B: しおり追加"),
-            tr("Shift+B: しおり一覧"),
-            tr("T: ページ一覧"),
-            tr("画面左右クリック: 次へ/前へ（読書方向に連動）"),
-            tr("Shift+画面左右クリック: 1ページ進む/戻す"),
-            tr("画面中央クリック: 操作ペインを表示/非表示"),
-            tr("右クリック: 前へ"),
-            tr("Esc: 操作ペインを閉じる / 全画面解除 / 本棚へ戻る"),
-            tr("H / ?: このヘルプを表示"),
-        ]
+        tr(entry.template, keys=entry.keys) if entry.keys is not None else tr(entry.template)
+        for entry in help_entries(reading_direction, available_actions)
     )
 
 
@@ -245,12 +221,6 @@ def show_help_dialog(parent, shortcuts_text: str) -> None:
         dialog.exec()
     finally:
         dialog.deleteLater()
-
-
-def compact_shortcuts_text(reading_direction: str) -> str:
-    if reading_direction == "rtl":
-        return tr("左側クリック/← 次 / 右側クリック/→ 前 / 中央クリック 情報 / V 表示切替 / O 原画比較 / P 設定 / H ヘルプ")
-    return tr("右側クリック/→ 次 / 左側クリック/← 前 / 中央クリック 情報 / V 表示切替 / O 原画比較 / P 設定 / H ヘルプ")
 
 
 def display_preset_name(name: str) -> str:
@@ -820,7 +790,8 @@ class SpreadWindow(QMainWindow):
         layout_row = QHBoxLayout()
         self.layout_buttons = {}
         for mode, title in (("spread", "見開き"), ("single", "単ページ")):
-            button = QPushButton(tr(title) + "  V", controls)
+            # V toggles layouts; it does not select either of these two choices.
+            button = QPushButton(tr(title), controls)
             button.setCheckable(True)
             button.clicked.connect(lambda _checked=False, value=mode: self.select_page_layout(value))
             self.layout_buttons[mode] = button
@@ -962,23 +933,13 @@ class SpreadWindow(QMainWindow):
         self.update_reader_action_states()
 
     def make_reader_action(self, action: str, parent: QWidget, *, compact: bool = False) -> ShortcutButton:
-        next_key, previous_key = ("←", "→") if self.is_right_bound() else ("→", "←")
-        actions = {
-            "previous": ("前へ", previous_key, lambda: self.move_by(-self.page_turn_step())),
-            "next": ("次へ", next_key, lambda: self.move_by(self.page_turn_step())),
-            "back_one": ("−1", "Shift+" + previous_key, lambda: self.move_by(-1)),
-            "forward_one": ("＋1", "Shift+" + next_key, lambda: self.move_by(1)),
-            "settings": ("設定", "P", self.toggle_controls),
-            "original": ("原画と比較", "O", lambda: self.original_check.toggle()),
-            "fullscreen": ("全画面", "F", self.toggle_fullscreen),
-            "layout": ("見開き", "V", self.toggle_page_layout),
-            "help": ("操作一覧", "H", self.show_shortcuts_help),
-            "bookmark": ("しおり", "B", self.add_bookmark),
-            "bookmarks": ("しおり一覧", "Shift+B", self.show_bookmarks),
-            "pages": ("ページ一覧", "T", self.show_page_overview),
-        }
-        title, shortcut, callback = actions[action]
-        button = ShortcutButton(tr(title), shortcut, parent, compact=compact)
+        callback = lambda: self.invoke_reader_action(action)
+        button = ShortcutButton(
+            tr(action_label(action)),
+            action_keycap(action, self.reading_direction),
+            parent,
+            compact=compact,
+        )
         button.setCheckable(action in {"settings", "original", "fullscreen", "layout"})
         button.clicked.connect(callback)
         self.reader_action_buttons.setdefault(action, []).append(button)
@@ -1083,13 +1044,7 @@ class SpreadWindow(QMainWindow):
         layout.addLayout(zoom_controls)
         grid = QGridLayout()
         grid.setSpacing(8)
-        navigation = ("next", "previous", "forward_one", "back_one") if self.is_right_bound() else ("previous", "next", "back_one", "forward_one")
-        actions = [*navigation, "original", "settings", "fullscreen", "layout", "help"]
-        if self.bookmark_callback is not None:
-            actions.append("bookmark")
-        if self.bookmarks_provider is not None:
-            actions.append("bookmarks")
-        actions.append("pages")
+        actions = overlay_action_ids(self.available_reader_actions(), self.reading_direction)
         for index, action in enumerate(actions):
             grid.addWidget(self.make_reader_action(action, self.reading_info_content), index // 2, index % 2)
         layout.addLayout(grid)
@@ -1681,7 +1636,7 @@ class SpreadWindow(QMainWindow):
         return label
 
     def help_text(self) -> str:
-        return navigation_help_text(self.reading_direction)
+        return viewer_shortcuts_text(self.reading_direction, self.available_reader_actions())
 
     def current_quality_mode(self) -> str:
         if bool(getattr(self, "original_check", None) and self.original_check.isChecked()):
@@ -1905,86 +1860,120 @@ class SpreadWindow(QMainWindow):
         return self.handle_navigation_key(event.key(), event.modifiers())
 
     def handle_navigation_key(self, key: int, modifiers=Qt.NoModifier) -> bool:
-        if key in {Qt.Key_Plus, Qt.Key_Equal} and modifiers in {Qt.NoModifier, Qt.ShiftModifier}:
-            self.zoom_in()
-            return True
-        if key == Qt.Key_Minus and modifiers == Qt.NoModifier:
-            self.zoom_out()
-            return True
-        if modifiers == Qt.NoModifier:
-            if key == Qt.Key_0:
-                self.set_viewport_zoom(1.0, mode="fit")
-                return True
-            if key == Qt.Key_W:
-                self.set_viewport_zoom(
-                    self.viewport_zoom_for_mode("width"),
-                    mode="width",
-                    top=True,
-                    focus_page=True,
-                )
-                return True
-            if key == Qt.Key_1:
-                self.set_viewport_zoom(
-                    self.viewport_zoom_for_mode("actual"),
-                    mode="actual",
-                    focus_page=True,
-                    normal_range=False,
-                )
-                return True
-        next_key = Qt.Key_Left if self.is_right_bound() else Qt.Key_Right
-        previous_key = Qt.Key_Right if self.is_right_bound() else Qt.Key_Left
-        if modifiers & Qt.ShiftModifier:
-            if key in {next_key, Qt.Key_Down}:
-                self.move_by(1)
-                return True
-            if key in {previous_key, Qt.Key_Up}:
-                self.move_by(-1)
-                return True
-        if key in {next_key, Qt.Key_Down, Qt.Key_Space}:
+        # Keep the previous distinction for a numeric-keypad modifier: arrows
+        # remain reader navigation, while keypad zoom/mode keys are not treated
+        # as the dedicated top-row shortcuts.
+        if modifiers & Qt.KeypadModifier and key in {
+            Qt.Key_Plus,
+            Qt.Key_Equal,
+            Qt.Key_Minus,
+            Qt.Key_0,
+            Qt.Key_1,
+            Qt.Key_W,
+            Qt.Key_T,
+        }:
+            return False
+        key_names = {
+            Qt.Key_Plus: "plus",
+            Qt.Key_Equal: "equal",
+            Qt.Key_Minus: "minus",
+            Qt.Key_0: "0",
+            Qt.Key_1: "1",
+            Qt.Key_W: "w",
+            Qt.Key_Left: "left",
+            Qt.Key_Right: "right",
+            Qt.Key_Up: "up",
+            Qt.Key_Down: "down",
+            Qt.Key_Space: "space",
+            Qt.Key_Backspace: "backspace",
+            Qt.Key_E: "e",
+            Qt.Key_Q: "q",
+            Qt.Key_F: "f",
+            Qt.Key_P: "p",
+            Qt.Key_V: "v",
+            Qt.Key_O: "o",
+            Qt.Key_B: "b",
+            Qt.Key_T: "t",
+            Qt.Key_H: "h",
+            Qt.Key_Question: "question",
+            Qt.Key_Escape: "escape",
+        }
+        key_name = key_names.get(key)
+        if key_name is None:
+            return False
+        modifier_names = frozenset(
+            name
+            for flag, name in (
+                (Qt.ShiftModifier, "shift"),
+                (Qt.ControlModifier, "control"),
+                (Qt.MetaModifier, "meta"),
+                (Qt.AltModifier, "alt"),
+            )
+            if modifiers & flag
+        )
+        action = resolve_action(
+            key_name,
+            modifier_names,
+            self.reading_direction,
+            self.available_reader_actions(),
+        )
+        return self.invoke_reader_action(action) if action is not None else False
+
+    def available_reader_actions(self) -> frozenset[str]:
+        available = {"always"}
+        if self.bookmark_callback is not None:
+            available.add("bookmark_add")
+        if self.bookmarks_provider is not None:
+            available.add("bookmark_list")
+        return frozenset(available)
+
+    def invoke_reader_action(self, action: str) -> bool:
+        if action == "next":
             self.move_by(self.page_turn_step())
-            return True
-        elif key in {previous_key, Qt.Key_Up, Qt.Key_Backspace}:
+        elif action == "previous":
             self.move_by(-self.page_turn_step())
-            return True
-        elif key == Qt.Key_E:
+        elif action == "forward_one":
             self.move_by(1)
-            return True
-        elif key == Qt.Key_Q:
+        elif action == "back_one":
             self.move_by(-1)
-            return True
-        elif key == Qt.Key_F:
+        elif action == "zoom_in":
+            self.zoom_in()
+        elif action == "zoom_out":
+            self.zoom_out()
+        elif action == "fit":
+            self.set_viewport_zoom(1.0, mode="fit")
+        elif action == "width":
+            self.set_viewport_zoom(self.viewport_zoom_for_mode("width"), mode="width", top=True, focus_page=True)
+        elif action == "actual":
+            self.set_viewport_zoom(
+                self.viewport_zoom_for_mode("actual"), mode="actual", focus_page=True, normal_range=False
+            )
+        elif action == "fullscreen":
             self.toggle_fullscreen()
-            return True
-        elif key == Qt.Key_P:
+        elif action == "settings":
             self.toggle_controls()
-            return True
-        elif key == Qt.Key_V:
+        elif action == "layout":
             self.toggle_page_layout()
-            return True
-        elif key == Qt.Key_O:
+        elif action == "original":
             self.original_check.toggle()
-            return True
-        elif key == Qt.Key_B and modifiers & Qt.ShiftModifier:
-            self.show_bookmarks()
-            return True
-        elif key == Qt.Key_B:
+        elif action == "bookmark":
             self.add_bookmark()
-            return True
-        elif key == Qt.Key_T and modifiers == Qt.NoModifier:
+        elif action == "bookmarks":
+            self.show_bookmarks()
+        elif action == "pages":
             self.show_page_overview()
-            return True
-        elif key in {Qt.Key_H, Qt.Key_Question}:
+        elif action == "help":
             self.show_shortcuts_help()
-            return True
-        elif key == Qt.Key_Escape:
+        elif action == "escape":
             if self.reading_info_visible:
                 self.dismiss_reading_overlay()
             elif self.is_fullscreen:
                 self.toggle_fullscreen()
             else:
                 self.close()
-            return True
-        return False
+        else:
+            return False
+        return True
 
     def page_turn_step(self) -> int:
         return 1 if self.page_layout_mode == "single" else 2
@@ -2133,7 +2122,7 @@ class SpreadWindow(QMainWindow):
             self.setFocus(Qt.ActiveWindowFocusReason)
 
     def show_shortcuts_help(self) -> None:
-        show_help_dialog(self, viewer_shortcuts_text(self.reading_direction))
+        show_help_dialog(self, viewer_shortcuts_text(self.reading_direction, self.available_reader_actions()))
         self.activateWindow()
         self.setFocus(Qt.ActiveWindowFocusReason)
 
