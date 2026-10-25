@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import shutil
+import sqlite3
 import sys
 import threading
 from pathlib import Path
@@ -25,7 +26,6 @@ from mangacrisp_app.library import (
     is_library_dir_confirmed,
     managed_book_dir_from_book,
     save_library_settings,
-    utc_now_iso,
 )
 from mangacrisp_app.page_provider import (
     PdfPageIdentityProvider,
@@ -85,8 +85,10 @@ class BookshelfSignals(QObject):
 READING_STATUS_LABELS = {
     "unread": "未読",
     "reading": "読書中",
-    "completed": "完了",
+    "completed": "読了",
 }
+READING_STATUS_FILTER_ALL = "all"
+READING_STATUS_FILTERS = (READING_STATUS_FILTER_ALL, "unread", "reading", "completed")
 
 BOOK_SORT_TITLE = "title"
 BOOK_SORT_LAST_OPENED = "last_opened"
@@ -134,9 +136,8 @@ def bookshelf_grid_label(book: Book, state: ReadingState | None) -> str:
         lines.append(title)
     if state is not None:
         lines.append(f"p.{state.page_index + 1} / {page_text}")
-    else:
-        status_key = READING_STATUS_LABELS.get(book.reading_status)
-        lines.append(tr(status_key) if status_key else book.reading_status)
+    status_key = READING_STATUS_LABELS.get(book.reading_status)
+    lines.append(tr(status_key) if status_key else book.reading_status)
     return "\n".join(lines)
 
 
@@ -153,6 +154,7 @@ def filter_books_for_discovery(
     query: str = "",
     sort_key: str = BOOK_SORT_TITLE,
     recent_only: bool = False,
+    reading_status: str = READING_STATUS_FILTER_ALL,
 ) -> list[BookSnapshot]:
     """Filter and sort a cached bookshelf snapshot without touching storage."""
     normalized_query = query.strip().casefold()
@@ -161,6 +163,7 @@ def filter_books_for_discovery(
         for entry in snapshot
         if (not normalized_query or normalized_query in entry[0].title.casefold())
         and (not recent_only or entry[0].last_opened_at is not None)
+        and (reading_status == READING_STATUS_FILTER_ALL or entry[0].reading_status == reading_status)
     ]
     if sort_key == BOOK_SORT_LAST_OPENED:
         entries.sort(key=lambda entry: _book_title_sort_key(entry[0]))
@@ -252,7 +255,7 @@ def bookshelf_shortcuts_text() -> str:
             "ダブルクリック: 読む",
             "読む: 選択中の本を開く",
             "Command/Ctrl+クリック, Shift+クリック: 複数選択",
-            "右クリック: 読む / 本棚から削除",
+            "右クリック: 読む / 進捗を変更 / 本棚から削除",
             "Delete: 選択中の本を本棚から削除。元ZIP/RARは残す",
             "本棚から削除: 確認後、MangaCrisp管理フォルダを削除。元ZIP/RARは残す",
             "保存先を開く: ファイル管理画面でMangaCrisp Libraryを表示",
@@ -310,7 +313,8 @@ QWidget#bookshelfRoot QWidget#discoveryBar QLabel {
     font-weight: 600;
 }
 QWidget#bookshelfRoot QLineEdit#bookSearch,
-QWidget#bookshelfRoot QComboBox#bookSort {
+QWidget#bookshelfRoot QComboBox#bookSort,
+QWidget#bookshelfRoot QComboBox#readingStatusFilter {
     background: #0b1320;
     border: 1px solid #3b4d62;
     border-radius: 9px;
@@ -319,13 +323,15 @@ QWidget#bookshelfRoot QComboBox#bookSort {
     padding: 0 10px;
 }
 QWidget#bookshelfRoot QLineEdit#bookSearch:focus,
-QWidget#bookshelfRoot QComboBox#bookSort:focus {
+QWidget#bookshelfRoot QComboBox#bookSort:focus,
+QWidget#bookshelfRoot QComboBox#readingStatusFilter:focus {
     border: 2px solid #66d9c4;
 }
 QWidget#bookshelfRoot QLineEdit#bookSearch::placeholder {
     color: #778695;
 }
-QWidget#bookshelfRoot QComboBox#bookSort QAbstractItemView {
+QWidget#bookshelfRoot QComboBox#bookSort QAbstractItemView,
+QWidget#bookshelfRoot QComboBox#readingStatusFilter QAbstractItemView {
     background: #151f2e;
     border: 1px solid #3b4d62;
     color: #eef5f3;
@@ -529,6 +535,7 @@ class BookshelfWindow(QMainWindow):
         self._discovery_query = ""
         self._discovery_sort = BOOK_SORT_TITLE
         self._discovery_recent_only = False
+        self._discovery_reading_status = READING_STATUS_FILTER_ALL
         self._updating_book_view = False
         self.signals = BookshelfSignals()
         self.signals.register_progress.connect(self.on_register_progress)
@@ -654,6 +661,16 @@ class BookshelfWindow(QMainWindow):
         self.sort_combo.addItem(tr("追加日"), BOOK_SORT_CREATED)
         self.sort_combo.currentIndexChanged.connect(self._on_sort_changed)
         discovery_layout.addWidget(self.sort_combo)
+        status_label = QLabel(tr("進捗"), discovery_bar)
+        discovery_layout.addWidget(status_label)
+        self.reading_status_combo = QComboBox(discovery_bar)
+        self.reading_status_combo.setObjectName("readingStatusFilter")
+        self.reading_status_combo.setAccessibleName(tr("進捗で絞り込む"))
+        self.reading_status_combo.addItem(tr("すべて"), READING_STATUS_FILTER_ALL)
+        for status in READING_STATUS_FILTERS[1:]:
+            self.reading_status_combo.addItem(tr(READING_STATUS_LABELS[status]), status)
+        self.reading_status_combo.currentIndexChanged.connect(self._on_reading_status_changed)
+        discovery_layout.addWidget(self.reading_status_combo)
         self.recent_button = QPushButton(tr("最近読んだ本"), discovery_bar)
         self.recent_button.setObjectName("recentButton")
         self.recent_button.setCheckable(True)
@@ -711,6 +728,23 @@ class BookshelfWindow(QMainWindow):
         buttons.addWidget(self.capture_button)
 
         buttons.addStretch(1)
+
+        self.reading_status_button = QToolButton(root)
+        self.reading_status_button.setObjectName("readingStatusActions")
+        self.reading_status_button.setText(tr("進捗を変更"))
+        self.reading_status_button.setAccessibleName(tr("選択した本の進捗を変更"))
+        self.reading_status_button.setPopupMode(QToolButton.InstantPopup)
+        self.reading_status_menu = QMenu(self.reading_status_button)
+        self.mark_completed_action = QAction(tr("読了にする"), self.reading_status_menu)
+        self.mark_completed_action.triggered.connect(
+            lambda: self.set_selected_reading_status("completed")
+        )
+        self.reading_status_menu.addAction(self.mark_completed_action)
+        self.mark_unread_action = QAction(tr("未読に戻す"), self.reading_status_menu)
+        self.mark_unread_action.triggered.connect(lambda: self.set_selected_reading_status("unread"))
+        self.reading_status_menu.addAction(self.mark_unread_action)
+        self.reading_status_button.setMenu(self.reading_status_menu)
+        buttons.addWidget(self.reading_status_button)
 
         self.delete_button = QPushButton(tr("本棚から削除"), root)
         self.delete_button.setObjectName("dangerButton")
@@ -791,6 +825,16 @@ class BookshelfWindow(QMainWindow):
         self._book_view_timer.stop()
         self._refresh_book_view()
 
+    def _on_reading_status_changed(self, _index: int) -> None:
+        if self._updating_book_view:
+            return
+        status = self.reading_status_combo.currentData()
+        self._discovery_reading_status = (
+            status if status in READING_STATUS_FILTERS else READING_STATUS_FILTER_ALL
+        )
+        self._book_view_timer.stop()
+        self._refresh_book_view()
+
     def _set_sort_combo(self, sort_key: str) -> None:
         index = self.sort_combo.findData(sort_key)
         if index < 0 or self.sort_combo.currentIndex() == index:
@@ -834,6 +878,7 @@ class BookshelfWindow(QMainWindow):
             query=self._discovery_query,
             sort_key=self._discovery_sort,
             recent_only=self._discovery_recent_only,
+            reading_status=self._discovery_reading_status,
         )
         visible_ids = {book.id for book, _state in entries}
         self._updating_book_view = True
@@ -885,8 +930,10 @@ class BookshelfWindow(QMainWindow):
         """Keep the primary and destructive actions clear when nothing is selected."""
         self._remember_visible_selection()
         has_selection = bool(self.selected_book_ids())
-        self.open_button.setEnabled(has_selection)
-        self.delete_button.setEnabled(has_selection)
+        actions_allowed = has_selection and self.active_reader is None and not self.register_running
+        self.open_button.setEnabled(actions_allowed)
+        self.delete_button.setEnabled(actions_allowed)
+        self.reading_status_button.setEnabled(actions_allowed)
 
     def confirm_library_location_if_needed(self) -> None:
         if is_library_dir_confirmed(self.library.paths):
@@ -1180,6 +1227,7 @@ class BookshelfWindow(QMainWindow):
             return
         path = self.register_queue.pop(0)
         self.register_running = True
+        self.update_action_states()
         position = self.register_done_count + 1
         total = self.register_done_count + 1 + len(self.register_queue)
         self.status_label.setText(
@@ -1209,6 +1257,7 @@ class BookshelfWindow(QMainWindow):
 
     def on_register_done(self, books: list[Book] | None, error: Exception | None) -> None:
         self.register_running = False
+        self.update_action_states()
         self.register_done_count += 1
         if error is not None:
             self.status_label.setText(tr("登録失敗: {error}", error=error))
@@ -1273,6 +1322,16 @@ class BookshelfWindow(QMainWindow):
         read_action = QAction(tr("読む"), menu)
         read_action.triggered.connect(lambda: self.open_book(clicked_id))
         menu.addAction(read_action)
+        status_menu = menu.addMenu(tr("進捗を変更"))
+        status_menu.setEnabled(not self.register_running and self.active_reader is None)
+        completed_action = QAction(tr("読了にする"), status_menu)
+        completed_action.triggered.connect(
+            lambda: self.set_books_reading_status(target_ids, "completed")
+        )
+        status_menu.addAction(completed_action)
+        unread_action = QAction(tr("未読に戻す"), status_menu)
+        unread_action.triggered.connect(lambda: self.set_books_reading_status(target_ids, "unread"))
+        status_menu.addAction(unread_action)
         delete_label = tr("本棚から削除") if len(target_ids) == 1 else tr("{count}冊を本棚から削除", count=len(target_ids))
         delete_action = QAction(delete_label, menu)
         delete_action.triggered.connect(lambda: self.delete_books(target_ids))
@@ -1281,6 +1340,26 @@ class BookshelfWindow(QMainWindow):
 
     def delete_selected_book(self) -> None:
         self.delete_books(self.selected_book_ids())
+
+    def set_selected_reading_status(self, status: str) -> None:
+        self.set_books_reading_status(self.selected_book_ids(), status)
+
+    def set_books_reading_status(self, book_ids: list[str], status: str) -> None:
+        if self.active_reader is not None or self.register_running:
+            return
+        if not book_ids:
+            self.status_label.setText(tr("進捗を変更する本を選んでください。"))
+            return
+        try:
+            changed = self.library.books.set_reading_status(book_ids, status)
+        except (ValueError, sqlite3.Error) as exc:
+            self.status_label.setText(tr("進捗を変更できませんでした: {error}", error=exc))
+            return
+        self.reload_books()
+        status_key = READING_STATUS_LABELS.get(status, status)
+        self.status_label.setText(
+            tr("{count}冊を{status}にしました。", count=changed, status=tr(status_key))
+        )
 
     def delete_books(self, book_ids: list[str]) -> None:
         books = [book for book in (self.library.books.get(book_id) for book_id in book_ids) if book is not None]
@@ -1443,9 +1522,7 @@ class BookshelfWindow(QMainWindow):
 
     def save_reading_state(self, book_id: str, window: SpreadWindow) -> None:
         self.library.reading_states.save(reading_state_from_window(book_id, window))
-        book = self.library.books.get(book_id)
-        if book is not None:
-            self.library.books.upsert(book.with_updates(reading_status="reading", last_opened_at=utc_now_iso()))
+        self.library.books.record_reading_progress(book_id)
 
     def add_bookmark(self, book_id: str, page_index: int) -> bool:
         if self.library.books.get(book_id) is None:
