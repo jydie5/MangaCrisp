@@ -141,10 +141,18 @@ earlier run URLs as validation of this later fix.
 Native macOS automation on the isolated demo candidate verified launch, title
 search, the Unread/All filter, opening a book, Shift+B, saving/reopening a label
 and multiline plain-text note, Escape cancellation, return to the bookshelf and
-Completed surviving a reread. Popup menu contents could not be inspected reliably
-through native automation. Bulk-status menus and native export/restore file
-pickers still require a human check; their data and confirmation logic have Qt
-automated coverage. Windows/Linux desktop input is also pending human acceptance.
+Completed surviving a reread. A follow-up on `fe48735` also verified selecting
+two demo books and marking them completed, the native JSON save/open dialogs,
+restore preview, Escape cancellation, confirmed restore, and a repeated restore.
+Read-only DB checks showed cancellation preserved the changed state; restore
+returned one Unread, one Reading and one Completed book, with exactly one bookmark
+after both restores. The cards visually matched those records. Popup menu contents
+were not exposed reliably by native automation, but keyboard menu navigation
+reached and verified each intended operation.
+
+The normalized-filename overwrite prompt has automated cancellation/confirmation
+coverage and English/Japanese visual checks. Its native platform-specific path
+still needs human acceptance. Windows/Linux desktop input is also pending.
 
 The local Mac test app uses a separate bundle identifier and demo-only TestData.
 It is ad-hoc signed, not notarized, and has not been accepted by the user.
