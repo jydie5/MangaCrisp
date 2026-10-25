@@ -2,6 +2,47 @@
 
 [日本語](linux-handover.ja.md)
 
+## Reading-records continuation after Windows b0.7 (2026-10-25)
+
+PRs #77–#81 are now merged to main in dependency order. The Windows user accepted
+the integrated candidate and
+[Windows Preview 0.7.1b0.7](https://github.com/jydie5/MangaCrisp/releases/tag/windows-preview-0.7.1b0.7)
+is published from main tag target `81e7721`. It reuses the accepted Windows CI
+ZIP from source `7605b641e6c6bffb672c06e5ae9787ab7aadd6b3`, without recompilation.
+The ZIP SHA-256 is `3ef9961d6844811b54b535adfacc8588f8d2598a70074d12733b5be15df7f4ec`.
+Local Windows tests passed 413 tests, 9 skips and 12 subtests. This is not Linux
+desktop or hardware acceptance, and the Windows ZIP must not be used on Linux.
+
+Linux preview b0.4 is unchanged and does not contain these reading-record features.
+Start clean from latest main with `git pull --ff-only origin main`, then create
+a fresh `linux/<topic>` branch. No feature-branch cherry-picks are needed.
+
+- Native [Ubuntu CI 40167591018](https://github.com/jydie5/MangaCrisp/actions/runs/40167591018)
+  passed on the integrated source. Its `mangacrisp-linux-x86_64` artifact was
+  available on 2026-10-25. Compare source, package scripts and checksums with
+  current main; reuse it if equivalent, otherwise build on Ubuntu 24.04 x86_64.
+- In a demo-only library, check Unread/Reading/Completed filters with search,
+  visible-selection bulk actions and completion surviving rereading. Mark unread
+  resets position but must retain bookmarks, per-book settings and history.
+- Check `Shift+B` label/note edit, save and Escape cancellation. Test export,
+  restore preview/cancel/confirm and repeated restore without bookmark duplication.
+  Confirm the overwrite prompt for a filename whose added JSON suffix already
+  exists. Keep real titles/notes and backup JSON out of public issues.
+- Backups are limited to 16 MiB and existing IDs in the same library. They do
+  not migrate books across PCs or reconnect moved files. Existing bookmark
+  labels/notes remain; restore only adds missing bookmarked pages.
+- Reimport a previously read demo with the same ID and verify completion,
+  last-opened history, position and bookmark notes remain. A renamed/moved
+  source with a different ID is not the same case.
+- Check Wayland and X11, native save/open dialogs, focus/Escape, English/Japanese
+  minimum-size layout, scaling, capture/portal and real GPU behavior separately.
+  Record source/artifact hash and environment, then stop for the Linux human
+  check before requesting a new Linux preview. Windows acceptance is not a
+  substitute; keep untested GPU/session/clean-install gates explicit.
+
+See [reading-record semantics and checklist](reading-records-handover.md).
+This update publishes Windows only; it does not change Linux download links.
+
 ## Linux-only continuation after Windows Preview b0.6 (2026-10-25)
 
 [Windows Preview 0.7.1b0.6](https://github.com/jydie5/MangaCrisp/releases/tag/windows-preview-0.7.1b0.6)
