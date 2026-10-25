@@ -110,9 +110,9 @@ large payloads can briefly block the UI and worker/progress support is deferred.
 
 ## Current verification and review boundary
 
-The integrated macOS source suite (Python 3.13.6, Qt offscreen) passed **407 tests,
+The integrated macOS source suite (Python 3.13.6, Qt offscreen) passed **410 tests,
 8 skips and 12 subtests** after bookmark editing and selection retention were
-added. The development PRs are stacked: reading status → record backup → reader
+added and the export suffix-overwrite fix was verified. The development PRs are stacked: reading status → record backup → reader
 actions → bookmark editing. Review/merge in that order, retargeting each child to
 main after its parent is integrated. Existing download links and release tags
 are unchanged. Native CI evidence is recorded on the corresponding PR.
@@ -124,3 +124,34 @@ extend their triggers to shared runtime changes or dispatch the bundled macOS
 and Linux clean-install audits on the exact release commit. Earlier green checks
 must not be presented as validation of later reader changes. Signing/notarization,
 Windows GPU variants and Linux desktop-session acceptance remain separate.
+
+
+## macOS candidate and CI evidence (2026-10-25)
+
+The four-feature runtime at `ecfeb6963f357e7dce5e7b451ea4cdf34ea14f31` passed
+[macOS](https://github.com/jydie5/MangaCrisp/actions/runs/40163601224),
+[Linux](https://github.com/jydie5/MangaCrisp/actions/runs/40163603007), and
+[Windows](https://github.com/jydie5/MangaCrisp/actions/runs/40163604779) native CI.
+The later `6f1e1aa` fix adds a confirmation when a filename without an extension
+would resolve to an already existing backup after adding the JSON suffix.
+Cancel is the default and leaves the prior bytes intact. Its full source suite
+passed 410 tests; refreshed CI results are linked from PR #80. Do not treat the
+earlier run URLs as validation of this later fix.
+
+Native macOS automation on the isolated demo candidate verified launch, title
+search, the Unread/All filter, opening a book, Shift+B, saving/reopening a label
+and multiline plain-text note, Escape cancellation, return to the bookshelf and
+Completed surviving a reread. Popup menu contents could not be inspected reliably
+through native automation. Bulk-status menus and native export/restore file
+pickers still require a human check; their data and confirmation logic have Qt
+automated coverage. Windows/Linux desktop input is also pending human acceptance.
+
+The local Mac test app uses a separate bundle identifier and demo-only TestData.
+It is ad-hoc signed, not notarized, and has not been accepted by the user.
+The accepted production app and published release assets are unchanged.
+
+追加の書き出し確認も実機チェック対象です。拡張子なしの保存名にJSON拡張子を補い、
+その保存先が既に存在する場合は、正しいファイル名を表示して確認します。
+取消では既存バックアップを変更しません。現時点の次段階設計は
+[欠損検出・再リンク／縦読み／キー設定](../product/reading-workflow-next-steps-2026-10-25.ja.md)
+を参照してください。

@@ -43,3 +43,5 @@ macOS beta 0.7.1b0.4 / Windows preview 0.7.1b0.6の次の共有機能を検討�
 テストは合成データまたは再配布可能なdemoを使う。共有suiteと各OSのCI、
 画面の見切れ・キーボード操作・実機での受入を区別して記録する。
 未完成EPUBや他OSの包装変更をこの機能へ混ぜない。
+
+次段階のPR分割・現DBの制限・受入テストは[実装境界と受入条件](reading-workflow-next-steps-2026-10-25.ja.md)を参照。
