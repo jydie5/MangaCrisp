@@ -607,6 +607,13 @@ class BookshelfWindow(QMainWindow):
         clear_cache_action = QAction(tr("キャッシュを削除"), more_menu)
         clear_cache_action.triggered.connect(self.clear_cache)
         more_menu.addAction(clear_cache_action)
+        more_menu.addSeparator()
+        self.export_records_action = QAction(tr("読書記録を書き出す"), more_menu)
+        self.export_records_action.triggered.connect(self.export_reading_records)
+        more_menu.addAction(self.export_records_action)
+        self.restore_records_action = QAction(tr("読書記録を復元する"), more_menu)
+        self.restore_records_action.triggered.connect(self.restore_reading_records)
+        more_menu.addAction(self.restore_records_action)
         more_button.setMenu(more_menu)
         header_row.addWidget(more_button)
         language_label = QLabel(tr("言語"), root)
@@ -934,6 +941,9 @@ class BookshelfWindow(QMainWindow):
         self.open_button.setEnabled(actions_allowed)
         self.delete_button.setEnabled(actions_allowed)
         self.reading_status_button.setEnabled(actions_allowed)
+        records_allowed = self.active_reader is None and not self.register_running
+        self.export_records_action.setEnabled(records_allowed)
+        self.restore_records_action.setEnabled(records_allowed)
 
     def confirm_library_location_if_needed(self) -> None:
         if is_library_dir_confirmed(self.library.paths):
@@ -1000,6 +1010,21 @@ class BookshelfWindow(QMainWindow):
             self.delete_selected_book()
             return
         super().keyPressEvent(event)
+
+    def export_reading_records(self) -> None:
+        if self.active_reader is not None or self.register_running:
+            return
+        from mangacrisp_app.reading_backup_dialogs import export_records
+
+        export_records(self, self.library)
+
+    def restore_reading_records(self) -> None:
+        if self.active_reader is not None or self.register_running:
+            return
+        from mangacrisp_app.reading_backup_dialogs import restore_records
+
+        if restore_records(self, self.library):
+            self.reload_books()
 
     def show_shortcuts_help(self) -> None:
         show_help_dialog(self, bookshelf_shortcuts_text())

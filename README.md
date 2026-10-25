@@ -351,6 +351,24 @@ reading positions are preserved.
   backend.
 - Updates are manual; download a newer build from Releases.
 
+## Next development changes (not yet released)
+
+The next shared branch adds **Unread / Reading / Completed** filters and bulk
+**Mark completed / Mark unread** actions. Completion is manual and survives a
+reread. Mark unread returns to the first page while keeping bookmarks and
+per-book display settings.
+
+The bookshelf's **…** menu also exports and restores small reading-record JSON
+backups: status, positions, per-book display settings and bookmarks. Restore
+previews matching/missing/incompatible books before confirmation. It matches
+existing IDs in the same bookshelf; it is not a cross-PC library migration.
+Media, caches and global settings are excluded. Titles and bookmark notes are
+included, so treat the file as personal data.
+
+See the [development handover](docs/development/reading-records-handover.md)
+for restore behavior and native acceptance checks. Published downloads above
+remain unchanged.
+
 ## Build from source
 
 ### Current source and platform release status
