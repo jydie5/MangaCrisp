@@ -40,6 +40,7 @@ from .archive_utils import (
 from .page_provider import PdfPageList, is_pdf, pdf_page_count, pdf_source_key
 
 CURRENT_SCHEMA_VERSION = 1
+MANUAL_READING_STATUSES = frozenset({"unread", "completed"})
 _INTERRUPTED_IMPORT_DIRECTORY = re.compile(
     r"^\.(?P<book_name>.+)\.(?P<kind>import|backup)-[0-9a-f]{32}$"
 )
@@ -540,6 +541,58 @@ class BookshelfRepository:
         cursor = self.db.connection.execute("DELETE FROM books WHERE id = ?", (book_id,))
         self.db.connection.commit()
         return cursor.rowcount > 0
+
+    def set_reading_status(self, book_ids: list[str], status: str) -> int:
+        """Apply a manual status, resetting saved positions only for unread."""
+        if status not in MANUAL_READING_STATUSES:
+            raise ValueError(f"unsupported manual reading status: {status}")
+        unique_ids = list(dict.fromkeys(book_id for book_id in book_ids if book_id))
+        if not unique_ids:
+            return 0
+        now = utc_now_iso()
+        variable_limit = (
+            self.db.connection.getlimit(sqlite3.SQLITE_LIMIT_VARIABLE_NUMBER)
+            if hasattr(self.db.connection, "getlimit")
+            else 999
+        )
+        # The book update has status and timestamp parameters in addition to
+        # IDs.  Keep batches deliberately small on builds with custom limits.
+        batch_size = max(1, min(200, variable_limit - 2))
+        batches = [unique_ids[index : index + batch_size] for index in range(0, len(unique_ids), batch_size)]
+        changed = 0
+        # One transaction prevents a failed reset from leaving a book marked
+        # unread at its old reading position.
+        with self.db.connection:
+            for batch in batches:
+                placeholders = ", ".join("?" for _ in batch)
+                cursor = self.db.connection.execute(
+                    f"UPDATE books SET reading_status = ?, updated_at = ? WHERE id IN ({placeholders})",
+                    (status, now, *batch),
+                )
+                changed += cursor.rowcount
+            if status == "unread":
+                for batch in batches:
+                    placeholders = ", ".join("?" for _ in batch)
+                    self.db.connection.execute(
+                        f"UPDATE reading_state SET page_index = 0, updated_at = ? WHERE book_id IN ({placeholders})",
+                        (now, *batch),
+                    )
+        return changed
+
+    def record_reading_progress(self, book_id: str) -> None:
+        """Save reading history without demoting manually completed books."""
+        now = utc_now_iso()
+        self.db.connection.execute(
+            """
+            UPDATE books
+            SET reading_status = CASE WHEN reading_status = 'unread' THEN 'reading' ELSE reading_status END,
+                last_opened_at = ?,
+                updated_at = ?
+            WHERE id = ?
+            """,
+            (now, now, book_id),
+        )
+        self.db.connection.commit()
 
     def _existing_created_at(self, book_id: str) -> str | None:
         row = self.db.connection.execute("SELECT created_at FROM books WHERE id = ?", (book_id,)).fetchone()

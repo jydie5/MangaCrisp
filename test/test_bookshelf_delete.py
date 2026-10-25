@@ -216,7 +216,7 @@ def test_right_click_on_unselected_book_targets_only_that_book(qapp, tmp_path: P
         assert menu is not None
         assert window.selected_book_ids() == [item.data(Qt.UserRole)]
         assert item.data(Qt.UserRole) in ids
-        assert [action.text() for action in menu.actions()] == ["読む", "本棚から削除"]
+        assert [action.text() for action in menu.actions()] == ["読む", "進捗を変更", "本棚から削除"]
     finally:
         window.close()
 
@@ -231,7 +231,7 @@ def test_right_click_on_selected_book_keeps_the_multi_selection(qapp, tmp_path: 
 
         assert menu is not None
         assert len(window.selected_book_ids()) == 2
-        assert menu.actions()[1].text() == "2冊を本棚から削除"
+        assert menu.actions()[-1].text() == "2冊を本棚から削除"
         assert window.build_book_context_menu(None) is None
     finally:
         window.close()
