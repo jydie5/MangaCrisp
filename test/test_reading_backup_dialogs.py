@@ -139,3 +139,52 @@ def test_bookshelf_blocks_backup_actions_during_import_or_reading(qapp, monkeypa
     finally:
         shelf.active_reader = None
         shelf.close()
+
+
+@pytest.mark.parametrize("confirm_overwrite", [False, True])
+def test_extensionless_export_confirms_existing_effective_destination(
+    qapp, monkeypatch, saved_records, tmp_path, confirm_overwrite,
+):
+    library, _book, _backup = saved_records
+    selected = tmp_path / "existing-records"
+    destination = selected.with_suffix(".mangacrisp.json")
+    previous = b"previous backup must survive cancellation"
+    destination.write_bytes(previous)
+    parent = QWidget()
+    set_language("en")
+    monkeypatch.setattr(dialogs.QFileDialog, "getSaveFileName", lambda *args: (str(selected), ""))
+    messages = []
+
+    def answer(message):
+        messages.append(message)
+        if message.standardButtons() & QMessageBox.Yes:
+            assert message.defaultButton() == message.button(QMessageBox.Cancel)
+            assert message.informativeText() == str(destination)
+            assert "already exists" in message.text()
+            return QMessageBox.Yes if confirm_overwrite else QMessageBox.Cancel
+        return QMessageBox.Ok
+
+    monkeypatch.setattr(QMessageBox, "exec", answer)
+    assert dialogs.export_records(parent, library) is confirm_overwrite
+    assert len(messages) == (2 if confirm_overwrite else 1)
+    if confirm_overwrite:
+        assert dialogs.load_reading_backup(destination).books
+    else:
+        assert destination.read_bytes() == previous
+    assert not selected.exists()
+    parent.close()
+
+
+def test_extensionless_export_uses_json_suffix_when_destination_is_new(
+    qapp, monkeypatch, saved_records, tmp_path,
+):
+    library, _book, _backup = saved_records
+    selected = tmp_path / "fresh-records"
+    parent = QWidget()
+    monkeypatch.setattr(dialogs.QFileDialog, "getSaveFileName", lambda *args: (str(selected), ""))
+    messages = []
+    monkeypatch.setattr(QMessageBox, "exec", lambda message: messages.append(message) or QMessageBox.Ok)
+    assert dialogs.export_records(parent, library)
+    assert dialogs.load_reading_backup(selected.with_suffix(".mangacrisp.json")).books
+    assert len(messages) == 1
+    parent.close()
