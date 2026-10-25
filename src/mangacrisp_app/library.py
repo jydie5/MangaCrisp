@@ -435,11 +435,11 @@ class LibraryService:
 
     def register_local_book(self, source_path: Path) -> Book:
         book = self.scanner.scan(source_path)
-        return self.books.upsert(book)
+        return self.books.upsert(book, preserve_reading_history=True)
 
     def register_local_books(self, source_path: Path) -> list[Book]:
         books = self.scanner.scan_many(source_path)
-        return [self.books.upsert(book) for book in books]
+        return [self.books.upsert(book, preserve_reading_history=True) for book in books]
 
     def import_local_books(self, source_path: Path) -> list[Book]:
         imported_books: list[Book] = []
@@ -447,7 +447,7 @@ class LibraryService:
             if book.file_kind in {"pdf", "zip", "cbz", "rar", "cbr", "7z", "cb7"}:
                 self.importer.import_book(book)
             else:
-                self.books.upsert(book)
+                self.books.upsert(book, preserve_reading_history=True)
             imported_books.append(self.books.get(book.id) or book)
         return imported_books
 
@@ -479,7 +479,8 @@ class BookshelfRepository:
     def __init__(self, db: LibraryDatabase) -> None:
         self.db = db
 
-    def upsert(self, book: Book) -> Book:
+    def upsert(self, book: Book, *, preserve_reading_history: bool = False) -> Book:
+        """Refresh source metadata, optionally retaining user history on an existing ID."""
         now = utc_now_iso()
         created_at = book.created_at or self._existing_created_at(book.id) or now
         updated = replace(book, created_at=created_at, updated_at=now)
@@ -499,8 +500,8 @@ class BookshelfRepository:
                 page_count=excluded.page_count,
                 cover_page_index=excluded.cover_page_index,
                 cover_thumbnail_path=excluded.cover_thumbnail_path,
-                reading_status=excluded.reading_status,
-                last_opened_at=excluded.last_opened_at,
+                reading_status=CASE WHEN ? THEN books.reading_status ELSE excluded.reading_status END,
+                last_opened_at=CASE WHEN ? THEN books.last_opened_at ELSE excluded.last_opened_at END,
                 updated_at=excluded.updated_at
             """,
             (
@@ -517,9 +518,13 @@ class BookshelfRepository:
                 updated.last_opened_at,
                 updated.created_at,
                 updated.updated_at,
+                int(preserve_reading_history),
+                int(preserve_reading_history),
             ),
         )
         self.db.connection.commit()
+        if preserve_reading_history:
+            return self.get(updated.id) or updated
         return updated
 
     def get(self, book_id: str) -> Book | None:
@@ -899,7 +904,7 @@ class LibraryImportService:
                         staged_result.pages_dir,
                         Path(imported_book.local_path),
                     )
-                self.books.upsert(imported_book)
+                self.books.upsert(imported_book, preserve_reading_history=True)
             except Exception:
                 shutil.rmtree(book_dir, ignore_errors=True)
                 if backup_dir.exists():
