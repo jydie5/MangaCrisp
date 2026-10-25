@@ -108,6 +108,18 @@ for other machines or files with long notes. The input limit remains 16 MiB;
 large payloads can briefly block the UI and worker/progress support is deferred.
 
 
+A separate upper-bound run used 3,350 books with one 4,096-character bookmark
+note each: 16,454,521 bytes (15.692 MiB, 98.08% of the limit). Export was 0.094 s,
+load/validation 0.077 s, preview 0.026 s and restore 0.058 s; a second restore
+added zero bookmarks. Process peak RSS rose from 49.7 MiB after fixture creation
+to approximately 200 MiB over the full run. This is process-wide high-water RSS,
+not a measurement of released heap or a guarantee for low-memory machines.
+A 3,500-book variant exceeded 16 MiB, failed validation, and preserved a preexisting
+27-byte sentinel output exactly. All data was synthetic and temporary. Keep the
+size cap; asynchronous execution/progress remains a follow-up, especially before
+raising limits.
+
+
 ## Current verification and review boundary
 
 The integrated macOS source suite (Python 3.13.6, Qt offscreen) passed **410 tests,
@@ -163,3 +175,13 @@ The accepted production app and published release assets are unchanged.
 取消では既存バックアップを変更しません。現時点の次段階設計は
 [欠損検出・再リンク／縦読み／キー設定](../product/reading-workflow-next-steps-2026-10-25.ja.md)
 を参照してください。
+
+
+The refreshed candidate at `fe4873557998d1418304615610ce14a341611b31`, including
+the overwrite confirmation, subsequently passed all three workflows:
+[macOS](https://github.com/jydie5/MangaCrisp/actions/runs/40164739284),
+[Linux](https://github.com/jydie5/MangaCrisp/actions/runs/40164741404), and
+[Windows](https://github.com/jydie5/MangaCrisp/actions/runs/40164743682).
+Later changes to this four-feature checkpoint are documentation only. The isolated
+Mac bundle passed engine provenance/hash, 36 model entries, license completeness,
+ad-hoc signature and startup checks. It is still not a published release.
