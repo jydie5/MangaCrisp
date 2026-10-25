@@ -95,6 +95,22 @@ archive内の巻分割・順序・staging repairを設計してから扱う。
 リリース判断には10分読書のメモリ/キャッシュ計測と3OSの入力確認を使う。
 性能の数値目標はbaseline計測後に決め、未計測値を保証値として公開しない。
 
+### 公式コードから確認した参考実装
+
+2026-10-25にOpenComic公式リポジトリを確認した。
+[`reading/render.js`](https://github.com/ollm/OpenComic/blob/master/scripts/reading/render.js)
+の`imagesToPreload()` / `setRender()`は現在位置の前後を対象にし、`decodeImage()`は
+IntersectionObserverの範囲に入った画像をdecodeする。
+[`reading/view.mts`](https://github.com/ollm/OpenComic/blob/master/scripts/reading/view.mts)
+はページ高と余白を累積して位置を持ち、近傍の寸法を先に取得し、遠方の寸法を推定する。
+後から`getAllSizes()`で補正する経路もある。
+[`reading.js`](https://github.com/ollm/OpenComic/blob/master/scripts/reading.js)の
+`goToIndex()` / `onScroll()`ではページ位置とスクロール量を対応付けている。
+
+これは遅延decodeと寸法推定の参考であり、全ページのDOMを破棄する仮想リストまで
+確認したものではない。MangaCrispではPDF/ZIPの寸法取得がmaterializeを起こすかを
+別途検証し、競合の「全寸法を後で取得」をそのまま移植しない。性能比較値は未測定。
+
 ## F20: ユーザーのキー割当
 
 #79は組み込みaction共通化の第一段階。keycap、binding、グループ化されたhelpには
