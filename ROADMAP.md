@@ -16,7 +16,7 @@
 F14の読了/未読操作と進捗フィルター、F15の同じ本棚向け読書記録バックアップ、
 F20の操作定義共通化、しおりラベル/メモ編集、同じIDの再登録時の履歴保護を
 PR #77〜#81で依存順にmainへ統合し、実機確認後にWindows Preview 0.7.1b0.7へ収録しました。
-macOS/Linuxの配布物は未更新で、対象OSごとの実機確認と公開が別に必要です。
+macOS Beta 0.7.1b0.5にも実機確認後に収録しました。Linuxの配布物は未更新で、Linux上でのビルドと実機確認が必要です。
 実装の操作・復元範囲・実機チェックは[読書記録の引き継ぎ](docs/development/reading-records-handover.md)へ記録します。
 次の欠損検出/再リンク、縦読み、キー設定は[実装境界と受入条件](docs/product/reading-workflow-next-steps-2026-10-25.ja.md)へ分割しました。
 

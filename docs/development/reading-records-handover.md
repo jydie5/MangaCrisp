@@ -3,8 +3,28 @@
 [日本語](#日本語)
 
 These shared features are merged and published in Windows Preview 0.7.1b0.7.
-macOS beta 0.7.1b0.4 and Linux preview 0.7.1b0.4 still predate them. Native
-acceptance and publication for those platforms remain separate.
+macOS beta 0.7.1b0.5 is also published after user acceptance; Linux
+preview 0.7.1b0.4 still predates them. Native acceptance and publication remain
+separate for each platform.
+
+## macOS beta 0.7.1b0.5 release checkpoint (2026-10-25)
+
+A new [`macos-beta-0.7.1b0.5`](../releases/macos-beta-0.7.1b0.5.md) tag/release
+is published from main `b062dda`. Its shared runtime is the `7605b64`
+reading-records checkpoint, with only release/documentation commits afterwards:
+F14 status filters and visible-selection bulk actions, F15 same-library JSON
+backup/restore, F05 bookmark labels/notes, same-ID reimport-history preservation,
+and the reader-action shortcut registry. Comic EPUB remains unconnected and is
+outside this release.
+
+The Mac source suite recorded **414 passed, 8 skipped, and 12 subtests passed**.
+The packaged Apple Silicon candidate passed ad-hoc signature, startup and
+color-PDF smoke checks, real-GPU color correction, and actual-app navigation,
+overview, Help (`H`) and fullscreen (`F`) checks. Existing candidate coverage
+also includes status bulk operations, backup preview/cancel/confirmed restore,
+bookmark-note editing and reimport history preservation. User acceptance authorizes
+this macOS release; it does not change Windows Preview 0.7.1b0.7 or Linux Preview
+0.7.1b0.4, nor replace their target-OS release gates.
 
 ## Merged and Windows-released checkpoint (2026-10-25)
 
@@ -95,8 +115,24 @@ Use generated images or `demo/` only, in an isolated bookshelf.
 
 ## 日本語
 
-これらはmainへ統合し、実機確認後にWindows b0.7へ収録しました。
-Mac b0.4 / Linux b0.4は未更新で、各OSの実機受入と公開は別に行います。
+これらはmainへ統合し、実機確認後にWindows b0.7へ収録しました。利用者はMac b0.5の
+公開も承認していますが、Linux b0.4は未更新です。各OSの実機受入と公開は別に行います。
+
+### macOS beta 0.7.1b0.5 公開チェックポイント（2026-10-25）
+
+現在のmain `b062dda`から、
+[`macos-beta-0.7.1b0.5`](../releases/macos-beta-0.7.1b0.5.md)を公開しました。
+共有runtimeは`7605b64`の読書記録チェックポイントと同じで、読書状態のフィルター／
+表示中選択だけへの一括操作、同一本棚向けJSON書出し／復元、しおりラベル／メモ、
+同一ID再登録時の履歴維持、reader actionのショートカット定義を含みます。Comic EPUBは
+未接続であり、この公開対象ではありません。
+
+Macのsource suiteは**414成功・8スキップ・12 subtests成功**でした。Apple Silicon候補で
+ad-hoc署名、起動、カラーPDF smoke、実GPUのカラー補正、実アプリでの移動・一覧・
+Help（`H`）・全画面（`F`）を確認しています。既存候補では一括読書状態変更、
+バックアップの確認／取消／確定復元、しおりメモ編集、同一ID再登録時の履歴維持も確認済みです。
+この利用者受入はMac公開だけを許可し、Windows b0.7やLinux b0.4を更新せず、
+各OSの対象OS検証ゲートも置き換えません。
 
 読了は手動指定です。最終ページへ飛んだだけでは読了にせず、読み返しで読了が
 消えないようにします。「未読に戻す」は位置だけ先頭へ戻し、しおり・本ごとの
@@ -219,3 +255,7 @@ This follow-up is separate from the fully verified `fe48735` test checkpoint.
 Verify the follow-up PR's own CI and candidate source before release. Native
 acceptance should include re-adding a previously read demo folder/archive and
 checking that its completion, last-opened history, position and bookmarks remain.
+
+Small localization follow-up: the English bookmark dialogs still display the
+Edit/Cancel button captions in Japanese. The gallery preserves the actual UI;
+complete those shared translations in a separate core change.

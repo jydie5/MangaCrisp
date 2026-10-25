@@ -15,9 +15,15 @@ sys.path.insert(0, str(REPOSITORY_ROOT / "src"))
 from PySide6.QtWidgets import QApplication
 
 import mangacrisp_app.viewer as viewer_module
+from mangacrisp_app.bookmark_dialog import BookmarkDialog, BookmarkEditorDialog
 from mangacrisp_app.bookshelf import BookshelfWindow
 from mangacrisp_app.i18n import set_language
-from mangacrisp_app.library import LibraryPaths, LibraryService, save_library_settings
+from mangacrisp_app.library import (
+    LibraryPaths,
+    LibraryService,
+    ReadingState,
+    save_library_settings,
+)
 from mangacrisp_app.page_overview import PageOverviewDialog
 from mangacrisp_app.shortcut_help import ShortcutHelpDialog
 from mangacrisp_app.viewer import SpreadWindow, viewer_shortcuts_text
@@ -49,6 +55,25 @@ def capture(demo_dir: Path, output_dir: Path, language: str = "en") -> None:
             for archive in archives:
                 for book in library.register_local_books(archive):
                     library.importer.import_book(book)
+
+            books = sorted(library.books.list_books(), key=lambda item: item.title)
+            if len(books) < 3:
+                raise RuntimeError("gallery requires three redistributable demo books")
+            library.books.record_reading_progress(books[1].id)
+            library.reading_states.save(ReadingState(books[1].id, 1))
+            library.books.record_reading_progress(books[2].id)
+            library.books.set_reading_status([books[2].id], "completed")
+            library.reading_states.save(ReadingState(books[2].id, 1))
+            demo_bookmark = library.bookmarks.add(
+                books[2].id,
+                1,
+                "お気に入りの場面" if language == "ja" else "A favorite scene",
+                note=(
+                    "あとで読み返す場面。\n色と構図を見比べる。"
+                    if language == "ja"
+                    else "A scene to revisit.\nCompare the colors and composition."
+                ),
+            )
 
             bookshelf = BookshelfWindow(library)
             bookshelf.resize(1400, 900)
@@ -89,6 +114,9 @@ def capture(demo_dir: Path, output_dir: Path, language: str = "en") -> None:
                 bookmark_delete_callback=lambda bookmark_id: bookshelf.delete_bookmark(
                     selected.id, bookmark_id
                 ),
+                bookmark_edit_callback=lambda bookmark_id, label, note: bookshelf.update_bookmark(
+                    selected.id, bookmark_id, label, note
+                ),
                 settings_path=paths.settings_path,
             )
             reader.index = min(1, max(0, len(pages) - 2))
@@ -111,6 +139,25 @@ def capture(demo_dir: Path, output_dir: Path, language: str = "en") -> None:
             if not help_dialog.card.grab().save(str(output_dir / "shortcut-help.png")):
                 raise RuntimeError("failed to save shortcut-help screenshot")
             help_dialog.close()
+
+            bookmarks = BookmarkDialog(
+                reader,
+                library.bookmarks.list_for_book(selected.id),
+                len(pages),
+                delete_callback=reader.bookmark_delete_callback,
+                edit_callback=reader.bookmark_edit_callback,
+            )
+            bookmarks.show()
+            process_events(app, 0.3)
+            if not bookmarks.card.grab().save(str(output_dir / "bookmarks.png")):
+                raise RuntimeError("failed to save bookmark-list screenshot")
+            bookmarks.close()
+            editor = BookmarkEditorDialog(reader, demo_bookmark, reader.bookmark_edit_callback)
+            editor.show()
+            process_events(app, 0.2)
+            if not editor.grab().save(str(output_dir / "bookmark-edit.png")):
+                raise RuntimeError("failed to save bookmark-editor screenshot")
+            editor.close()
 
             overview = PageOverviewDialog(reader, pages, reader.index)
             overview.show()

@@ -28,6 +28,8 @@ of the original RAIV project and now follows its own product direction.
 
 ![Shortcut help with Escape and outside-click dismissal](docs/images/shortcut-help.png)
 
+![Bookmark label and note editor](docs/images/bookmark-edit.png)
+
 </details>
 
 Screenshots show the shared UI on macOS using an isolated demo bookshelf.
@@ -52,12 +54,13 @@ Trust only funding links published in this repository.
 
 The standalone build does not require Python, uv, or Terminal.
 
-### [Download MangaCrisp for macOS (Apple Silicon) — Beta 0.7.1b0.4](https://github.com/jydie5/MangaCrisp/releases/download/macos-beta-0.7.1b0.4/MangaCrisp-v0.7.1b0.4-macos-apple-silicon-standalone.zip)
+### [Download MangaCrisp for macOS (Apple Silicon) — Beta 0.7.1b0.5](https://github.com/jydie5/MangaCrisp/releases/download/macos-beta-0.7.1b0.5/MangaCrisp-v0.7.1b0.5-macos-apple-silicon-standalone.zip)
 
-This macOS beta adds bookshelf search and sorting, physical page jumps,
-bookmarks, per-book settings restoration, zoom/pan controls, and a lazy page
-overview. It also keeps processed-page lookup lazy and isolates ZIP extraction
-by physical page. See the [release notes](docs/releases/macos-beta-0.7.1b0.4.md).
+This macOS beta adds reading-status filters and bulk actions, same-library
+record export/restore, and bookmark label/note editing. It protects history on
+same-source reimport and confirms the effective backup filename before replacing
+an existing file. Search, zoom/pan and lazy page overview remain included.
+See the [release notes](docs/releases/macos-beta-0.7.1b0.5.md).
 
 1. Download the standalone ZIP from the link above.
 2. Unzip it and move `MangaCrisp.app` to Applications.
@@ -378,13 +381,13 @@ See the [development handover](docs/development/reading-records-handover.md)
 for restore behavior and native acceptance checks. The reader's built-in action
 registry also brings key dispatch, control badges and help into a common module;
 user-defined shortcut editing is not included yet. These reading-record changes
-are merged into main but are not yet in the macOS/Linux downloads above.
+ship in the macOS b0.5 and Windows b0.7 downloads above; Linux b0.4 still predates them.
 
 ## Build from source
 
 ### Current source and platform release status
 
-The following features are in macOS Beta 0.7.1b0.4 and Windows Preview
+The following features are in macOS Beta 0.7.1b0.5 and Windows Preview
 0.7.1b0.7. The Linux download above is unchanged; its native verification and
 next release are tracked in the [Linux handover](docs/development/linux-handover.md).
 

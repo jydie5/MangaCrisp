@@ -2,6 +2,26 @@
 
 [日本語](linux-handover.ja.md)
 
+## macOS beta 0.7.1b0.5 release checkpoint (2026-10-25)
+
+The user accepted the Apple Silicon macOS candidate for release. A new
+[`macos-beta-0.7.1b0.5`](../releases/macos-beta-0.7.1b0.5.md) tag/release is
+published from main `b062dda`. It contains the shared `7605b64`
+reading-records runtime—status filters/bulk actions, same-library JSON
+backup/restore, bookmark labels/notes, same-ID reimport-history preservation
+and the declarative reader shortcut registry—plus release documentation. Comic
+EPUB remains unconnected and is not a reading feature.
+
+The macOS source suite recorded **414 passed, 8 skipped, and 12 subtests
+passed**. The packaged target-Mac candidate passed ad-hoc signature, startup
+and color-PDF smoke checks, real-GPU color correction, and actual-app
+navigation, overview, Help (`H`) and fullscreen (`F`) checks. Earlier candidate
+coverage also includes status bulk actions, backup preview/cancel/restore,
+bookmark-note editing and same-ID reimport history preservation. This is not
+Linux desktop or hardware evidence. Keep Linux Preview b0.4 unchanged; a Linux
+release still requires a target-OS build and separate Wayland/X11, scaling,
+native-dialog/focus, portal, real-GPU and clean-install acceptance.
+
 ## Reading-records continuation after Windows b0.7 (2026-10-25)
 
 PRs #77–#81 are now merged to main in dependency order. The Windows user accepted

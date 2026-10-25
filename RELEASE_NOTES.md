@@ -1,3 +1,18 @@
+# macOS Beta 0.7.1b0.5 — reading records and bookmark notes (2026-10-25)
+
+Apple Silicon now ships reading-status filters/bulk actions, same-library JSON
+record backup, editable bookmark labels/notes and reimport-history protection.
+The user accepted the Mac build. Clean English/Japanese screenshots use only
+the redistributable Pepper&Carrot demo in a temporary library.
+
+Mac版へ読了管理・読書記録バックアップ・しおりメモを収録しました。
+Windows b0.7は公開済み、Linux b0.4は未更新です。Comic EPUBは含みません。
+このMacベータはad-hoc署名済み、Developer ID署名・notarization未実施です。
+
+[Mac release notes / 詳細](docs/releases/macos-beta-0.7.1b0.5.md) ·
+[Windows handover](docs/development/windows-handover.md) ·
+[Linux引き継ぎ](docs/development/linux-handover.ja.md)
+
 # Windows Preview 0.7.1b0.7 — reading records and bookmark notes (2026-10-25)
 
 PRs #77–#81 are merged in dependency order. Windows now ships reading-status
