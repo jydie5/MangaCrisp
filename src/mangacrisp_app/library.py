@@ -40,6 +40,8 @@ from .archive_utils import (
 from .page_provider import PdfPageList, is_pdf, pdf_page_count, pdf_source_key
 
 CURRENT_SCHEMA_VERSION = 1
+MAX_BOOKMARK_LABEL_LENGTH = 1024
+MAX_BOOKMARK_NOTE_LENGTH = 4096
 MANUAL_READING_STATUSES = frozenset({"unread", "completed"})
 _INTERRUPTED_IMPORT_DIRECTORY = re.compile(
     r"^\.(?P<book_name>.+)\.(?P<kind>import|backup)-[0-9a-f]{32}$"
@@ -795,6 +797,46 @@ class BookmarkRepository:
         cursor = self.db.connection.execute("DELETE FROM bookmarks WHERE id = ?", (bookmark_id,))
         self.db.connection.commit()
         return cursor.rowcount > 0
+
+    def update(self, book_id: str, bookmark_id: str, label: str, note: str | None) -> Bookmark | None:
+        """Update one bookmark only when it belongs to the supplied book."""
+        normalized_label, normalized_note = normalize_bookmark_text(label, note)
+        now = utc_now_iso()
+        with self.db.connection:
+            cursor = self.db.connection.execute(
+                """
+                UPDATE bookmarks
+                SET label = ?, note = ?, updated_at = ?
+                WHERE id = ? AND book_id = ?
+                """,
+                (normalized_label, normalized_note, now, bookmark_id, book_id),
+            )
+            if cursor.rowcount != 1:
+                return None
+            row = self.db.connection.execute(
+                "SELECT * FROM bookmarks WHERE id = ? AND book_id = ?",
+                (bookmark_id, book_id),
+            ).fetchone()
+            if row is None:
+                raise RuntimeError("bookmark disappeared during update")
+        return _bookmark_from_row(row) if row else None
+
+
+def normalize_bookmark_text(label: str, note: str | None) -> tuple[str, str | None]:
+    """Normalize user-editable plain text before it reaches SQLite."""
+    if not isinstance(label, str):
+        raise TypeError("bookmark label must be text")
+    normalized_label = re.sub(r"[\r\n]+", " ", label).strip()
+    if not normalized_label:
+        raise ValueError("bookmark label cannot be empty")
+    if len(normalized_label) > MAX_BOOKMARK_LABEL_LENGTH:
+        raise ValueError("bookmark label is too long")
+    if note is not None and not isinstance(note, str):
+        raise TypeError("bookmark note must be text")
+    normalized_note = note if note is not None and note.strip() else None
+    if normalized_note is not None and len(normalized_note) > MAX_BOOKMARK_NOTE_LENGTH:
+        raise ValueError("bookmark note is too long")
+    return normalized_label, normalized_note
 
 
 class LibraryImportService:

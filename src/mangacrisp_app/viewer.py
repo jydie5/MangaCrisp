@@ -491,6 +491,7 @@ class SpreadWindow(QMainWindow):
         bookmark_callback: Callable[[int], bool | None] | None = None,
         bookmarks_provider: Callable[[], list[Bookmark]] | None = None,
         bookmark_delete_callback: Callable[[str], bool] | None = None,
+        bookmark_edit_callback: Callable[[str, str, str | None], Bookmark | None] | None = None,
         next_book_callback: Callable[[], None] | None = None,
         next_book_label: str | None = None,
         close_callback: Callable[[SpreadWindow], None] | None = None,
@@ -522,6 +523,7 @@ class SpreadWindow(QMainWindow):
         self.bookmark_callback = bookmark_callback
         self.bookmarks_provider = bookmarks_provider
         self.bookmark_delete_callback = bookmark_delete_callback
+        self.bookmark_edit_callback = bookmark_edit_callback
         self.next_book_callback = next_book_callback
         self.next_book_label = next_book_label
         self.close_callback = close_callback
@@ -2097,6 +2099,7 @@ class SpreadWindow(QMainWindow):
             bookmarks,
             len(self.pages),
             delete_callback=self.bookmark_delete_callback,
+            edit_callback=self.bookmark_edit_callback,
         )
         try:
             if (

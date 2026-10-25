@@ -20,6 +20,7 @@ from mangacrisp_app.i18n import (
 )
 from mangacrisp_app.library import (
     Book,
+    Bookmark,
     LibraryPaths,
     LibraryService,
     ReadingState,
@@ -1491,6 +1492,9 @@ class BookshelfWindow(QMainWindow):
             bookmark_callback=lambda page_index: self.add_bookmark(book.id, page_index),
             bookmarks_provider=lambda: self.library.bookmarks.list_for_book(book.id),
             bookmark_delete_callback=lambda bookmark_id: self.delete_bookmark(book.id, bookmark_id),
+            bookmark_edit_callback=lambda bookmark_id, label, note: self.update_bookmark(
+                book.id, bookmark_id, label, note
+            ),
             next_book_callback=(lambda: self.open_next_book_from_window(book.id, window)) if next_book else None,
             next_book_label=next_book.title if next_book else None,
             close_callback=self.on_reader_closed,
@@ -1561,6 +1565,13 @@ class BookshelfWindow(QMainWindow):
         if not any(bookmark.id == bookmark_id for bookmark in self.library.bookmarks.list_for_book(book_id)):
             return False
         return self.library.bookmarks.delete(bookmark_id)
+
+    def update_bookmark(
+        self, book_id: str, bookmark_id: str, label: str, note: str | None
+    ) -> Bookmark | None:
+        if self.library.books.get(book_id) is None:
+            return None
+        return self.library.bookmarks.update(book_id, bookmark_id, label, note)
 
     def closeEvent(self, event) -> None:
         if self.active_reader is not None:

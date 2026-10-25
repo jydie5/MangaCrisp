@@ -94,7 +94,7 @@ def restore_records(parent: QWidget, library: LibraryService) -> bool:
             parent,
             tr("読書記録を復元する"),
             tr("一致した本の読書記録を、保存した内容へ戻しますか？"),
-            summary + "\n\n" + tr("現在の読書位置・読書状態・本ごとの表示設定を置き換えます。既存のしおりは残し、未登録のページだけ追加します。漫画本体と全体設定は変更しません。"),
+            summary + "\n\n" + tr("現在の読書位置・読書状態・本ごとの表示設定を置き換えます。既存しおりのラベル・メモは残し、未登録のページだけ追加します。漫画本体と全体設定は変更しません。"),
         )
         dialog.setIcon(QMessageBox.Question)
         dialog.setStandardButtons(QMessageBox.Cancel)

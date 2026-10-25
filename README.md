@@ -369,6 +369,10 @@ existing IDs in the same bookshelf; it is not a cross-PC library migration.
 Media, caches and global settings are excluded. Titles and bookmark notes are
 included, so treat the file as personal data.
 
+In **Bookmarks** (`Shift+B`), **Edit** changes a label or optional plain-text note
+without moving the bookmark. Cancel keeps the original. Backup restore preserves
+existing bookmark labels/notes and adds missing bookmarked pages only.
+
 See the [development handover](docs/development/reading-records-handover.md)
 for restore behavior and native acceptance checks. The reader's built-in action
 registry also brings key dispatch, control badges and help into a common module;

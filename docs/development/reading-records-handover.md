@@ -41,6 +41,19 @@ bookmarks. The complete DB operation must roll back on failure. Global quality
 preset definitions are not in this first format; missing named presets follow
 the reader's existing fallback.
 
+## Bookmark labels and notes (F05 follow-up)
+
+Open Bookmarks with Shift+B, select a bookmark and choose Edit. A required label
+and optional plain-text note can be saved without changing the bookmark ID,
+physical page or creation time. Cancel/Escape makes no change. Invalid input or
+storage failure keeps the editor open with the entered text. Even a bookmark
+whose page is no longer available can be edited or removed.
+
+Notes appear as a short preview in the list and in full in the editor/tooltip.
+The label limit is 1,024 characters and the note limit is 4,096 characters.
+Reading-record export includes them. Restore adds missing bookmark pages and
+preserves labels/notes on existing pages; it does not undo later note edits.
+
 ## Native checklist
 
 Use generated images or `demo/` only, in an isolated bookshelf.
@@ -57,7 +70,10 @@ Use generated images or `demo/` only, in an isolated bookshelf.
 5. Restore twice: existing bookmarks and labels remain, with no duplicates.
 6. Try an unrelated bookshelf or a malformed file: no books are created and no
    source or cache files are changed. Check the reported skipped/error counts.
-7. Test at the minimum window size in English and Japanese; ensure the filter
+7. Edit a bookmark label and multiline note, cancel once, then save. Reopen the
+   list and confirm the edit. A deleted bookmark restored from a backup should
+   recover its saved note; an existing bookmark should keep its current note.
+8. Test at the minimum window size in English and Japanese; ensure the filter
    row and action buttons fit. Check keyboard focus and Escape/cancel.
 
 ## 日本語
@@ -73,7 +89,11 @@ Use generated images or `demo/` only, in an isolated bookshelf.
 漫画本体・cache・保存先・全体設定を含めません。書名やしおりのメモは含むため、
 そのまま公開用の診断情報として扱わないでください。別PCへの再取り込みや原本移動の
 自動照合は対象外です。復元前に一致・対象なし・不一致・追加しおり件数を表示し、
-確認後に保存済みの状態へ戻します。既存しおりは残し、同じページを二重追加しません。
+確認後に保存済みの状態へ戻します。既存しおりのラベル・メモは残し、同じページを二重追加しません。
+
+Shift+Bのしおり一覧からラベルとメモを編集できます。ID・ページ番号・作成日時は
+維持し、キャンセル/Escでは変更しません。保存失敗時には入力を残します。
+JSON復元は既存のメモ編集を巻き戻さず、消えたページのしおりだけを追加します。
 
 
 ## Synthetic scale check (2026-10-25)
@@ -86,3 +106,21 @@ kept exactly 10,000 of each record type. The F14 bulk status update took 0.026 s
 Temporary data was removed. These are single-run measurements, not guarantees
 for other machines or files with long notes. The input limit remains 16 MiB;
 large payloads can briefly block the UI and worker/progress support is deferred.
+
+
+## Current verification and review boundary
+
+The integrated macOS source suite (Python 3.13.6, Qt offscreen) passed **407 tests,
+8 skips and 12 subtests** after bookmark editing and selection retention were
+added. The development PRs are stacked: reading status → record backup → reader
+actions → bookmark editing. Review/merge in that order, retargeting each child to
+main after its parent is integrated. Existing download links and release tags
+are unchanged. Native CI evidence is recorded on the corresponding PR.
+
+The older CI additions [#67](https://github.com/jydie5/MangaCrisp/pull/67) and
+[#69](https://github.com/jydie5/MangaCrisp/pull/69) passed their earlier audit runs,
+but their path filters omit many shared runtime files. Before a release, either
+extend their triggers to shared runtime changes or dispatch the bundled macOS
+and Linux clean-install audits on the exact release commit. Earlier green checks
+must not be presented as validation of later reader changes. Signing/notarization,
+Windows GPU variants and Linux desktop-session acceptance remain separate.
