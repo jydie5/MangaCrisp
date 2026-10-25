@@ -70,18 +70,19 @@ All versions and the SHA-256 checksum are available on the
 
 ### Windows development preview
 
-**[Download Windows 10/11 x64 Preview 0.7.1b0.6](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.1b0.6/MangaCrisp-0.7.1b0-windows-x64-portable-preview.zip)**
+**[Download Windows 10/11 x64 Preview 0.7.1b0.7](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.1b0.7/MangaCrisp-0.7.1b0-windows-x64-portable-preview.zip)**
 
-This preview adds bookshelf search/sorting, physical page jumps, bookmarks,
-per-book reading settings, zoom/pan and a lazy page overview, plus processed-page
-and ZIP cache fixes. The user confirmed Windows startup, overview selection,
-zoom and fit. The unchanged Windows-native CI package passes source/build,
-distribution-audit and extracted-startup checks; it was not recompiled locally.
+This preview adds reading-status filters and bulk actions, same-library record
+export/restore, bookmark label/note editing, and reimport-history protection.
+It retains search, page jumps, zoom/pan and lazy page overview. The Windows user
+accepted the integrated candidate. The unchanged native CI package passes
+source/build, distribution-audit and extracted-startup checks; it was not
+recompiled locally.
 
 Python, uv, CUDA, and an installer are not required. The unsigned package bundles
 the pinned Zig-built Real-CUGAN engine and 7-Zip. Intel/AMD engine-matched Vulkan
 and separate clean-account evidence remain stable-release requirements.
-See [release notes](docs/releases/windows-preview-0.7.1b0.6.md) and
+See [release notes](docs/releases/windows-preview-0.7.1b0.7.md) and
 [Windows installation](INSTALL.windows.md).
 
 ### Linux (Ubuntu) preview
@@ -355,9 +356,9 @@ reading positions are preserved.
   backend.
 - Updates are manual; download a newer build from Releases.
 
-## Next development changes (not yet released)
+## Reading records (Windows Preview 0.7.1b0.7)
 
-The next shared branch adds **Unread / Reading / Completed** filters and bulk
+The Windows preview adds **Unread / Reading / Completed** filters and bulk
 **Mark completed / Mark unread** actions. Completion is manual and survives a
 reread. Mark unread returns to the first page while keeping bookmarks and
 per-book display settings.
@@ -376,15 +377,15 @@ existing bookmark labels/notes and adds missing bookmarked pages only.
 See the [development handover](docs/development/reading-records-handover.md)
 for restore behavior and native acceptance checks. The reader's built-in action
 registry also brings key dispatch, control badges and help into a common module;
-user-defined shortcut editing is not included yet. Published downloads above
-remain unchanged.
+user-defined shortcut editing is not included yet. These reading-record changes
+are merged into main but are not yet in the macOS/Linux downloads above.
 
 ## Build from source
 
 ### Current source and platform release status
 
 The following features are in macOS Beta 0.7.1b0.4 and Windows Preview
-0.7.1b0.6. The Linux download above is unchanged; its native verification and
+0.7.1b0.7. The Linux download above is unchanged; its native verification and
 next release are tracked in the [Linux handover](docs/development/linux-handover.md).
 
 - **F03 — Bookshelf discovery:** Search titles and sort by natural title,

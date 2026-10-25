@@ -1,3 +1,17 @@
+# Windows Preview 0.7.1b0.7 — reading records and bookmark notes (2026-10-25)
+
+PRs #77–#81 are merged in dependency order. Windows now ships reading-status
+filters/bulk actions, same-library reading-record backup, editable bookmark
+labels/notes, shared action definitions and reimport-history preservation.
+The user accepted the Windows candidate; the unchanged CI ZIP is published.
+macOS/Linux downloads are unchanged. This is an unsigned Development Preview.
+
+依存順にmainへ統合し、Windowsの実機確認を受けた読書記録・しおりメモ版を公開しました。
+バックアップは同じ本棚の記録用で、別PCへの本棚移行ではありません。
+
+[Windows release notes / 詳細](docs/releases/windows-preview-0.7.1b0.7.md) ·
+[Linux continuation / Linux引継ぎ](docs/development/linux-handover.ja.md)
+
 # Windows Preview 0.7.1b0.6 — navigation and page overview (2026-10-25)
 
 Bookshelf discovery, page jumps, bookmarks, per-book settings, zoom/pan and lazy

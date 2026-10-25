@@ -2,6 +2,41 @@
 
 [English](linux-handover.md)
 
+## 読書記録版Windows b0.7公開後のLinux引継ぎ（2026-10-25）
+
+PR #77〜#81を依存順にmainへ統合しました。利用者のWindows実機確認を受領し、
+[Windows Preview 0.7.1b0.7](https://github.com/jydie5/MangaCrisp/releases/tag/windows-preview-0.7.1b0.7)
+をmainのタグ参照 `81e7721`から公開しました。ソース `7605b641e6c6bffb672c06e5ae9787ab7aadd6b3`の
+Windows CI成果物を再コンパイルせず使用し、ZIP SHA-256は
+`3ef9961d6844811b54b535adfacc8588f8d2598a70074d12733b5be15df7f4ec`です。
+Windowsの再テストは413成功・9スキップ・12サブテスト成功でした。
+Linuxの実デスクトップ・実GPUの合格ではなく、Windows ZIPをLinuxへ流用してはいけません。
+
+公開中のLinux b0.4は未更新で、この読書記録機能を含みません。
+変更を保全してからmainで`git pull --ff-only origin main`し、新しい`linux/<作業名>`を切ります。
+機能ブランチを順にcherry-pickする必要はありません。
+
+- 同じ統合ソースの[Ubuntu CI 40167591018](https://github.com/jydie5/MangaCrisp/actions/runs/40167591018)は成功済みです。
+  `mangacrisp-linux-x86_64`成果物は2026-10-25時点で取得可能です。最新mainとの実行コード・
+  パッケージ処理・checksumを照合し、同じなら流用、差分があればUbuntu 24.04 x86_64でビルドします。
+- デモ専用本棚で未読／読書中／読了フィルターと検索、表示中の選択だけの一括変更、
+  読み返しても読了が残ることを確認します。未読に戻すと位置だけ先頭へ戻り、
+  しおり・本ごとの設定・最終閲覧履歴は維持します。
+- `Shift+B`のラベル／メモ編集、保存・Esc取消、JSON書出し、復元前の確認・取消・確定を確認します。
+  繰り返してもしおりが重複せず、拡張子補完後に既存ファイルへ重なる場合も確認が出ること。
+  本物の書名・メモを含むJSONは公開issueへ載せないでください。
+- バックアップは16 MiB以内・同じ本棚の既存ID用であり、別PCへの移行や原本再リンクではありません。
+  既存しおりのラベル／メモは維持し、未登録ページだけ追加します。
+- 同じIDのデモを再登録し、読了状態・最終閲覧日時・位置・しおりメモが残ることを確認します。
+  移動・改名でIDが変わった原本は今回の修正対象と混同しません。
+- Wayland／X11、ネイティブの保存／開くダイアログ、focus／Esc、日英の最小幅、倍率、
+  capture／portal、実GPUを分けて記録します。source／artifact hashと環境を残し、
+  **Linuxヒューマンチェックで停止**してから次のLinux preview公開を依頼します。
+  Windowsの合格で代用せず、未検証GPU・セッション・clean installゲートは残します。
+
+詳細な仕様と8項目は[読書記録引継ぎ](reading-records-handover.md)を参照してください。
+今回はWindowsのみ公開し、Linuxのダウンロード先は変更していません。
+
 ## Windows Preview b0.6公開後、Linux担当のみへの引継ぎ（2026-10-25）
 
 [Windows Preview 0.7.1b0.6](https://github.com/jydie5/MangaCrisp/releases/tag/windows-preview-0.7.1b0.6)

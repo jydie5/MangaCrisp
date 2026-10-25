@@ -2,9 +2,26 @@
 
 [日本語](#日本語)
 
-This describes the next shared features after macOS beta 0.7.1b0.4 and Windows
-preview 0.7.1b0.6. It does not change the published download or claim native
-Windows/Linux acceptance. Build each platform's candidate on that platform.
+These shared features are merged and published in Windows Preview 0.7.1b0.7.
+macOS beta 0.7.1b0.4 and Linux preview 0.7.1b0.4 still predate them. Native
+acceptance and publication for those platforms remain separate.
+
+## Merged and Windows-released checkpoint (2026-10-25)
+
+PRs #77 → #78 → #79 → #80 → #81 were retargeted and merged to main in that
+order, preserving their commit history. Integrated source `7605b64` matches
+main after #81 (`143ad66`); later release/download changes are documentation.
+[Windows Preview 0.7.1b0.7](../releases/windows-preview-0.7.1b0.7.md) reuses
+the exact ZIP from [Windows CI 40167593501](https://github.com/jydie5/MangaCrisp/actions/runs/40167593501).
+The same head passed [macOS CI](https://github.com/jydie5/MangaCrisp/actions/runs/40167588467)
+and [Linux CI](https://github.com/jydie5/MangaCrisp/actions/runs/40167591018).
+The local merged Windows suite passed 413 tests, 9 skips and 12 subtests.
+
+The user gave general native Windows acceptance and authorized merge/release.
+Do not infer individual checklist or all-GPU/clean-account evidence. Windows
+remains unsigned; Intel/AMD and separate clean-account gates remain open.
+Follow [the Linux continuation](linux-handover.md) for Linux desktop work.
+Older verification checkpoints below are historical, not the release state.
 
 ## Reading status (F14)
 
@@ -78,8 +95,8 @@ Use generated images or `demo/` only, in an isolated bookshelf.
 
 ## 日本語
 
-これは公開済みMac b0.4 / Windows b0.6の次の共有機能の作業メモです。
-配布物はまだ更新しません。Windows/Linuxの実機確認は各OS担当が行います。
+これらはmainへ統合し、実機確認後にWindows b0.7へ収録しました。
+Mac b0.4 / Linux b0.4は未更新で、各OSの実機受入と公開は別に行います。
 
 読了は手動指定です。最終ページへ飛んだだけでは読了にせず、読み返しで読了が
 消えないようにします。「未読に戻す」は位置だけ先頭へ戻し、しおり・本ごとの
@@ -120,14 +137,15 @@ size cap; asynchronous execution/progress remains a follow-up, especially before
 raising limits.
 
 
-## Current verification and review boundary
+## Pre-merge verification and review boundary (historical)
 
 The integrated macOS source suite (Python 3.13.6, Qt offscreen) passed **410 tests,
 8 skips and 12 subtests** after bookmark editing and selection retention were
-added and the export suffix-overwrite fix was verified. The development PRs are stacked: reading status → record backup → reader
-actions → bookmark editing. Review/merge in that order, retargeting each child to
-main after its parent is integrated. Existing download links and release tags
-are unchanged. Native CI evidence is recorded on the corresponding PR.
+added and the export suffix-overwrite fix was verified. The development PRs were
+stacked: reading status → record backup → reader actions → bookmark editing,
+then reimport-history preservation. They were subsequently merged in that order,
+retargeting each child to main. Windows publication is recorded above; the older
+pre-merge checkpoints did not change downloads. CI evidence remains on each PR.
 
 The older CI additions [#67](https://github.com/jydie5/MangaCrisp/pull/67) and
 [#69](https://github.com/jydie5/MangaCrisp/pull/69) passed their earlier audit runs,

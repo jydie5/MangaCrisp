@@ -29,8 +29,8 @@ Platform handover checkpoints are maintained in:
   changes awaiting Windows and Linux verification)
 - `docs/development/next-features-handover.md` (unreleased shared feature status
   and Windows/Linux verification boundary)
-- `docs/development/reading-records-handover.md` (unreleased reading status,
-  record backup, action definitions and bookmark notes; PRs #77–#80)
+- `docs/development/reading-records-handover.md` (reading records, action
+  definitions and bookmark notes; PRs #77–#81 and per-platform release status)
 - `docs/development/epub-probe-handover.md` (F13 Stage A metadata probe and
   staged Comic EPUB integration boundary)
 

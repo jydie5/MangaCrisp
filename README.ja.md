@@ -64,17 +64,17 @@ ZIP展開先も物理ページごとに分離しました。詳細は[リリー�
 
 ### Windows開発プレビュー
 
-**[Windows 10/11 x64 Preview 0.7.1b0.6をダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.1b0.6/MangaCrisp-0.7.1b0-windows-x64-portable-preview.zip)**
+**[Windows 10/11 x64 Preview 0.7.1b0.7をダウンロード](https://github.com/jydie5/MangaCrisp/releases/download/windows-preview-0.7.1b0.7/MangaCrisp-0.7.1b0-windows-x64-portable-preview.zip)**
 
-本棚検索・並べ替え、ページ番号ジャンプ、しおり、本ごとの設定、ズーム／パン、遅延ページ一覧と、
-処理済みページ・ZIPキャッシュ修正を収録しています。利用者はWindows実機で起動、一覧選択、拡大・全体復帰を確認済みです。
-WindowsネイティブCIでソーステスト・ビルド・配布監査・展開後起動を検証した成果物を、
-ローカルで再コンパイルせず配布しています。
+読了状態フィルターと一括変更、同じ本棚の読書記録バックアップ、しおりラベル／メモ編集、
+再登録時の履歴保護を追加しました。本棚検索・ページジャンプ・ズーム／パン・遅延ページ一覧も含みます。
+利用者のWindows実機確認で統合候補を受け入れ済みです。ネイティブCIでソーステスト・ビルド・
+配布監査・展開後起動を検証した成果物を、ローカルで再コンパイルせず配布しています。
 
 未署名のポータブルZIPで、Python、uv、CUDA、インストーラーは不要です。
 固定したZig版Real-CUGANと7-Zipを同梱します。Intel/AMD実GPUのエンジン一致証跡と
 別クリーンアカウントの検証は正式版までの残項目です。
-[リリースノート](docs/releases/windows-preview-0.7.1b0.6.md)と
+[リリースノート](docs/releases/windows-preview-0.7.1b0.7.md)と
 [Windows導入手順](INSTALL.windows.ja.md)を参照してください。
 
 ### Linux（Ubuntu）プレビュー
@@ -320,10 +320,10 @@ PDF描画キャッシュとAI補正キャッシュは破棄可能です。それ
 - RAR形式によってはmacOS側の展開機能との相性で開けない場合があります。
 - 自動アップデートは未実装です。新しいZIPをReleasesから取得してください。
 
-## 次の開発変更（未リリース）
+## 読書記録（Windows Preview 0.7.1b0.7）
 
-次の共有ブランチでは、本棚を「未読・読書中・読了」で絞り込めるようにし、
-選択した本をまとめて「読了にする」「未読に戻す」操作を追加します。
+Windows previewでは、本棚を「未読・読書中・読了」で絞り込めます。
+選択した本をまとめて「読了にする」「未読に戻す」操作も利用できます。
 読了は手動指定で、読み返しても維持します。未読に戻すと先頭ページへ戻り、
 しおりと本ごとの表示設定は残ります。
 
@@ -339,7 +339,8 @@ PDF描画キャッシュとAI補正キャッシュは破棄可能です。それ
 復元の仕様と各OSの確認項目は
 [開発引き継ぎ](docs/development/reading-records-handover.md)を参照してください。
 キー処理・ボタンのキー表示・ヘルプの定義も共通モジュールへ整理します。
-キー割当の編集UIは今回含めません。上記の公開済みダウンロードは変更しません。
+キー割当の編集UIは今回含めません。これらはmainへ統合済みですが、
+上記のmacOS／Linux配布物にはまだ含みません。
 
 ## ソースコードから起動する
 
@@ -347,7 +348,7 @@ PDF描画キャッシュとAI補正キャッシュは破棄可能です。それ
 
 ### 現在のsourceとmacOSベータの状態
 
-以下はmacOS Beta 0.7.1b0.4とWindows Preview 0.7.1b0.6に含まれます。
+以下はmacOS Beta 0.7.1b0.4とWindows Preview 0.7.1b0.7に含まれます。
 Linuxの配布物は従来版のままです。Linux実機確認と次の公開手順は
 [Linux引継ぎ書](docs/development/linux-handover.ja.md)を参照してください。
 
