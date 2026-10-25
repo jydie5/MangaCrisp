@@ -2,6 +2,52 @@
 
 [English](linux-handover.md)
 
+## Windows Preview b0.6公開後、Linux担当のみへの引継ぎ（2026-10-25）
+
+[Windows Preview 0.7.1b0.6](https://github.com/jydie5/MangaCrisp/releases/tag/windows-preview-0.7.1b0.6)
+を公開しました。タグはmain `742e6b4`を参照し、Windowsネイティブ
+[CI run 40057157576](https://github.com/jydie5/MangaCrisp/actions/runs/40057157576)
+の成果物（検証merge `47f0c2c388de6c87e89fef76100c04f82838779d`）を再コンパイルせず使用しています。
+アプリ・依存関係・Windowsパッケージ処理はmacOS b0.4/main `cdab340`と一致し、
+以後の変更はリリース・配布案内の文書だけです。
+Windows ZIPのSHA-256は
+`54596edeec782990b18fc95bdd0b0087145c0595afc9c1b38944f50a544a6187`です。
+来歴照合用であり、WindowsバイナリをLinux配布へ流用してはいけません。
+
+Windowsでは利用者が起動、`T`一覧からの選択移動、`+`拡大、`0`全体復帰を確認し、公開を承認しました。
+展開後の開発ツール除外起動も再確認済みです。これは範囲を限定したWindowsの確認で、
+Linux実機合格・エージェントによる画面検証・全GPU・別クリーンアカウント合格ではありません。
+Windowsは未署名で、Intel/AMDと別アカウントの正式版ゲートは残っています。
+
+今回の引継ぎ先はLinux担当だけです。Mac/Windows向け引継ぎ書の書き換えやLinux版公開は行っていません。
+Linuxの公開中ダウンロードは旧 `d7bbf50`由来の **linux-preview-0.7.1b0.4** のままで、
+今回の新しい読書操作・ページ一覧は含みません。
+
+### Linux側で再開する手順
+
+1. 未コミット変更を保全し、きれいな作業ツリーでmainへ切り替えて
+   `git pull --ff-only origin main`し、新しい`linux/<作業名>`を切ります。
+   Windowsの文書ブランチをcherry-pickする必要はありません。
+2. 同じ統合候補のUbuntuネイティブ
+   [CI run 40057157588](https://github.com/jydie5/MangaCrisp/actions/runs/40057157588)は
+   ソース・パッケージとも成功済みです。`mangacrisp-linux-x86_64`成果物は2026-10-25時点で取得可能です。
+   検証ソースと最新main、checksum、来歴を照合し、実行コード・パッケージ処理に差分がなければ流用できます。
+   差分や期限切れがあればUbuntu 24.04 x86_64上で再ビルドします。引継ぎ文書だけの変更で再コンパイルは不要です。
+3. デモ／生成画像で本棚検索・並べ替え、物理ページジャンプ、`B`／`Shift+B`、本ごとの設定復元、
+   `+`／`-`／`0`／`W`／`1`、Ctrl＋ホイール、ドラッグ中の誤ページ送りなしを確認します。
+   `T`一覧の表示範囲・選択・キャンセル・終了、PDF／ZIPの遅延処理も確認します。
+4. GNOME WaylandとX11を分け、倍率、Qt、Ubuntu、GPU/ドライバ、commit、成果物hashを記録します。
+   カーソル・フォーカス・モーダル、原画／補正版のカラー、補正キャッシュ整理、capture／portal復帰も再確認します。
+   CIやheadlessの成功を実デスクトップ・実GPUの合格とは扱いません。
+5. suite、ネイティブ配布版の起動、パッケージREADMEに従うUbuntu 24.04/26.04のclean検証を実行します。
+   Intel/AMD、確認できないセッションなどの残件は明記します。
+6. **Linuxのヒューマンチェックでいったん停止**し、実際の確認範囲をこの文書へ記録してください。
+   リリース指示を受けてから新しいLinux previewタグで公開し、checksumを添付します。
+   旧配布物は保持し、READMEのLinuxリンクは新しい配布物の公開後に更新します。
+
+以下の日付付き旧記録は過去の証跡であり、今回のLinux実機確認の代わりにはなりません。
+Comic EPUB読書は引き続き今回のリリース対象外です。
+
 ## macOS beta 0.7.1b0.4からの受け取り（2026-10-24）
 
 現行のApple Silicon配布版は
