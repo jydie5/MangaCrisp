@@ -185,3 +185,19 @@ the overwrite confirmation, subsequently passed all three workflows:
 Later changes to this four-feature checkpoint are documentation only. The isolated
 Mac bundle passed engine provenance/hash, 36 model entries, license completeness,
 ad-hoc signature and startup checks. It is still not a published release.
+
+
+## Follow-up: preserve history when reimporting the same ID
+
+A subsequent shared fix prevents scanner-created defaults from replacing a
+book's Completed/Reading status and last-opened timestamp when the same source
+is registered/imported again with the same ID. Source metadata still refreshes;
+reading position, display settings and bookmarks remain. This is not moved-file
+matching: a different ID is still a separate book. Explicit repository updates
+can still change history. The import-specific preservation happens in the SQL
+conflict update, avoiding a separate read-then-overwrite of those fields.
+
+This follow-up is separate from the fully verified `fe48735` test checkpoint.
+Verify the follow-up PR's own CI and candidate source before release. Native
+acceptance should include re-adding a previously read demo folder/archive and
+checking that its completion, last-opened history, position and bookmarks remain.
