@@ -113,6 +113,7 @@ ENGLISH_TRANSLATIONS = {
     "読書記録 (*.json)": "Reading records (*.json)",
     "読書記録を書き出せませんでした。": "Could not export reading records.",
     "読書記録を書き出しました。": "Reading records exported.",
+    "拡張子を補完した保存先に読書記録が既にあります。置き換えますか？": "A reading-record backup already exists at the filename with the added extension. Replace it?",
     "同じ本棚の読書位置・状態・表示設定・しおりを復元できます。漫画本体や全体設定は含みません。書名としおりのメモは含まれます。": "Restore positions, status, per-book settings and bookmarks to this bookshelf. Media and global settings are excluded. Book titles and bookmark notes are included.",
     "復元対象: {matched}冊\n対象の本なし: {missing}冊\n互換性なし: {incompatible}冊\n追加するしおり: {bookmarks}件": "Matching books: {matched}\nMissing books: {missing}\nIncompatible books: {incompatible}\nBookmarks to add: {bookmarks}",
     "この本棚に復元できる記録がありません。": "No records can be restored to this bookshelf.",

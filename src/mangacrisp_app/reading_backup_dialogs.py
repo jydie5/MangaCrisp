@@ -48,10 +48,24 @@ def export_records(parent: QWidget, library: LibraryService) -> bool:
     )
     if not filename:
         return False
-    destination = Path(filename)
+    selected_destination = Path(filename)
+    destination = selected_destination
     if not destination.suffix:
         destination = destination.with_suffix(".mangacrisp.json")
     try:
+        # The native picker only confirmed its selected path, not our appended suffix.
+        if destination != selected_destination and destination.exists():
+            dialog = _message(
+                parent,
+                tr("読書記録を書き出す"),
+                tr("拡張子を補完した保存先に読書記録が既にあります。置き換えますか？"),
+                str(destination),
+            )
+            dialog.setIcon(QMessageBox.Question)
+            dialog.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
+            dialog.setDefaultButton(QMessageBox.Cancel)
+            if dialog.exec() != QMessageBox.Yes:
+                return False
         export_reading_backup(library, destination)
     except (OSError, ValueError, RuntimeError, sqlite3.Error) as exc:
         dialog = _message(parent, tr("読書記録を書き出す"), tr("読書記録を書き出せませんでした。"), str(exc))
