@@ -224,14 +224,18 @@ These are the defaults for right-bound manga.
 
 | Key | Action |
 |---|---|
-| `Left` / `Space` | Next spread |
-| `Right` | Previous spread |
-| `Shift + Left` | Shift one page forward |
-| `Shift + Right` | Shift one page backward |
+| `Left` / `Down` / `Space` | Next spread |
+| `Right` / `Up` / `Backspace` | Previous spread |
+| `Shift + Left` / `Shift + Down` / `E` | Shift one page forward |
+| `Shift + Right` / `Shift + Up` / `Q` | Shift one page backward |
 | `V` | Toggle Spread (2 images) / Single Page (1 image) |
 | `F` | Toggle full screen |
 | `P` | Show or hide Reading Settings |
 | `O` | Toggle Original / Enhanced |
+| `B` / `Shift + B` | Add a bookmark / open bookmarks |
+| `T` | Open the page overview |
+| `+` / `-` | Zoom in / out |
+| `0` / `W` / `1` | Fit page / fit current page width / actual size |
 | `H` / `?` | Show keyboard help and project links |
 | `Esc` | Close the controls panel, exit full screen, or return to the bookshelf |
 
@@ -366,7 +370,9 @@ Media, caches and global settings are excluded. Titles and bookmark notes are
 included, so treat the file as personal data.
 
 See the [development handover](docs/development/reading-records-handover.md)
-for restore behavior and native acceptance checks. Published downloads above
+for restore behavior and native acceptance checks. The reader's built-in action
+registry also brings key dispatch, control badges and help into a common module;
+user-defined shortcut editing is not included yet. Published downloads above
 remain unchanged.
 
 ## Build from source
